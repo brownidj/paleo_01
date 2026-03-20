@@ -3,136 +3,15 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 
 from trip_repository import TripRepository
-from ui.team_editor_dialog import TeamEditorDialog
-
-
-class TripFormDialog(tk.Toplevel):
-    def __init__(
-        self,
-        parent: tk.Widget,
-        fields: list[str],
-        initial_data: dict[str, str] | None,
-        on_save,
-        on_duplicate=None,
-        readonly_fields: set[str] | None = None,
-        active_users: list[str] | None = None,
-        modal: bool = True,
-        on_close=None,
-    ):
-        super().__init__(parent)
-        self.title("Trip Record")
-        self.fields = fields
-        self.on_save = on_save
-        self.on_duplicate = on_duplicate
-        self.readonly_fields = readonly_fields or set()
-        self.active_users = active_users or []
-        self.modal = modal
-        self.on_close = on_close
-        self.inputs: dict[str, tk.Widget] = {}
-        self.resizable(False, False)
-
-        body = ttk.Frame(self, padding=10)
-        body.pack(fill="both", expand=True)
-
-        for i, field in enumerate(fields):
-            ttk.Label(body, text=field).grid(row=i, column=0, sticky="e", padx=4, pady=4)
-            if field == "notes":
-                notes_frame = ttk.Frame(body)
-                notes_frame.grid(row=i, column=1, sticky="ew", padx=4, pady=4)
-                widget = tk.Text(
-                    notes_frame,
-                    width=40,
-                    height=6,
-                    wrap="word",
-                    bd=1,
-                    relief="solid",
-                    highlightthickness=0,
-                )
-                scrollbar = ttk.Scrollbar(notes_frame, orient="vertical", command=widget.yview)
-                widget.configure(yscrollcommand=scrollbar.set)
-                widget.pack(side="left", fill="both", expand=True)
-                scrollbar.pack(side="right", fill="y")
-                if initial_data and initial_data.get(field):
-                    widget.insert("1.0", str(initial_data[field]))
-            else:
-                widget = ttk.Entry(body, width=42)
-                widget.grid(row=i, column=1, sticky="ew", padx=4, pady=4)
-                if initial_data and initial_data.get(field):
-                    widget.insert(0, str(initial_data[field]))
-                if field in self.readonly_fields:
-                    widget.configure(state="readonly")
-                if field == "team":
-                    ttk.Button(body, text="Edit team", command=self._edit_team).grid(
-                        row=i, column=2, sticky="w", padx=4, pady=4
-                    )
-            self.inputs[field] = widget
-
-        btns = ttk.Frame(body)
-        btns.grid(row=len(fields), column=0, columnspan=3, sticky="ew", pady=8)
-        btns.columnconfigure(2, weight=1)
-        ttk.Button(btns, text="Save", command=self._save).grid(row=0, column=0, padx=4, sticky="w")
-        if callable(self.on_duplicate):
-            ttk.Button(btns, text="Duplicate", command=self._duplicate).grid(row=0, column=1, padx=4, sticky="w")
-        ttk.Button(btns, text="Cancel", command=self._close).grid(row=0, column=3, padx=4, sticky="e")
-
-        self.transient(parent)
-        if self.modal:
-            self.grab_set()
-        self.protocol("WM_DELETE_WINDOW", self._close)
-
-    def _edit_team(self) -> None:
-        team_widget = self.inputs.get("team")
-        if not isinstance(team_widget, ttk.Entry):
-            return
-        trip_name_widget = self.inputs.get("trip_name")
-        trip_name = ""
-        if isinstance(trip_name_widget, ttk.Entry):
-            trip_name = trip_name_widget.get().strip()
-        current_value = team_widget.get().strip()
-        existing_names = [v.strip() for v in current_value.split(",") if v.strip()]
-
-        def save_team(selected_names: list[str]) -> None:
-            lines = [line.strip() for line in selected_names if line.strip()]
-            team_widget.configure(state="normal")
-            team_widget.delete(0, "end")
-            team_widget.insert(0, ", ".join(lines))
-            if "team" in self.readonly_fields:
-                team_widget.configure(state="readonly")
-
-        TeamEditorDialog(self, self.active_users, existing_names, trip_name, save_team)
-
-    def _save(self) -> None:
-        payload = self._collect_payload()
-        should_close = self.on_save(payload)
-        if should_close is False:
-            return
-        self._close()
-
-    def _duplicate(self) -> None:
-        if not callable(self.on_duplicate):
-            return
-        payload = self._collect_payload()
-        self.on_duplicate(payload)
-
-    def _collect_payload(self) -> dict[str, str]:
-        payload: dict[str, str] = {}
-        for field, widget in self.inputs.items():
-            if isinstance(widget, tk.Text):
-                payload[field] = widget.get("1.0", "end").strip()
-            else:
-                payload[field] = widget.get().strip()
-        return payload
-
-    def _close(self) -> None:
-        if callable(self.on_close):
-            self.on_close()
-        self.destroy()
+from ui.location_tab import LocationTab
+from ui.trip_form_dialog import TripFormDialog
+from ui.users_tab import UsersTab
 
 
 class PlanningPhaseWindow(tk.Tk):
     def __init__(self, db_path: str = "paleo_trips_01.db"):
         super().__init__()
-        self.title("Planning Phase - Trips")
+        self.title("Planning Phase")
         self.geometry("980x560")
 
         self.repo = TripRepository(db_path)
@@ -144,30 +23,54 @@ class PlanningPhaseWindow(tk.Tk):
         self.list_fields = [f for f in self.list_fields if f in self.fields]
         self.edit_fields = [f for f in self.edit_fields if f in self.fields]
 
-        ttk.Label(self, text="Trips", font=("Helvetica", 15, "bold")).pack(pady=10)
+        self.tabs = ttk.Notebook(self)
+        self.tabs.pack(fill="both", expand=True, padx=10, pady=10)
 
-        self.tree = ttk.Treeview(
-            self,
+        self.trips_tab = ttk.Frame(self.tabs)
+        self.location_tab = LocationTab(self.tabs, self.repo)
+        self.geology_tab = ttk.Frame(self.tabs)
+        self.collection_plan_tab = ttk.Frame(self.tabs)
+        self.users_tab = UsersTab(self.tabs, self.repo)
+        self.tabs.add(self.trips_tab, text="Trips")
+        self.tabs.add(self.location_tab, text="Location")
+        self.tabs.add(self.geology_tab, text="Geology")
+        self.tabs.add(self.collection_plan_tab, text="Collection Plan")
+        self.tabs.add(self.users_tab, text="Team Members")
+        self.tabs.bind("<<NotebookTabChanged>>", self._on_tab_changed)
+
+        self._build_trips_tab()
+        self._build_placeholder_tab(self.geology_tab, "Geology")
+        self._build_placeholder_tab(self.collection_plan_tab, "Collection Plan")
+        self.load_trips()
+        self.location_tab.load_locations()
+        self.users_tab.load_users()
+
+    def _build_trips_tab(self) -> None:
+        ttk.Label(self.trips_tab, text="Trips", font=("Helvetica", 15, "bold")).pack(pady=10)
+        self.trips_tree = ttk.Treeview(
+            self.trips_tab,
             columns=self.list_fields,
             show="headings",
         )
         for field in self.list_fields:
-            self.tree.heading(field, text=field)
-            self.tree.column(field, width=160, anchor="w")
-        self.tree.pack(fill="both", expand=True, padx=10, pady=6)
-
-        buttons = ttk.Frame(self)
+            self.trips_tree.heading(field, text=field)
+            self.trips_tree.column(field, width=160, anchor="w")
+        self.trips_tree.pack(fill="both", expand=True, padx=10, pady=6)
+        buttons = ttk.Frame(self.trips_tab)
         buttons.pack(fill="x", padx=10, pady=8)
         ttk.Button(buttons, text="New Trip", command=self.new_trip).pack(side="left", padx=4)
         ttk.Button(buttons, text="Edit Selected", command=self.edit_selected).pack(side="left", padx=4)
         ttk.Button(buttons, text="Refresh", command=self.load_trips).pack(side="left", padx=4)
+        self.trips_tree.bind("<Double-1>", lambda _: self.edit_selected())
 
-        self.tree.bind("<Double-1>", lambda _: self.edit_selected())
-        self.load_trips()
+    @staticmethod
+    def _build_placeholder_tab(tab: ttk.Frame, title: str) -> None:
+        ttk.Label(tab, text=title, font=("Helvetica", 15, "bold")).pack(pady=(40, 10))
+        ttk.Label(tab, text="Scaffolded tab. Data form coming next.").pack()
 
     def load_trips(self) -> None:
-        for item in self.tree.get_children():
-            self.tree.delete(item)
+        for item in self.trips_tree.get_children():
+            self.trips_tree.delete(item)
         try:
             records = self.repo.list_trips()
         except sqlite3.Error as e:
@@ -175,7 +78,7 @@ class PlanningPhaseWindow(tk.Tk):
             return
         for record in records:
             values = [record.get(field, "") for field in self.list_fields]
-            self.tree.insert("", "end", iid=str(record["rowid"]), values=values)
+            self.trips_tree.insert("", "end", iid=str(record["rowid"]), values=values)
 
     def new_trip(self) -> None:
         def save_new(payload: dict[str, str]) -> bool:
@@ -204,7 +107,7 @@ class PlanningPhaseWindow(tk.Tk):
         )
 
     def edit_selected(self) -> None:
-        selected = self.tree.selection()
+        selected = self.trips_tree.selection()
         if not selected:
             messagebox.showinfo("Edit Trip", "Select a Trip first.")
             return
@@ -323,3 +226,10 @@ class PlanningPhaseWindow(tk.Tk):
         for rid in stale_ids:
             self.open_edit_dialogs.pop(rid, None)
         return active
+
+    def _on_tab_changed(self, _event) -> None:
+        current_tab = self.tabs.select()
+        if current_tab == str(self.location_tab):
+            self.location_tab.load_locations()
+        if current_tab == str(self.users_tab):
+            self.users_tab.load_users()

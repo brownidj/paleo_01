@@ -118,26 +118,36 @@ rg --files "$ROOT_DIR" \
 
 ## Code base architecture state
 
-- **Architecture**: Two active app tracks are present:
-  - **Legacy Field Recorder Track**:
-    - **Infrastructure**: `database_manager.py` + `database_schema.py` (`paleo_field` schema and migrations).
-    - **Service/Logic**: `ui/ui_services.py` (adapter between Tk UI and legacy DB manager).
-    - **Composition Root**: `app_composition.py`, with thin `main.py`.
-    - **UI**: `ui/main_window.py`, `ui/mission_views.py`, `ui/locality_views.py`, `ui/specimen_views.py`, `ui/photo_viewer.py`.
-  - **Planning Phase Track (Trip-centric)**:
-    - **Infrastructure/Init**: `scripts/db_bootstrap.py`, `scripts/init_db.py`.
-    - **Repository**: `trip_repository.py` (`Trips` + active `Users` access).
-    - **UI**: `planning_phase_main.py`, `ui/planning_phase_window.py`, `ui/team_editor_dialog.py`.
-    - **Seeding**: `scripts/seed_users.py`, `scripts/seed_trips.py`.
-- **Planning Database**: `paleo_trips_01.db` with `Users` (including boolean-like `active`) and `Trips`.
-- **Entrypoint Rule**: `main.py` remains a thin bootstrap (no direct wiring).
-- **Error Handling**: explicit `sqlite3` exception handling is in place for key UI persistence paths.
-- **Known Compliance Gap**:
-  - File-size constraint currently violated by `ui/planning_phase_window.py` (>300 lines).
-- **Automation**: line-limit checks remain available in `scripts/check_file_sizes.sh`.
+- **Architecture**: Planning-phase Trip desktop app only (legacy field-recorder track removed).
+  - **Infrastructure/Init**: `scripts/db_bootstrap.py`, `scripts/init_db.py`.
+  - **Repository**: `trip_repository.py` (`Trips` CRUD + active `Users` lookups).
+  - **UI Entrypoints**: `main.py` and `planning_phase_main.py` both launch planning-phase UI.
+  - **UI Modules**:
+    - `ui/planning_phase_window.py` (Trips list + orchestration).
+    - `ui/trip_form_dialog.py` (Trip form modal, duplicate flow).
+    - `ui/team_editor_dialog.py` (active-user multi-select team editor).
+  - **Seeding**: `scripts/seed_users.py`, `scripts/seed_trips.py`.
+- **Planning Database**: `paleo_trips_01.db` with:
+  - `Users(id, name, phone_number, active)` where `active` is boolean-like (`0/1`).
+  - `Trips(trip_code, trip_name, start_date, end_date, team, region, notes)`.
+- **Entrypoint Rule**: `main.py` is thin and contains no domain/infrastructure wiring.
+- **Error Handling**: UI operations catch explicit `sqlite3`/`ValueError` paths and show targeted dialogs.
+- **Constraints**: source file size checks currently pass with `scripts/check_file_sizes.sh`.
 
 ## Test run report
 
+- **2026-03-20 14:01**: Legacy field-recorder track removal + planning-track validation.
+    - Removed legacy files:
+      - `app_composition.py`
+      - `database_manager.py`, `database_schema.py`
+      - `demo_db.py`
+      - `ui/main_window.py`, `ui/mission_views.py`, `ui/locality_views.py`, `ui/specimen_views.py`, `ui/photo_viewer.py`, `ui/ui_services.py`
+      - `tests/test_database_manager.py`, `tests/test_ui_services.py`
+    - Added planning-track tests:
+      - `tests/test_trip_repository.py`
+    - `./scripts/check_file_sizes.sh .`: PASSED
+    - `python3 -m unittest -v`: PASSED
+    - Total tests: 3 passed (planning repository tests)
 - **2026-03-20 13:53**: Reassessment against CURRENT_STATE prompt.
     - `./scripts/check_file_sizes.sh .`: FAILED
       - `ui/planning_phase_window.py` at 325 lines (over 300-line limit)
