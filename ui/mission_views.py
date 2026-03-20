@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+from ui.ui_services import UIServiceError
 
 class MissionListView(ttk.Frame):
     def __init__(self, parent, controller):
@@ -31,7 +32,11 @@ class MissionListView(ttk.Frame):
     def load_data(self):
         for item in self.tree.get_children():
             self.tree.delete(item)
-        missions = self.ui_service.get_all_missions()
+        try:
+            missions = self.ui_service.get_all_missions()
+        except UIServiceError as e:
+            messagebox.showerror("Error", str(e))
+            return
         for m in missions:
             self.tree.insert("", "end", iid=m["id"], values=(m["name"], m["date"]))
 
@@ -42,7 +47,11 @@ class MissionListView(ttk.Frame):
         selected = self.tree.selection()
         if not selected: return
         mission_id = selected[0]
-        mission = self.ui_service.get_mission(mission_id)
+        try:
+            mission = self.ui_service.get_mission(mission_id)
+        except UIServiceError as e:
+            messagebox.showerror("Error", str(e))
+            return
         self.controller.show_mission_detail(mission)
 
     def view_localities(self):
@@ -94,13 +103,25 @@ class MissionDetailView(ttk.Frame):
             return
 
         if self.mission:
-            self.ui_service.update_mission(self.mission["id"], data)
+            try:
+                self.ui_service.update_mission(self.mission["id"], data)
+            except (UIServiceError, ValueError) as e:
+                messagebox.showerror("Error", str(e))
+                return
         else:
-            self.ui_service.create_mission(**data)
+            try:
+                self.ui_service.create_mission(**data)
+            except UIServiceError as e:
+                messagebox.showerror("Error", str(e))
+                return
         
         self.controller.show_mission_list()
 
     def delete_mission(self):
         if messagebox.askyesno("Confirm", "Are you sure you want to delete this mission?"):
-            self.ui_service.delete_mission(self.mission["id"])
+            try:
+                self.ui_service.delete_mission(self.mission["id"])
+            except UIServiceError as e:
+                messagebox.showerror("Error", str(e))
+                return
             self.controller.show_mission_list()

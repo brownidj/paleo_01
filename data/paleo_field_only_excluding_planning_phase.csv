@@ -1,0 +1,13 @@
+section,field,populated_01,populated_02,populated_03
+Geological/Temporal,Concentration,field*,research,n/a
+Geological/Temporal,Orientation,field,n/a,n/a
+Geological/Temporal,Abundancy in Sediment,field*,research,n/a
+Geological/Temporal,Reinforcement,field*,research,n/a
+Location,Latitude,field,n/a,n/a
+Location,Longitude,field,n/a,n/a
+Location,Altitude Value,field,n/a,n/a
+Location,Altitude Unit,field,n/a,n/a
+Preservation & Collection,Preservation Quality,field*,research,n/a
+Preservation & Collection,Preservation Comments,field,n/a,n/a
+Preservation & Collection,Collection Comments,field*,research,n/a
+Preservation & Collection,Occurrence Comments,field*,research,n/a

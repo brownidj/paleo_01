@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="demo_paleo.db" uuid="d13b72ab-0961-4e7e-9019-9db5456848dc">
+    <data-source source="LOCAL" name="paleo_trips_01.db" uuid="699e56e1-44e6-45b0-b735-326a3d57b919">
       <driver-ref>sqlite.xerial</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
-      <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/demo_paleo.db</jdbc-url>
+      <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/paleo_trips_01.db</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
   </component>

@@ -1,0 +1,67 @@
+section,field,populated_01,populated_02,populated_03
+ID,Identified Name,research,n/a,n/a
+ID,Accepted Name,research,n/a,n/a
+ID,Family,research,n/a,n/a
+ID,Genus,research,n/a,n/a
+ID,Phylum,research,n/a,n/a
+ID,Class,research,n/a,n/a
+ID,Order,research,n/a,n/a
+ID,Diet,research,n/a,n/a
+ID,Life Habit,research,n/a,n/a
+ID,Research Group,research,n/a,n/a
+ID,Taxonomy Comments,research,n/a,n/a
+Geological/Temporal,Early Interval,research,n/a,n/a
+Geological/Temporal,Late Interval,research,n/a,n/a
+Geological/Temporal,Max Ma,research,n/a,n/a
+Geological/Temporal,Min Ma,research,n/a,n/a
+Geological/Temporal,Environment,research,field,n/a
+Geological/Temporal,Geology Comments,field,research,planning_phase
+Geological/Temporal,Size Classes,research,n/a,n/a
+Geological/Temporal,Concentration,field,research,n/a
+Geological/Temporal,Orientation,field,n/a,n/a
+Geological/Temporal,Abundancy in Sediment,field,research,n/a
+Geological/Temporal,Reinforcement,field,research,n/a
+Geological/Temporal,Composition,research,n/a,n/a
+Location,Latitude,field,n/a,n/a
+Location,Longitude,field,n/a,n/a
+Location,Altitude Value,field,n/a,n/a
+Location,Altitude Unit,field,n/a,n/a
+Location,Country Code,research,n/a,n/a
+Location,State,research,n/a,n/a
+Location,County,research,n/a,n/a
+Location,Basin,research,field,n/a
+Location,Collection Name,field,research,planning_phase
+Location,Collection Subset,field,research,planning_phase
+Location,Collection AKA,research,field,n/a
+Location,Geogscale,research,n/a,n/a
+Location,Geography Comments,research,field,n/a
+Stratigraphy,Formation,field,research,planning_phase
+Stratigraphy,Stratigraphy Group,research,field,n/a
+Stratigraphy,Stratigraphy Comments,field,research,planning_phase
+Lithology,Lithology,field,n/a,planning_phase
+Lithology,Lithification,field,research,planning_phase
+Lithology,Minor Lithology,field,research,planning_phase
+Lithology,Lithology Adjectives,field,research,planning_phase
+Preservation & Collection,Preservation Mode,research,field,n/a
+Preservation & Collection,Preservation Quality,field,research,n/a
+Preservation & Collection,Preservation Comments,field,n/a,n/a
+Preservation & Collection,Collection Type,research,n/a,n/a
+Preservation & Collection,Collection Coverage,research,n/a,n/a
+Preservation & Collection,Collection Size,research,n/a,n/a
+Preservation & Collection,Collectors,field,n/a,planning_phase
+Preservation & Collection,Collection Dates,field,n/a,planning_phase
+Preservation & Collection,Collection Comments,field,research,n/a
+Preservation & Collection,Collection Methods,field,n/a,planning_phase
+Preservation & Collection,Occurrence Comments,field,research,n/a
+Preservation & Collection,Museum,research,n/a,n/a
+Publication,Published Year,research,n/a,n/a
+Publication,Reference Author,research,n/a,n/a
+Publication,Full Reference,research,n/a,n/a
+Publication,Reference Title,research,n/a,n/a
+Trip,trip_code,n/a,n/a,planning_phase
+Trip,trip_name,n/a,n/a,planning_phase
+Trip,start_date,n/a,n/a,planning_phase
+Trip,end_date,n/a,n/a,planning_phase
+Trip,team,n/a,n/a,planning_phase
+Trip,region,n/a,n/a,planning_phase
+Trip,notes,n/a,n/a,planning_phase

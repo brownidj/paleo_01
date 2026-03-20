@@ -1,6 +1,7 @@
 import unittest
+import sqlite3
 
-from ui.ui_services import UIService
+from ui.ui_services import UIService, UIServiceError
 
 
 class FakeDb:
@@ -12,6 +13,11 @@ class FakeDb:
 
     def get_specimen(self, spec_id):
         return {"id": spec_id, "name": "S"}
+
+
+class FailingDb:
+    def list_missions(self):
+        raise sqlite3.OperationalError("boom")
 
 
 class TestUIService(unittest.TestCase):
@@ -29,6 +35,11 @@ class TestUIService(unittest.TestCase):
     def test_get_specimen_passthrough(self):
         specimen = self.service.get_specimen("specimen-1")
         self.assertEqual(specimen["id"], "specimen-1")
+
+    def test_wraps_sqlite_errors(self):
+        service = UIService(FailingDb())
+        with self.assertRaises(UIServiceError):
+            service.get_all_missions()
 
 
 if __name__ == "__main__":

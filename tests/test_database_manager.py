@@ -218,5 +218,29 @@ class TestDatabaseManager(unittest.TestCase):
         self.assertIsNone(self.db.get_specimen(spec_id))
         self.assertEqual(len(self.db.list_specimens_for_locality(loc_id)), 0)
 
+    def test_update_locality_rejects_invalid_field(self):
+        mission_id = str(uuid.uuid4())
+        self.db.insert_mission({"id": mission_id, "name": "M", "date": "2026-01-01"})
+        loc_id = str(uuid.uuid4())
+        self.db.insert_locality({
+            "id": loc_id, "mission_id": mission_id, "name": "L", "latitude": 0, "longitude": 0,
+            "altitude": 0, "lithology_text": "", "measured_dip": 0, "dip_direction": 0
+        })
+        with self.assertRaises(ValueError):
+            self.db.update_locality(loc_id, {"is_deleted": 1})
+
+    def test_insert_photo_rejects_invalid_parent_type(self):
+        with self.assertRaises(ValueError):
+            self.db.insert_photo({
+                "id": str(uuid.uuid4()),
+                "parent_id": "x",
+                "parent_type": "mission",
+                "file_path": "/tmp/test.jpg",
+                "caption": "bad",
+                "latitude": 0,
+                "longitude": 0,
+                "heading": 0,
+            })
+
 if __name__ == "__main__":
     unittest.main()

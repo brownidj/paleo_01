@@ -118,20 +118,42 @@ rg --files "$ROOT_DIR" \
 
 ## Code base architecture state
 
-- **Architecture**: Decoupled into layers:
-  - **Infrastructure**: `database_manager.py` (SQLite persistence).
-  - **Service/Logic**: `ui/ui_services.py` (Adapter between UI and DB, includes read adapters to avoid UI -> DB reach-through).
-  - **Composition Root**: `app_composition.py` (wires `DatabaseManager`, `UIService`, `MainWindow`).
-  - **UI**: `ui/main_window.py` (view router/orchestrator), `ui/mission_views.py`, `ui/locality_views.py`, `ui/specimen_views.py` (modular views).
-- **Data Model**: `mission`, `locality`, `specimen`, and `photo` with full CRUD support.
-- **Relational Integrity**: Missions group localities; Localities group specimens; Photos link to any.
-- **Offline-First**: Uses local SQLite storage (`paleo_field.db`).
-- **Entrypoint Rule**: `main.py` is now a thin bootstrap with no direct dependency wiring.
-- **Debug/Error Handling**: Debug toggles remain centralized in `logger.py`; `ui/photo_viewer.py` now uses explicit exception types for image-load failures.
-- **Constraints**: Source/documentation line limit checks automated via `scripts/check_file_sizes.sh`.
+- **Architecture**: Two active app tracks are present:
+  - **Legacy Field Recorder Track**:
+    - **Infrastructure**: `database_manager.py` + `database_schema.py` (`paleo_field` schema and migrations).
+    - **Service/Logic**: `ui/ui_services.py` (adapter between Tk UI and legacy DB manager).
+    - **Composition Root**: `app_composition.py`, with thin `main.py`.
+    - **UI**: `ui/main_window.py`, `ui/mission_views.py`, `ui/locality_views.py`, `ui/specimen_views.py`, `ui/photo_viewer.py`.
+  - **Planning Phase Track (Trip-centric)**:
+    - **Infrastructure/Init**: `scripts/db_bootstrap.py`, `scripts/init_db.py`.
+    - **Repository**: `trip_repository.py` (`Trips` + active `Users` access).
+    - **UI**: `planning_phase_main.py`, `ui/planning_phase_window.py`, `ui/team_editor_dialog.py`.
+    - **Seeding**: `scripts/seed_users.py`, `scripts/seed_trips.py`.
+- **Planning Database**: `paleo_trips_01.db` with `Users` (including boolean-like `active`) and `Trips`.
+- **Entrypoint Rule**: `main.py` remains a thin bootstrap (no direct wiring).
+- **Error Handling**: explicit `sqlite3` exception handling is in place for key UI persistence paths.
+- **Known Compliance Gap**:
+  - File-size constraint currently violated by `ui/planning_phase_window.py` (>300 lines).
+- **Automation**: line-limit checks remain available in `scripts/check_file_sizes.sh`.
 
 ## Test run report
 
+- **2026-03-20 13:53**: Reassessment against CURRENT_STATE prompt.
+    - `./scripts/check_file_sizes.sh .`: FAILED
+      - `ui/planning_phase_window.py` at 325 lines (over 300-line limit)
+    - `python3 -m unittest -v`: PASSED
+    - Total tests: 16 passed
+    - Notes:
+      - Current tests validate legacy DB/service layers.
+      - Planning-phase UI/repository flows currently rely on manual testing.
+- **2026-03-19 13:39**: Hardening pass verification.
+    - `./scripts/check_file_sizes.sh .`: PASSED
+    - `python3 -m unittest -v`: PASSED
+    - Total tests: 16 passed
+    - Added coverage:
+      - invalid update-field rejection (`DatabaseManager`)
+      - invalid `photo.parent_type` rejection (`DatabaseManager`)
+      - sqlite error wrapping to `UIServiceError` (`UIService`)
 - **2026-03-19 13:27**: Ran file size checker and unit tests after architecture fixes.
     - `./scripts/check_file_sizes.sh .`: PASSED
     - `python3 -m unittest -v`: PASSED

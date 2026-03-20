@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Coverage / test artifacts
+.coverage
+.coverage.*
+htmlcov/
+
+# Local databases and runtime data
+*.db
+
+# OS/editor noise
+.DS_Store
+
+# Explicit currently unversioned IDE files
+.idea/inspectionProfiles/Project_Default.xml
+.idea/inspectionProfiles/profiles_settings.xml
+.idea/vcs.xml

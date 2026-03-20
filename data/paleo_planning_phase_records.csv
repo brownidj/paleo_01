@@ -1,0 +1,13 @@
+section,field,populated_01,populated_02,populated_03
+Location,Collection Name,planning_phase,n/a,n/a
+Location,Collection Subset,planning_phase,n/a,n/a
+Stratigraphy,Formation,planning_phase*,n/a,n/a
+Stratigraphy,Stratigraphy Comments,planning_phase*,n/a,n/a
+Lithology,Lithology,planning_phase*,n/a,n/a
+Lithology,Lithification,planning_phase*,n/a,n/a
+Lithology,Minor Lithology,planning_phase*,n/a,n/a
+Lithology,Lithology Adjectives,planning_phase*,n/a,n/a
+Geological/Temporal,Geology Comments,planning_phase*,n/a,n/a
+Preservation & Collection,Collectors,planning_phase,n/a,n/a
+Preservation & Collection,Collection Dates,planning_phase,n/a,n/a
+Preservation & Collection,Collection Methods,planning_phase,n/a,n/a

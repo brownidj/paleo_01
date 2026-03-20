@@ -5,6 +5,6 @@ from ui.main_window import MainWindow
 
 def build_main_window() -> MainWindow:
     """Create and wire the application root objects."""
-    db = DatabaseManager("paleo_field.db")
+    db = DatabaseManager("data/paleo_field.db")
     ui_service = UIService(db)
     return MainWindow(ui_service)

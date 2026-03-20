@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import os
 from ui.photo_viewer import PhotoViewer
+from ui.ui_services import UIServiceError
 
 class LocalityListView(ttk.Frame):
     def __init__(self, parent, controller, mission_id):
@@ -34,7 +35,11 @@ class LocalityListView(ttk.Frame):
     def load_data(self):
         for item in self.tree.get_children():
             self.tree.delete(item)
-        localities = self.ui_service.get_localities_for_mission(self.mission_id)
+        try:
+            localities = self.ui_service.get_localities_for_mission(self.mission_id)
+        except UIServiceError as e:
+            messagebox.showerror("Error", str(e))
+            return
         for loc in localities:
             self.tree.insert("", "end", iid=loc["id"], values=(loc["name"], loc["created_at"]))
 
@@ -46,7 +51,11 @@ class LocalityListView(ttk.Frame):
         if not selected:
             return
         loc_id = selected[0]
-        locality = self.ui_service.get_locality(loc_id)
+        try:
+            locality = self.ui_service.get_locality(loc_id)
+        except UIServiceError as e:
+            messagebox.showerror("Error", str(e))
+            return
         self.controller.show_locality_detail(self.mission_id, locality)
 
 class LocalityDetailView(ttk.Frame):
@@ -126,7 +135,11 @@ class LocalityDetailView(ttk.Frame):
         if not self.locality: return
         for item in self.spec_tree.get_children():
             self.spec_tree.delete(item)
-        specs = self.ui_service.get_specimens_for_locality(self.locality["id"])
+        try:
+            specs = self.ui_service.get_specimens_for_locality(self.locality["id"])
+        except UIServiceError as e:
+            messagebox.showerror("Error", str(e))
+            return
         for spec in specs:
             self.spec_tree.insert("", "end", iid=spec["id"], values=(spec["name"],))
 
@@ -134,13 +147,21 @@ class LocalityDetailView(ttk.Frame):
         selected = self.spec_tree.selection()
         if not selected: return
         spec_id = selected[0]
-        specimen = self.ui_service.get_specimen(spec_id)
+        try:
+            specimen = self.ui_service.get_specimen(spec_id)
+        except UIServiceError as e:
+            messagebox.showerror("Error", str(e))
+            return
         self.controller.show_specimen_detail(self.locality["id"], specimen)
 
     def load_photos(self):
         if not self.locality: return
         self.photo_list.delete(0, tk.END)
-        self.photos = self.ui_service.get_photos(self.locality["id"])
+        try:
+            self.photos = self.ui_service.get_photos(self.locality["id"])
+        except UIServiceError as e:
+            messagebox.showerror("Error", str(e))
+            return
         for p in self.photos:
             self.photo_list.insert(tk.END, f"{os.path.basename(p['file_path'])} - {p['caption']}")
 
@@ -168,7 +189,11 @@ class LocalityDetailView(ttk.Frame):
         file_path = filedialog.askopenfilename(title="Select Photo", filetypes=[("Image files", "*.jpg *.jpeg *.png")])
         if file_path:
             # In a real app we might copy the file to an 'assets' folder
-            self.ui_service.add_photo(self.locality["id"], "locality", file_path, "Locality photo")
+            try:
+                self.ui_service.add_photo(self.locality["id"], "locality", file_path, "Locality photo")
+            except (UIServiceError, ValueError) as e:
+                messagebox.showerror("Error", str(e))
+                return
             self.load_photos()
 
     def save(self):
@@ -185,13 +210,25 @@ class LocalityDetailView(ttk.Frame):
             return
 
         if self.locality:
-            self.ui_service.update_locality(self.locality["id"], data)
+            try:
+                self.ui_service.update_locality(self.locality["id"], data)
+            except (UIServiceError, ValueError) as e:
+                messagebox.showerror("Error", str(e))
+                return
         else:
-            self.ui_service.create_locality(mission_id=self.mission_id, **data)
+            try:
+                self.ui_service.create_locality(mission_id=self.mission_id, **data)
+            except UIServiceError as e:
+                messagebox.showerror("Error", str(e))
+                return
         
         self.controller.show_locality_list(self.mission_id)
 
     def delete_locality(self):
         if messagebox.askyesno("Confirm", "Are you sure you want to delete this locality?"):
-            self.ui_service.delete_locality(self.locality["id"])
+            try:
+                self.ui_service.delete_locality(self.locality["id"])
+            except UIServiceError as e:
+                messagebox.showerror("Error", str(e))
+                return
             self.controller.show_locality_list(self.mission_id)

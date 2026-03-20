@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import os
 from ui.photo_viewer import PhotoViewer
+from ui.ui_services import UIServiceError
 
 class SpecimenDetailView(ttk.Frame):
     def __init__(self, parent, controller, locality_id, specimen=None):
@@ -59,7 +60,11 @@ class SpecimenDetailView(ttk.Frame):
             self.load_photos()
 
     def back_to_locality(self):
-        locality = self.ui_service.get_locality(self.locality_id)
+        try:
+            locality = self.ui_service.get_locality(self.locality_id)
+        except UIServiceError as e:
+            messagebox.showerror("Error", str(e))
+            return
         if not locality:
             messagebox.showerror("Error", "Locality not found")
             return
@@ -68,7 +73,11 @@ class SpecimenDetailView(ttk.Frame):
     def load_photos(self):
         if not self.specimen: return
         self.photo_list.delete(0, tk.END)
-        self.photos = self.ui_service.get_photos(self.specimen["id"])
+        try:
+            self.photos = self.ui_service.get_photos(self.specimen["id"])
+        except UIServiceError as e:
+            messagebox.showerror("Error", str(e))
+            return
         for p in self.photos:
             self.photo_list.insert(tk.END, f"{os.path.basename(p['file_path'])} - {p['caption']}")
 
@@ -96,7 +105,11 @@ class SpecimenDetailView(ttk.Frame):
         file_path = filedialog.askopenfilename(title="Select Photo", filetypes=[("Image files", "*.jpg *.jpeg *.png")])
         if file_path:
             # In a real app we might copy the file to an 'assets' folder
-            self.ui_service.add_photo(self.specimen["id"], "specimen", file_path, "Field photo")
+            try:
+                self.ui_service.add_photo(self.specimen["id"], "specimen", file_path, "Field photo")
+            except (UIServiceError, ValueError) as e:
+                messagebox.showerror("Error", str(e))
+                return
             self.load_photos()
 
     def save(self):
@@ -113,14 +126,26 @@ class SpecimenDetailView(ttk.Frame):
             return
 
         if self.specimen:
-            self.ui_service.update_specimen(self.specimen["id"], data)
+            try:
+                self.ui_service.update_specimen(self.specimen["id"], data)
+            except (UIServiceError, ValueError) as e:
+                messagebox.showerror("Error", str(e))
+                return
         else:
             data["locality_id"] = self.locality_id
-            self.ui_service.create_specimen(**data)
+            try:
+                self.ui_service.create_specimen(**data)
+            except UIServiceError as e:
+                messagebox.showerror("Error", str(e))
+                return
         
         self.back_to_locality()
 
     def delete_specimen(self):
         if messagebox.askyesno("Confirm", "Are you sure you want to delete this specimen?"):
-            self.ui_service.delete_specimen(self.specimen["id"])
+            try:
+                self.ui_service.delete_specimen(self.specimen["id"])
+            except UIServiceError as e:
+                messagebox.showerror("Error", str(e))
+                return
             self.back_to_locality()
