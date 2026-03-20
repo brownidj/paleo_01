@@ -76,15 +76,15 @@ def create_trips_table(conn: sqlite3.Connection, fields: list[str]) -> None:
 
 def create_locations_table(conn: sqlite3.Connection) -> None:
     location_fields = [
+        "name",
         "latitude",
         "longitude",
         "altitude_value",
         "altitude_unit",
         "country_code",
         "state",
-        "county",
+        "lga",
         "basin",
-        "collection_aka",
         "geogscale",
         "geography_comments",
     ]
@@ -99,6 +99,7 @@ def create_locations_table(conn: sqlite3.Connection) -> None:
     for field in location_fields:
         if field not in existing:
             conn.execute(f'ALTER TABLE Locations ADD COLUMN "{field}" TEXT')
+    _migrate_legacy_county_to_lga(conn)
 
     conn.execute(
         """
@@ -161,21 +162,26 @@ def _migrate_legacy_collection_fields(conn: sqlite3.Connection) -> None:
 
 def _rebuild_locations_table_without_legacy_columns(conn: sqlite3.Connection) -> None:
     location_columns = [row[1] for row in conn.execute("PRAGMA table_info(Locations)").fetchall()]
-    if "collection_name" not in location_columns and "collection_subset" not in location_columns:
+    if (
+        "collection_name" not in location_columns
+        and "collection_subset" not in location_columns
+        and "collection_aka" not in location_columns
+        and "county" not in location_columns
+    ):
         return
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS Locations_new (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
             latitude TEXT,
             longitude TEXT,
             altitude_value TEXT,
             altitude_unit TEXT,
             country_code TEXT,
             state TEXT,
-            county TEXT,
+            lga TEXT,
             basin TEXT,
-            collection_aka TEXT,
             geogscale TEXT,
             geography_comments TEXT
         )
@@ -191,18 +197,33 @@ def _rebuild_locations_table_without_legacy_columns(conn: sqlite3.Connection) ->
 
 def location_fields_for_rebuild() -> list[str]:
     return [
+        "name",
         "latitude",
         "longitude",
         "altitude_value",
         "altitude_unit",
         "country_code",
         "state",
-        "county",
+        "lga",
         "basin",
-        "collection_aka",
         "geogscale",
         "geography_comments",
     ]
+
+
+def _migrate_legacy_county_to_lga(conn: sqlite3.Connection) -> None:
+    location_columns = {row[1] for row in conn.execute("PRAGMA table_info(Locations)").fetchall()}
+    if "county" not in location_columns or "lga" not in location_columns:
+        return
+    conn.execute(
+        """
+        UPDATE Locations
+        SET lga = county
+        WHERE (lga IS NULL OR TRIM(lga) = '')
+          AND county IS NOT NULL
+          AND TRIM(county) <> ''
+        """
+    )
 
 
 def initialize_database(db_path: Path, classification_csv: Path) -> list[str]:

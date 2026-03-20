@@ -85,6 +85,8 @@ class TestTripRepository(unittest.TestCase):
     def test_location_create_list_update(self):
         loc_id = self.repo.create_location(
             {
+                "name": "Alpha Ridge",
+                "lga": "LGA A",
                 "country_code": "AU",
                 "collection_events": [
                     {"collection_name": "Alpha Site", "collection_subset": "Subset A"},
@@ -94,6 +96,8 @@ class TestTripRepository(unittest.TestCase):
         )
         all_locations = self.repo.list_locations()
         self.assertEqual(len(all_locations), 1)
+        self.assertEqual(all_locations[0]["name"], "Alpha Ridge")
+        self.assertEqual(all_locations[0]["lga"], "LGA A")
         self.assertEqual(all_locations[0]["collection_name"], "Alpha Site")
         self.assertEqual(all_locations[0]["collection_subset"], "Subset A")
         self.assertEqual(all_locations[0]["country_code"], "AU")
@@ -110,14 +114,18 @@ class TestTripRepository(unittest.TestCase):
         self.assertIsNone(updated["collection_subset"])
         self.assertEqual(len(updated["collection_events"]), 1)
 
-    def test_location_requires_at_least_one_collection_event(self):
-        with self.assertRaises(ValueError):
-            self.repo.create_location(
-                {
-                    "country_code": "AU",
-                    "collection_events": [],
-                }
-            )
+    def test_location_can_have_zero_collection_events(self):
+        loc_id = self.repo.create_location(
+            {
+                "name": "No Event Site",
+                "country_code": "AU",
+                "collection_events": [],
+            }
+        )
+        location = self.repo.get_location(loc_id)
+        self.assertIsNotNone(location)
+        self.assertEqual(location["name"], "No Event Site")
+        self.assertEqual(location["collection_events"], [])
 
 
 if __name__ == "__main__":

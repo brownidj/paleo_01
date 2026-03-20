@@ -4,15 +4,15 @@ from tkinter import ttk
 
 class LocationFormDialog(tk.Toplevel):
     FIELDS = [
+        "name",
         "latitude",
         "longitude",
         "altitude_value",
         "altitude_unit",
         "country_code",
         "state",
-        "county",
+        "lga",
         "basin",
-        "collection_aka",
         "geogscale",
         "geography_comments",
     ]

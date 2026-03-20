@@ -6,7 +6,7 @@ from ui.location_form_dialog import LocationFormDialog
 
 
 class LocationTab(ttk.Frame):
-    LIST_COLUMNS = ("collection_name", "collection_subset", "event_count", "country_code", "state")
+    LIST_COLUMNS = ("name", "lga", "state", "country_code", "latitude", "longitude")
 
     def __init__(self, parent, repo: TripRepository):
         super().__init__(parent)
@@ -18,9 +18,18 @@ class LocationTab(ttk.Frame):
             columns=self.LIST_COLUMNS,
             show="headings",
         )
+        column_widths = {
+            "name": 220,
+            "lga": 170,
+            "state": 55,
+            "country_code": 45,
+            "latitude": 95,
+            "longitude": 95,
+        }
         for col in self.LIST_COLUMNS:
-            self.tree.heading(col, text=col)
-            self.tree.column(col, width=170, anchor="w")
+            heading = "LGA" if col == "lga" else col.replace("_", " ")
+            self.tree.heading(col, text=heading)
+            self.tree.column(col, width=column_widths.get(col, 120), anchor="w")
         self.tree.pack(fill="both", expand=True, padx=10, pady=6)
 
         buttons = ttk.Frame(self)
@@ -37,18 +46,11 @@ class LocationTab(ttk.Frame):
             messagebox.showerror("Database Error", str(e))
             return
         for loc in locations:
-            event_count = len(loc.get("collection_events", []))
             self.tree.insert(
                 "",
                 "end",
                 iid=str(loc["id"]),
-                values=(
-                    loc.get("collection_name", "") or "",
-                    loc.get("collection_subset", "") or "",
-                    event_count,
-                    loc.get("country_code", "") or "",
-                    loc.get("state", "") or "",
-                ),
+                values=tuple((loc.get(col, "") or "") for col in self.LIST_COLUMNS),
             )
 
     def new_location(self) -> None:

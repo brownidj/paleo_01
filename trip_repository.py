@@ -15,15 +15,15 @@ DEFAULT_TRIP_FIELDS = [
 ]
 
 LOCATION_FIELDS = [
+    "name",
     "latitude",
     "longitude",
     "altitude_value",
     "altitude_unit",
     "country_code",
     "state",
-    "county",
+    "lga",
     "basin",
-    "collection_aka",
     "geogscale",
     "geography_comments",
 ]
@@ -57,6 +57,7 @@ class TripRepository:
             for field in LOCATION_FIELDS:
                 if field not in existing:
                     conn.execute(f'ALTER TABLE "Locations" ADD COLUMN "{field}" TEXT')
+            self._migrate_legacy_county_to_lga(conn)
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS "CollectionEvents" (
@@ -234,8 +235,9 @@ class TripRepository:
             location["collection_subset"] = first_event.get("collection_subset")
         locations.sort(
             key=lambda r: (
-                str(r.get("collection_name", "")).lower(),
-                str(r.get("collection_subset", "")).lower(),
+                str(r.get("name", "")).lower(),
+                str(r.get("lga", "")).lower(),
+                str(r.get("state", "")).lower(),
             )
         )
         return locations
@@ -273,35 +275,36 @@ class TripRepository:
     def create_location(self, data: dict[str, Any]) -> int:
         self.ensure_locations_table()
         events = self._normalize_collection_events(data.get("collection_events"))
-        if not events:
-            raise ValueError("At least one collection_event is required.")
         insert_fields = [name for name in LOCATION_FIELDS if name in data]
-        if not insert_fields:
-            raise ValueError("No valid Location fields supplied.")
-        col_sql = ", ".join([f'"{name}"' for name in insert_fields])
-        placeholders = ", ".join(["?"] * len(insert_fields))
-        values = [data.get(name) for name in insert_fields]
         with self._connect() as conn:
-            cur = conn.execute(
-                f'INSERT INTO "Locations" ({col_sql}) VALUES ({placeholders})',
-                values,
-            )
+            if insert_fields:
+                col_sql = ", ".join([f'"{name}"' for name in insert_fields])
+                placeholders = ", ".join(["?"] * len(insert_fields))
+                values = [data.get(name) for name in insert_fields]
+                cur = conn.execute(
+                    f'INSERT INTO "Locations" ({col_sql}) VALUES ({placeholders})',
+                    values,
+                )
+            else:
+                cur = conn.execute('INSERT INTO "Locations" DEFAULT VALUES')
             location_id = int(cur.lastrowid)
-            conn.executemany(
-                """
-                INSERT INTO "CollectionEvents" (location_id, collection_name, collection_subset)
-                VALUES (?, ?, ?)
-                """,
-                [(location_id, event["collection_name"], event["collection_subset"]) for event in events],
-            )
+            if events:
+                conn.executemany(
+                    """
+                    INSERT INTO "CollectionEvents" (location_id, collection_name, collection_subset)
+                    VALUES (?, ?, ?)
+                    """,
+                    [(location_id, event["collection_name"], event["collection_subset"]) for event in events],
+                )
             return location_id
 
     def update_location(self, location_id: int, data: dict[str, Any]) -> None:
         self.ensure_locations_table()
+        has_events_key = "collection_events" in data
         events = self._normalize_collection_events(data.get("collection_events"))
-        if not events:
-            raise ValueError("At least one collection_event is required.")
         update_fields = [name for name in LOCATION_FIELDS if name in data]
+        if not update_fields and not has_events_key:
+            raise ValueError("No valid Location fields supplied.")
         with self._connect() as conn:
             if update_fields:
                 set_sql = ", ".join([f'"{name}" = ?' for name in update_fields])
@@ -310,14 +313,16 @@ class TripRepository:
                     f'UPDATE "Locations" SET {set_sql} WHERE id = ?',
                     values,
                 )
-            conn.execute('DELETE FROM "CollectionEvents" WHERE location_id = ?', (location_id,))
-            conn.executemany(
-                """
-                INSERT INTO "CollectionEvents" (location_id, collection_name, collection_subset)
-                VALUES (?, ?, ?)
-                """,
-                [(location_id, event["collection_name"], event["collection_subset"]) for event in events],
-            )
+            if has_events_key:
+                conn.execute('DELETE FROM "CollectionEvents" WHERE location_id = ?', (location_id,))
+                if events:
+                    conn.executemany(
+                        """
+                        INSERT INTO "CollectionEvents" (location_id, collection_name, collection_subset)
+                        VALUES (?, ?, ?)
+                        """,
+                        [(location_id, event["collection_name"], event["collection_subset"]) for event in events],
+                    )
 
     @staticmethod
     def _last_name(name: str) -> str:
@@ -380,22 +385,27 @@ class TripRepository:
     @staticmethod
     def _rebuild_locations_table_without_legacy_columns(conn: sqlite3.Connection) -> None:
         location_columns = [row["name"] for row in conn.execute('PRAGMA table_info("Locations")').fetchall()]
-        if "collection_name" not in location_columns and "collection_subset" not in location_columns:
+        if (
+            "collection_name" not in location_columns
+            and "collection_subset" not in location_columns
+            and "collection_aka" not in location_columns
+            and "county" not in location_columns
+        ):
             return
 
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS "Locations_new" (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT,
                 latitude TEXT,
                 longitude TEXT,
                 altitude_value TEXT,
                 altitude_unit TEXT,
                 country_code TEXT,
                 state TEXT,
-                county TEXT,
+                lga TEXT,
                 basin TEXT,
-                collection_aka TEXT,
                 geogscale TEXT,
                 geography_comments TEXT
             )
@@ -407,3 +417,18 @@ class TripRepository:
         conn.execute(f'INSERT INTO "Locations_new" ({col_sql}) SELECT {col_sql} FROM "Locations"')
         conn.execute('DROP TABLE "Locations"')
         conn.execute('ALTER TABLE "Locations_new" RENAME TO "Locations"')
+
+    @staticmethod
+    def _migrate_legacy_county_to_lga(conn: sqlite3.Connection) -> None:
+        location_columns = {row["name"] for row in conn.execute('PRAGMA table_info("Locations")').fetchall()}
+        if "county" not in location_columns or "lga" not in location_columns:
+            return
+        conn.execute(
+            """
+            UPDATE "Locations"
+            SET lga = county
+            WHERE (lga IS NULL OR TRIM(lga) = '')
+              AND county IS NOT NULL
+              AND TRIM(county) <> ''
+            """
+        )
