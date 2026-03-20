@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 
+from ui.location_picker_dialog import LocationPickerDialog
 from ui.team_editor_dialog import TeamEditorDialog
 
 
@@ -14,6 +15,7 @@ class TripFormDialog(tk.Toplevel):
         on_duplicate=None,
         readonly_fields: set[str] | None = None,
         active_users: list[str] | None = None,
+        location_names: list[str] | None = None,
         modal: bool = True,
         on_close=None,
     ):
@@ -24,6 +26,7 @@ class TripFormDialog(tk.Toplevel):
         self.on_duplicate = on_duplicate
         self.readonly_fields = readonly_fields or set()
         self.active_users = active_users or []
+        self.location_names = location_names or []
         self.modal = modal
         self.on_close = on_close
         self.inputs: dict[str, tk.Widget] = {}
@@ -53,16 +56,23 @@ class TripFormDialog(tk.Toplevel):
                 if initial_data and initial_data.get(field):
                     widget.insert("1.0", str(initial_data[field]))
             else:
-                widget = ttk.Entry(body, width=42)
-                widget.grid(row=i, column=1, sticky="ew", padx=4, pady=4)
+                if field in {"team", "location"}:
+                    team_frame = ttk.Frame(body)
+                    team_frame.grid(row=i, column=1, sticky="ew", padx=4, pady=4)
+                    widget = ttk.Entry(team_frame, width=38)
+                    widget.pack(side="left", fill="x", expand=True)
+                    if field == "team":
+                        edit_cmd = self._edit_team
+                    else:
+                        edit_cmd = self._edit_location
+                    ttk.Button(team_frame, text="✎", width=3, command=edit_cmd).pack(side="left", padx=(4, 0))
+                else:
+                    widget = ttk.Entry(body, width=42)
+                    widget.grid(row=i, column=1, sticky="ew", padx=4, pady=4)
                 if initial_data and initial_data.get(field):
                     widget.insert(0, str(initial_data[field]))
                 if field in self.readonly_fields:
                     widget.configure(state="readonly")
-                if field == "team":
-                    ttk.Button(body, text="Edit team", command=self._edit_team).grid(
-                        row=i, column=2, sticky="w", padx=4, pady=4
-                    )
             self.inputs[field] = widget
 
         btns = ttk.Frame(body)
@@ -87,17 +97,38 @@ class TripFormDialog(tk.Toplevel):
         if isinstance(trip_name_widget, ttk.Entry):
             trip_name = trip_name_widget.get().strip()
         current_value = team_widget.get().strip()
-        existing_names = [v.strip() for v in current_value.split(",") if v.strip()]
+        existing_names = [v.strip() for v in current_value.split(";") if v.strip()]
 
         def save_team(selected_names: list[str]) -> None:
             lines = [line.strip() for line in selected_names if line.strip()]
             team_widget.configure(state="normal")
             team_widget.delete(0, "end")
-            team_widget.insert(0, ", ".join(lines))
+            team_widget.insert(0, "; ".join(lines))
             if "team" in self.readonly_fields:
                 team_widget.configure(state="readonly")
 
         TeamEditorDialog(self, self.active_users, existing_names, trip_name, save_team)
+
+    def _edit_location(self) -> None:
+        location_widget = self.inputs.get("location")
+        if not isinstance(location_widget, ttk.Entry):
+            return
+        trip_name_widget = self.inputs.get("trip_name")
+        trip_name = ""
+        if isinstance(trip_name_widget, ttk.Entry):
+            trip_name = trip_name_widget.get().strip()
+        current_value = location_widget.get().strip()
+        existing_names = [v.strip() for v in current_value.split(";") if v.strip()]
+
+        def save_locations(selected_names: list[str]) -> None:
+            lines = [line.strip() for line in selected_names if line.strip()]
+            location_widget.configure(state="normal")
+            location_widget.delete(0, "end")
+            location_widget.insert(0, "; ".join(lines))
+            if "location" in self.readonly_fields:
+                location_widget.configure(state="readonly")
+
+        LocationPickerDialog(self, self.location_names, existing_names, trip_name, save_locations)
 
     def _save(self) -> None:
         payload = self._collect_payload()

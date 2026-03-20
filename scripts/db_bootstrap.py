@@ -40,7 +40,7 @@ def get_trip_fields(classification_csv: Path) -> list[str]:
         if field not in seen:
             unique_fields.append(field)
             seen.add(field)
-    return unique_fields
+    return normalize_trip_fields(unique_fields)
 
 
 def create_users_table(conn: sqlite3.Connection) -> None:
@@ -62,16 +62,26 @@ def create_users_table(conn: sqlite3.Connection) -> None:
 
 
 def create_trips_table(conn: sqlite3.Connection, fields: list[str]) -> None:
-    if not fields:
+    normalized_fields = normalize_trip_fields(fields)
+    if len(normalized_fields) == 1:
         raise ValueError("No Trip fields found in classification CSV.")
-    column_sql = ",\n            ".join(f'"{name}" TEXT' for name in fields)
+    column_sql = ",\n            ".join(f'"{name}" TEXT' for name in normalized_fields if name != "id")
     conn.execute(
         f"""
         CREATE TABLE IF NOT EXISTS Trips (
+            id INTEGER PRIMARY KEY AUTOINCREMENT
+            {"," if column_sql else ""}
             {column_sql}
         )
         """
     )
+    _migrate_legacy_trips_table(conn, normalized_fields)
+    existing = {row[1] for row in conn.execute("PRAGMA table_info(Trips)").fetchall()}
+    for field in normalized_fields:
+        if field != "id" and field not in existing:
+            conn.execute(f'ALTER TABLE Trips ADD COLUMN "{field}" TEXT')
+    _migrate_legacy_region_to_location(conn)
+    _rebuild_trips_table_without_region(conn)
 
 
 def create_locations_table(conn: sqlite3.Connection) -> None:
@@ -104,10 +114,10 @@ def create_locations_table(conn: sqlite3.Connection) -> None:
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS TripLocations (
-            trip_code TEXT NOT NULL,
+            id INTEGER NOT NULL,
             location_id INTEGER NOT NULL,
-            PRIMARY KEY (trip_code, location_id),
-            FOREIGN KEY (trip_code) REFERENCES Trips(trip_code),
+            PRIMARY KEY (id, location_id),
+            FOREIGN KEY (id) REFERENCES Trips(id),
             FOREIGN KEY (location_id) REFERENCES Locations(id)
         )
         """
@@ -123,8 +133,8 @@ def create_locations_table(conn: sqlite3.Connection) -> None:
         )
         """
     )
-    conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_trips_trip_code_unique ON Trips(trip_code)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_trip_locations_trip ON TripLocations(trip_code)")
+    _migrate_legacy_trip_locations(conn)
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_trip_locations_trip ON TripLocations(id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_trip_locations_location ON TripLocations(location_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_collection_events_location ON CollectionEvents(location_id)")
     _migrate_legacy_collection_fields(conn)
@@ -234,3 +244,126 @@ def initialize_database(db_path: Path, classification_csv: Path) -> list[str]:
         create_locations_table(conn)
         conn.commit()
     return trip_fields
+
+
+def normalize_trip_fields(fields: list[str]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = ["id"]
+    for field in fields:
+        mapped = "location" if field == "region" else field
+        if mapped in {"id", "trip_code"}:
+            continue
+        if mapped not in seen:
+            result.append(mapped)
+            seen.add(mapped)
+    return result
+
+
+def _migrate_legacy_trips_table(conn: sqlite3.Connection, trip_fields: list[str]) -> None:
+    columns = [row[1] for row in conn.execute("PRAGMA table_info(Trips)").fetchall()]
+    needs_rebuild = "id" not in columns or "trip_code" in columns
+    if not needs_rebuild:
+        return
+    conn.execute("DROP TABLE IF EXISTS TripLocations")
+    non_id_columns = [name for name in trip_fields if name != "id"]
+    col_sql = ",\n            ".join(f'"{name}" TEXT' for name in non_id_columns)
+    conn.execute(
+        f"""
+        CREATE TABLE IF NOT EXISTS Trips_new (
+            id INTEGER PRIMARY KEY AUTOINCREMENT
+            {"," if col_sql else ""}
+            {col_sql}
+        )
+        """
+    )
+    insert_columns: list[str] = []
+    select_columns: list[str] = []
+    for field in non_id_columns:
+        if field in columns:
+            insert_columns.append(f'"{field}"')
+            select_columns.append(f'"{field}"')
+        elif field == "location" and "region" in columns:
+            insert_columns.append('"location"')
+            select_columns.append('"region"')
+    if insert_columns:
+        conn.execute(
+            f"INSERT INTO Trips_new ({', '.join(insert_columns)}) SELECT {', '.join(select_columns)} FROM Trips"
+        )
+    conn.execute("DROP TABLE Trips")
+    conn.execute("ALTER TABLE Trips_new RENAME TO Trips")
+
+
+def _migrate_legacy_trip_locations(conn: sqlite3.Connection) -> None:
+    columns = [row[1] for row in conn.execute("PRAGMA table_info(TripLocations)").fetchall()]
+    if "trip_code" not in columns:
+        return
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS TripLocations_new (
+            id INTEGER NOT NULL,
+            location_id INTEGER NOT NULL,
+            PRIMARY KEY (id, location_id),
+            FOREIGN KEY (id) REFERENCES Trips(id),
+            FOREIGN KEY (location_id) REFERENCES Locations(id)
+        )
+        """
+    )
+    has_trips_trip_code = conn.execute(
+        "SELECT COUNT(*) FROM pragma_table_info('Trips') WHERE name = 'trip_code'"
+    ).fetchone()[0]
+    if has_trips_trip_code:
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO TripLocations_new (id, location_id)
+            SELECT t.id, tl.location_id
+            FROM TripLocations tl
+            JOIN Trips t ON t.trip_code = tl.trip_code
+            """
+        )
+    conn.execute("DROP TABLE TripLocations")
+    conn.execute("ALTER TABLE TripLocations_new RENAME TO TripLocations")
+
+
+def _migrate_legacy_region_to_location(conn: sqlite3.Connection) -> None:
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(Trips)").fetchall()}
+    if "location" not in columns or "region" not in columns:
+        return
+    conn.execute(
+        """
+        UPDATE Trips
+        SET location = region
+        WHERE (location IS NULL OR TRIM(location) = '')
+          AND region IS NOT NULL
+          AND TRIM(region) <> ''
+        """
+    )
+
+
+def _rebuild_trips_table_without_region(conn: sqlite3.Connection) -> None:
+    rows = conn.execute("PRAGMA table_info(Trips)").fetchall()
+    names = [row[1] for row in rows]
+    if "region" not in names:
+        return
+    conn.execute("DROP TABLE IF EXISTS TripLocations")
+    kept_rows = [row for row in rows if row[1] != "region"]
+    column_defs: list[str] = []
+    for row in kept_rows:
+        name = row[1]
+        col_type = row[2] or "TEXT"
+        is_not_null = int(row[3]) == 1
+        default_value = row[4]
+        is_pk = int(row[5]) == 1
+        if is_pk and name == "id":
+            column_defs.append('"id" INTEGER PRIMARY KEY AUTOINCREMENT')
+            continue
+        definition = f'"{name}" {col_type}'
+        if is_not_null:
+            definition += " NOT NULL"
+        if default_value is not None:
+            definition += f" DEFAULT {default_value}"
+        column_defs.append(definition)
+    conn.execute(f"CREATE TABLE IF NOT EXISTS Trips_new ({', '.join(column_defs)})")
+    cols_sql = ", ".join([f'"{row[1]}"' for row in kept_rows])
+    conn.execute(f"INSERT INTO Trips_new ({cols_sql}) SELECT {cols_sql} FROM Trips")
+    conn.execute("DROP TABLE Trips")
+    conn.execute("ALTER TABLE Trips_new RENAME TO Trips")

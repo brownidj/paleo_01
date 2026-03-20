@@ -1,16 +1,14 @@
 import sqlite3
-import re
 from pathlib import Path
 from typing import Any
 
 
 DEFAULT_TRIP_FIELDS = [
-    "trip_code",
     "trip_name",
     "start_date",
     "end_date",
     "team",
-    "region",
+    "location",
     "notes",
 ]
 
@@ -39,10 +37,24 @@ class TripRepository:
         return conn
 
     def ensure_trips_table(self, fields: list[str] | None = None) -> None:
-        trip_fields = fields or DEFAULT_TRIP_FIELDS
-        cols = ", ".join([f'"{name}" TEXT' for name in trip_fields])
+        trip_fields = self._normalize_trip_fields(fields or DEFAULT_TRIP_FIELDS)
+        cols = ", ".join([f'"{name}" TEXT' for name in trip_fields if name != "id"])
         with self._connect() as conn:
-            conn.execute(f'CREATE TABLE IF NOT EXISTS "Trips" ({cols})')
+            conn.execute(
+                f'''
+                CREATE TABLE IF NOT EXISTS "Trips" (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT
+                    {", " + cols if cols else ""}
+                )
+                '''
+            )
+            self._migrate_legacy_trips_table(conn, trip_fields)
+            existing = {row["name"] for row in conn.execute('PRAGMA table_info("Trips")').fetchall()}
+            for field in trip_fields:
+                if field not in existing:
+                    conn.execute(f'ALTER TABLE "Trips" ADD COLUMN "{field}" TEXT')
+            self._migrate_legacy_region_to_location(conn)
+            self._rebuild_trips_table_without_region(conn)
 
     def ensure_locations_table(self) -> None:
         with self._connect() as conn:
@@ -74,17 +86,17 @@ class TripRepository:
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS "TripLocations" (
-                    trip_code TEXT NOT NULL,
+                    id INTEGER NOT NULL,
                     location_id INTEGER NOT NULL,
-                    PRIMARY KEY (trip_code, location_id),
-                    FOREIGN KEY (trip_code) REFERENCES Trips(trip_code),
+                    PRIMARY KEY (id, location_id),
+                    FOREIGN KEY (id) REFERENCES Trips(id),
                     FOREIGN KEY (location_id) REFERENCES Locations(id)
                 )
                 """
             )
-            conn.execute('CREATE INDEX IF NOT EXISTS idx_trip_locations_trip ON "TripLocations"(trip_code)')
+            self._migrate_legacy_trip_locations(conn)
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_trip_locations_trip ON "TripLocations"(id)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_trip_locations_location ON "TripLocations"(location_id)')
-            conn.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_trips_trip_code_unique ON "Trips"(trip_code)')
             conn.execute(
                 'CREATE INDEX IF NOT EXISTS idx_collection_events_location ON "CollectionEvents"(location_id)'
             )
@@ -96,70 +108,73 @@ class TripRepository:
         if fields:
             return fields
         self.ensure_trips_table()
-        return DEFAULT_TRIP_FIELDS
+        return self._normalize_trip_fields(DEFAULT_TRIP_FIELDS)
 
     def list_trips(self) -> list[dict[str, Any]]:
         fields = self.get_fields()
         col_sql = ", ".join([f'"{name}"' for name in fields])
         with self._connect() as conn:
             rows = conn.execute(
-                f'SELECT rowid, {col_sql} FROM "Trips" ORDER BY rowid DESC'
+                f'SELECT {col_sql} FROM "Trips" ORDER BY id DESC'
             ).fetchall()
         return [dict(row) for row in rows]
 
-    def get_trip(self, row_id: int) -> dict[str, Any] | None:
+    def get_trip(self, trip_id: int) -> dict[str, Any] | None:
         fields = self.get_fields()
         col_sql = ", ".join([f'"{name}"' for name in fields])
         with self._connect() as conn:
             row = conn.execute(
-                f'SELECT rowid, {col_sql} FROM "Trips" WHERE rowid = ?',
-                (row_id,),
+                f'SELECT {col_sql} FROM "Trips" WHERE id = ?',
+                (trip_id,),
             ).fetchone()
         return dict(row) if row else None
 
     def create_trip(self, data: dict[str, Any]) -> int:
         fields = self.get_fields()
-        insert_fields = [name for name in fields if name in data]
-        if not insert_fields:
-            raise ValueError("No valid Trip fields supplied.")
-        col_sql = ", ".join([f'"{name}"' for name in insert_fields])
-        placeholders = ", ".join(["?"] * len(insert_fields))
-        values = [data[name] for name in insert_fields]
         with self._connect() as conn:
-            cur = conn.execute(
-                f'INSERT INTO "Trips" ({col_sql}) VALUES ({placeholders})',
-                values,
-            )
+            insert_fields = [name for name in fields if name != "id" and name in data]
+            if insert_fields:
+                col_sql = ", ".join([f'"{name}"' for name in insert_fields])
+                placeholders = ", ".join(["?"] * len(insert_fields))
+                values = [data[name] for name in insert_fields]
+                cur = conn.execute(
+                    f'INSERT INTO "Trips" ({col_sql}) VALUES ({placeholders})',
+                    values,
+                )
+            else:
+                cur = conn.execute('INSERT INTO "Trips" DEFAULT VALUES')
             return int(cur.lastrowid)
 
-    def update_trip(self, row_id: int, data: dict[str, Any]) -> None:
+    def update_trip(self, trip_id: int, data: dict[str, Any]) -> None:
         fields = self.get_fields()
-        update_fields = [name for name in fields if name in data]
+        update_fields = [name for name in fields if name != "id" and name in data]
         if not update_fields:
             raise ValueError("No valid Trip fields supplied.")
         set_sql = ", ".join([f'"{name}" = ?' for name in update_fields])
-        values = [data[name] for name in update_fields] + [row_id]
+        values = [data[name] for name in update_fields] + [trip_id]
         with self._connect() as conn:
             conn.execute(
-                f'UPDATE "Trips" SET {set_sql} WHERE rowid = ?',
+                f'UPDATE "Trips" SET {set_sql} WHERE id = ?',
                 values,
             )
-
-    def next_trip_code(self) -> str:
-        with self._connect() as conn:
-            rows = conn.execute('SELECT "trip_code" FROM "Trips"').fetchall()
-        max_num = 0
-        for row in rows:
-            trip_code = row["trip_code"] or ""
-            match = re.search(r"(\d+)$", trip_code)
-            if match:
-                max_num = max(max_num, int(match.group(1)))
-        return f"TRIP-{max_num + 1:04d}"
 
     def list_active_users(self) -> list[str]:
         with self._connect() as conn:
             rows = conn.execute(
                 'SELECT name FROM "Users" WHERE active = 1 ORDER BY name'
+            ).fetchall()
+        return [row["name"] for row in rows]
+
+    def list_location_names(self) -> list[str]:
+        self.ensure_locations_table()
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT name
+                FROM "Locations"
+                WHERE name IS NOT NULL AND TRIM(name) <> ''
+                ORDER BY name
+                """
             ).fetchall()
         return [row["name"] for row in rows]
 
@@ -432,3 +447,124 @@ class TripRepository:
               AND TRIM(county) <> ''
             """
         )
+
+    @staticmethod
+    def _normalize_trip_fields(fields: list[str]) -> list[str]:
+        seen: set[str] = set()
+        result: list[str] = ["id"]
+        for field in fields:
+            mapped = "location" if field == "region" else field
+            if mapped in {"id", "trip_code"}:
+                continue
+            if mapped not in seen:
+                result.append(mapped)
+                seen.add(mapped)
+        return result
+
+    @staticmethod
+    def _migrate_legacy_trips_table(conn: sqlite3.Connection, trip_fields: list[str]) -> None:
+        columns = [row["name"] for row in conn.execute('PRAGMA table_info("Trips")').fetchall()]
+        needs_rebuild = "id" not in columns or "trip_code" in columns
+        if not needs_rebuild:
+            return
+        conn.execute('DROP TABLE IF EXISTS "TripLocations"')
+        conn.execute(
+            f'''
+            CREATE TABLE IF NOT EXISTS "Trips_new" (
+                id INTEGER PRIMARY KEY AUTOINCREMENT
+                {", " + ", ".join([f'"{name}" TEXT' for name in trip_fields if name != "id"]) if len(trip_fields) > 1 else ""}
+            )
+            '''
+        )
+        insert_columns: list[str] = []
+        select_columns: list[str] = []
+        for field in trip_fields:
+            if field == "id":
+                continue
+            if field in columns:
+                insert_columns.append(f'"{field}"')
+                select_columns.append(f'"{field}"')
+            elif field == "location" and "region" in columns:
+                insert_columns.append('"location"')
+                select_columns.append('"region"')
+        if insert_columns:
+            conn.execute(
+                f'INSERT INTO "Trips_new" ({", ".join(insert_columns)}) SELECT {", ".join(select_columns)} FROM "Trips"'
+            )
+        conn.execute('DROP TABLE "Trips"')
+        conn.execute('ALTER TABLE "Trips_new" RENAME TO "Trips"')
+
+    @staticmethod
+    def _migrate_legacy_trip_locations(conn: sqlite3.Connection) -> None:
+        columns = [row["name"] for row in conn.execute('PRAGMA table_info("TripLocations")').fetchall()]
+        if not columns:
+            return
+        if "trip_code" not in columns:
+            return
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS "TripLocations_new" (
+                id INTEGER NOT NULL,
+                location_id INTEGER NOT NULL,
+                PRIMARY KEY (id, location_id),
+                FOREIGN KEY (id) REFERENCES Trips(id),
+                FOREIGN KEY (location_id) REFERENCES Locations(id)
+            )
+            """
+        )
+        has_trips_trip_code = conn.execute(
+            "SELECT COUNT(*) FROM pragma_table_info('Trips') WHERE name = 'trip_code'"
+        ).fetchone()[0]
+        if has_trips_trip_code:
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO "TripLocations_new" (id, location_id)
+                SELECT t.id, tl.location_id
+                FROM "TripLocations" tl
+                JOIN "Trips" t ON t.trip_code = tl.trip_code
+                """
+            )
+        conn.execute('DROP TABLE "TripLocations"')
+        conn.execute('ALTER TABLE "TripLocations_new" RENAME TO "TripLocations"')
+
+    @staticmethod
+    def _migrate_legacy_region_to_location(conn: sqlite3.Connection) -> None:
+        columns = {row["name"] for row in conn.execute('PRAGMA table_info("Trips")').fetchall()}
+        if "location" not in columns or "region" not in columns:
+            return
+        conn.execute(
+            """
+            UPDATE "Trips"
+            SET location = region
+            WHERE (location IS NULL OR TRIM(location) = '')
+              AND region IS NOT NULL
+              AND TRIM(region) <> ''
+            """
+        )
+
+    @staticmethod
+    def _rebuild_trips_table_without_region(conn: sqlite3.Connection) -> None:
+        rows = conn.execute('PRAGMA table_info("Trips")').fetchall()
+        names = [row["name"] for row in rows]
+        if "region" not in names:
+            return
+        conn.execute('DROP TABLE IF EXISTS "TripLocations"')
+        kept_rows = [row for row in rows if row["name"] != "region"]
+        column_defs: list[str] = []
+        for row in kept_rows:
+            name = row["name"]
+            col_type = row["type"] or "TEXT"
+            if int(row["pk"]) == 1 and name == "id":
+                column_defs.append('"id" INTEGER PRIMARY KEY AUTOINCREMENT')
+                continue
+            definition = f'"{name}" {col_type}'
+            if int(row["notnull"]) == 1:
+                definition += " NOT NULL"
+            if row["dflt_value"] is not None:
+                definition += f" DEFAULT {row['dflt_value']}"
+            column_defs.append(definition)
+        conn.execute(f'CREATE TABLE IF NOT EXISTS "Trips_new" ({", ".join(column_defs)})')
+        kept_columns_sql = ", ".join([f'"{row["name"]}"' for row in kept_rows])
+        conn.execute(f'INSERT INTO "Trips_new" ({kept_columns_sql}) SELECT {kept_columns_sql} FROM "Trips"')
+        conn.execute('DROP TABLE "Trips"')
+        conn.execute('ALTER TABLE "Trips_new" RENAME TO "Trips"')

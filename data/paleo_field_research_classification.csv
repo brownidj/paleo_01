@@ -58,10 +58,10 @@ Publication,Published Year,research,n/a,n/a
 Publication,Reference Author,research,n/a,n/a
 Publication,Full Reference,research,n/a,n/a
 Publication,Reference Title,research,n/a,n/a
-Trip,trip_code,n/a,n/a,planning_phase
+Trip,id,n/a,n/a,planning_phase
 Trip,trip_name,n/a,n/a,planning_phase
 Trip,start_date,n/a,n/a,planning_phase
 Trip,end_date,n/a,n/a,planning_phase
 Trip,team,n/a,n/a,planning_phase
-Trip,region,n/a,n/a,planning_phase
+Trip,location,n/a,n/a,planning_phase
 Trip,notes,n/a,n/a,planning_phase

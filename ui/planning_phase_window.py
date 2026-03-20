@@ -9,17 +9,48 @@ from ui.users_tab import UsersTab
 
 
 class PlanningPhaseWindow(tk.Tk):
+    PALETTE = {
+        "earth": {
+            "dusty_ochre": "#D9B37A",
+            "clay_blush": "#D9A8A1",
+            "soft_ironstone": "#C98F7A",
+        },
+        "vegetation": {
+            "eucalypt_sage": "#9DB8A7",
+            "spinifex_mint": "#C7D8B6",
+            "pale_wattle_green": "#AFC8A2",
+        },
+        "water_sky": {
+            "creek_blue": "#A9C7CF",
+        },
+        "fossil_bone": {
+            "fossil_sand": "#F5EEDF",
+            "bone_white": "#FBF8F2",
+            "chalk_beige": "#E9DFCF",
+            "weathered_stone": "#C8BBAA",
+        },
+        "text": {
+            "deep_gumleaf": "#4A5A52",
+            "dust_bark": "#7A746B",
+        },
+        "status": {
+            "muted_rust": "#B97A6A",
+            "pale_wattle_green": "#AFC8A2",
+        },
+    }
+
     def __init__(self, db_path: str = "paleo_trips_01.db"):
         super().__init__()
         self.title("Planning Phase")
         self.geometry("980x560")
+        self._apply_palette()
 
         self.repo = TripRepository(db_path)
         self.open_edit_dialogs: dict[int, TripFormDialog] = {}
         self.repo.ensure_trips_table()
         self.fields = self.repo.get_fields()
-        self.list_fields = ["trip_name", "trip_code", "start_date", "end_date", "region"]
-        self.edit_fields = ["trip_name", "trip_code", "start_date", "end_date", "region", "team", "notes"]
+        self.list_fields = ["trip_name", "start_date", "end_date", "location"]
+        self.edit_fields = ["trip_name", "start_date", "end_date", "location", "team", "notes"]
         self.list_fields = [f for f in self.list_fields if f in self.fields]
         self.edit_fields = [f for f in self.edit_fields if f in self.fields]
 
@@ -78,14 +109,13 @@ class PlanningPhaseWindow(tk.Tk):
             return
         for record in records:
             values = [record.get(field, "") for field in self.list_fields]
-            self.trips_tree.insert("", "end", iid=str(record["rowid"]), values=values)
+            self.trips_tree.insert("", "end", iid=str(record["id"]), values=values)
 
     def new_trip(self) -> None:
         def save_new(payload: dict[str, str]) -> bool:
             if not payload.get("trip_name"):
                 messagebox.showerror("Validation Error", "trip_name is required.")
                 return False
-            payload["trip_code"] = self.repo.next_trip_code()
             normalized = self._normalize_payload(payload)
             try:
                 self.repo.create_trip(normalized)
@@ -95,14 +125,15 @@ class PlanningPhaseWindow(tk.Tk):
             self.load_trips()
             return True
 
-        initial_data = {"trip_code": self.repo.next_trip_code()}
+        initial_data = {}
         TripFormDialog(
             self,
             self.edit_fields,
             initial_data,
             save_new,
-            readonly_fields={"trip_code"},
+            readonly_fields=set(),
             active_users=self.repo.list_active_users(),
+            location_names=self.repo.list_location_names(),
             modal=True,
         )
 
@@ -111,9 +142,9 @@ class PlanningPhaseWindow(tk.Tk):
         if not selected:
             messagebox.showinfo("Edit Trip", "Select a Trip first.")
             return
-        row_id = int(selected[0])
+        trip_id = int(selected[0])
         try:
-            trip = self.repo.get_trip(row_id)
+            trip = self.repo.get_trip(trip_id)
         except sqlite3.Error as e:
             messagebox.showerror("Database Error", str(e))
             return
@@ -128,7 +159,7 @@ class PlanningPhaseWindow(tk.Tk):
                 return False
             normalized = self._normalize_payload(payload)
             try:
-                self.repo.update_trip(row_id, normalized)
+                self.repo.update_trip(trip_id, normalized)
             except (sqlite3.Error, ValueError) as e:
                 messagebox.showerror("Save Error", str(e))
                 return False
@@ -139,34 +170,33 @@ class PlanningPhaseWindow(tk.Tk):
             if not payload.get("trip_name"):
                 messagebox.showerror("Validation Error", "trip_name is required.")
                 return False
-            payload["trip_code"] = self.repo.next_trip_code()
             payload["start_date"] = ""
             payload["end_date"] = ""
             normalized = self._normalize_payload(payload)
             try:
-                new_row_id = self.repo.create_trip(normalized)
-                new_trip = self.repo.get_trip(new_row_id)
+                new_trip_id = self.repo.create_trip(normalized)
+                new_trip = self.repo.get_trip(new_trip_id)
             except (sqlite3.Error, ValueError) as e:
                 messagebox.showerror("Duplicate Error", str(e))
                 return False
             self.load_trips()
-            existing_dialog = self.open_edit_dialogs.get(row_id)
+            existing_dialog = self.open_edit_dialogs.get(trip_id)
             if existing_dialog and existing_dialog.winfo_exists():
                 existing_dialog.destroy()
             if new_trip:
-                self._open_edit_dialog(new_row_id, new_trip)
+                self._open_edit_dialog(new_trip_id, new_trip)
             return True
 
-        self._open_edit_dialog(row_id, trip, save_edit, duplicate_trip)
+        self._open_edit_dialog(trip_id, trip, save_edit, duplicate_trip)
 
     def _open_edit_dialog(
         self,
-        row_id: int,
+        trip_id: int,
         trip: dict[str, str],
         save_edit=None,
         duplicate_trip=None,
     ) -> None:
-        existing = self.open_edit_dialogs.get(row_id)
+        existing = self.open_edit_dialogs.get(trip_id)
         if existing and existing.winfo_exists():
             existing.lift()
             existing.focus_force()
@@ -182,7 +212,7 @@ class PlanningPhaseWindow(tk.Tk):
                 return False
             normalized = self._normalize_payload(payload)
             try:
-                self.repo.update_trip(row_id, normalized)
+                self.repo.update_trip(trip_id, normalized)
             except (sqlite3.Error, ValueError) as e:
                 messagebox.showerror("Save Error", str(e))
                 return False
@@ -195,19 +225,22 @@ class PlanningPhaseWindow(tk.Tk):
             trip,
             save_edit or _default_save,
             on_duplicate=duplicate_trip,
-            readonly_fields={"trip_code"},
+            readonly_fields=set(),
             active_users=self.repo.list_active_users(),
+            location_names=self.repo.list_location_names(),
             modal=False,
-            on_close=lambda rid=row_id: self._on_edit_dialog_closed(rid),
+            on_close=lambda rid=trip_id: self._on_edit_dialog_closed(rid),
         )
-        self.open_edit_dialogs[row_id] = dialog
+        self.open_edit_dialogs[trip_id] = dialog
 
     @staticmethod
     def _normalize_payload(payload: dict[str, str]) -> dict[str, str | None]:
         normalized: dict[str, str | None] = {}
         for key, value in payload.items():
-            if key in {"trip_name", "trip_code"}:
+            if key in {"trip_name"}:
                 normalized[key] = value
+            elif key == "id":
+                continue
             else:
                 normalized[key] = value if value else None
         return normalized
@@ -233,3 +266,97 @@ class PlanningPhaseWindow(tk.Tk):
             self.location_tab.load_locations()
         if current_tab == str(self.users_tab):
             self.users_tab.load_users()
+
+    def _apply_palette(self) -> None:
+        p = self.PALETTE
+        bg = p["fossil_bone"]["fossil_sand"]
+        surface = p["fossil_bone"]["bone_white"]
+        surface_alt = p["fossil_bone"]["chalk_beige"]
+        border = p["fossil_bone"]["weathered_stone"]
+        text_primary = p["text"]["deep_gumleaf"]
+        text_secondary = p["text"]["dust_bark"]
+        primary = p["vegetation"]["eucalypt_sage"]
+        secondary = p["earth"]["dusty_ochre"]
+        selected = p["earth"]["clay_blush"]
+
+        self.configure(bg=bg)
+        self.option_add("*Background", bg)
+        self.option_add("*Foreground", text_primary)
+        self.option_add("*Listbox.background", surface)
+        self.option_add("*Listbox.foreground", text_primary)
+        self.option_add("*Listbox.selectBackground", secondary)
+        self.option_add("*Listbox.selectForeground", text_primary)
+        self.option_add("*Text.background", surface)
+        self.option_add("*Text.foreground", text_primary)
+        self.option_add("*Text.insertBackground", text_primary)
+
+        style = ttk.Style(self)
+        available_themes = set(style.theme_names())
+        if "clam" in available_themes:
+            style.theme_use("clam")
+
+        style.configure(".", background=bg, foreground=text_primary)
+        style.configure("TFrame", background=bg)
+        style.configure("TLabel", background=bg, foreground=text_primary)
+
+        style.configure(
+            "TButton",
+            background=primary,
+            foreground=text_primary,
+            borderwidth=1,
+            padding=(10, 5),
+        )
+        style.map(
+            "TButton",
+            background=[("active", secondary), ("pressed", p["earth"]["clay_blush"])],
+            foreground=[("disabled", text_secondary)],
+        )
+
+        style.configure(
+            "TNotebook",
+            background=bg,
+            borderwidth=0,
+            tabmargins=(6, 6, 6, 0),
+        )
+        style.configure(
+            "TNotebook.Tab",
+            background=surface_alt,
+            foreground=text_secondary,
+            padding=(14, 8),
+        )
+        style.map(
+            "TNotebook.Tab",
+            background=[("selected", primary), ("active", secondary)],
+            foreground=[("selected", text_primary), ("active", text_primary)],
+        )
+
+        style.configure(
+            "Treeview",
+            background=surface,
+            fieldbackground=surface,
+            foreground=text_primary,
+            rowheight=24,
+        )
+        style.map(
+            "Treeview",
+            background=[("selected", selected)],
+            foreground=[("selected", text_primary)],
+        )
+        style.configure(
+            "Treeview.Heading",
+            background=surface_alt,
+            foreground=text_primary,
+            relief="flat",
+        )
+
+        style.configure(
+            "TEntry",
+            fieldbackground=surface,
+            foreground=text_primary,
+        )
+        style.map("TEntry", fieldbackground=[("readonly", surface_alt)])
+        style.configure(
+            "TCheckbutton",
+            background=bg,
+            foreground=text_primary,
+        )

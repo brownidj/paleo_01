@@ -118,72 +118,52 @@ rg --files "$ROOT_DIR" \
 
 ## Code base architecture state
 
-- **Architecture**: Planning-phase Trip desktop app only (legacy field-recorder track removed).
-  - **Infrastructure/Init**: `scripts/db_bootstrap.py`, `scripts/init_db.py`.
-  - **Repository**: `trip_repository.py` (`Trips` CRUD + active `Users` lookups).
-  - **UI Entrypoints**: `main.py` and `planning_phase_main.py` both launch planning-phase UI.
+- **Architecture**: Planning-phase desktop app only (Tkinter + SQLite), with `Trips`, `Locations`, and `Team Members` tabs.
+  - **Infrastructure/Init**:
+    - `scripts/db_bootstrap.py`: schema creation + migrations.
+    - `scripts/init_db.py`: CLI initializer.
+  - **Repository**:
+    - `trip_repository.py`: data access and schema guard methods (`ensure_trips_table`, `ensure_locations_table`), plus CRUD/list helpers.
+  - **UI Entrypoints**:
+    - `main.py` and `planning_phase_main.py` launch `PlanningPhaseWindow` only (thin entrypoints).
   - **UI Modules**:
-    - `ui/planning_phase_window.py` (Trips list + orchestration).
-    - `ui/trip_form_dialog.py` (Trip form modal, duplicate flow).
-    - `ui/team_editor_dialog.py` (active-user multi-select team editor).
-  - **Seeding**: `scripts/seed_users.py`, `scripts/seed_trips.py`.
-- **Planning Database**: `paleo_trips_01.db` with:
-  - `Users(id, name, phone_number, active)` where `active` is boolean-like (`0/1`).
-  - `Trips(trip_code, trip_name, start_date, end_date, team, region, notes)`.
-- **Entrypoint Rule**: `main.py` is thin and contains no domain/infrastructure wiring.
-- **Error Handling**: UI operations catch explicit `sqlite3`/`ValueError` paths and show targeted dialogs.
-- **Constraints**: source file size checks currently pass with `scripts/check_file_sizes.sh`.
+    - `ui/planning_phase_window.py`: orchestration, tab setup, theme/palette, trip list, trip dialog lifecycle.
+    - `ui/trip_form_dialog.py`: Trip edit form; inline icon editors for `team` and `location`.
+    - `ui/team_editor_dialog.py`: active-user selector for team assignment.
+    - `ui/location_picker_dialog.py`: location selector for trip location list.
+    - `ui/location_tab.py`, `ui/location_form_dialog.py`: location CRUD + collection-events editing.
+    - `ui/users_tab.py`, `ui/user_form_dialog.py`: users CRUD (no delete in UI flow).
+  - **Seeding**:
+    - `scripts/seed_users.py`: users with fixed AU phone and active split.
+    - `scripts/seed_locations.py`: fake locations; supports `--truncate`; optional one-time cardinal variants from first-pass records.
+    - `scripts/seed_trips.py`: trips seeded from existing locations, writes `TripLocations`, supports second-pass multi-location trip generation via random boolean on similar-location matches.
+- **Planning Database (`paleo_trips_01.db`)**:
+  - `Users(id, name, phone_number, active)`
+  - `Trips(id, trip_name, start_date, end_date, team, location, notes)` (`region` removed)
+  - `Locations(id, name, latitude, longitude, altitude_value, altitude_unit, country_code, state, lga, basin, geogscale, geography_comments)`
+  - `CollectionEvents(id, location_id, collection_name, collection_subset)` (0..many per location)
+  - `TripLocations(id, location_id)` (many-to-many between trips and locations)
+- **Behavioral Notes**:
+  - Trips use integer `id` auto-increment; no `trip_code`.
+  - `team` and `location` list values are semicolon-separated.
+  - `region -> location` migration exists; `region` column is removed in migration rebuild.
+  - UI palette/theme is applied centrally in `PlanningPhaseWindow`.
+- **Prompt Compliance Snapshot**:
+  - `main.py` remains thin: **compliant**.
+  - DB layer uses parameterized queries and context managers: **compliant**.
+  - File size <= 300 rule: **not currently compliant** (`scripts/db_bootstrap.py`, `trip_repository.py`, `ui/planning_phase_window.py` exceed threshold).
 
 ## Test run report
 
-- **2026-03-20 14:01**: Legacy field-recorder track removal + planning-track validation.
-    - Removed legacy files:
-      - `app_composition.py`
-      - `database_manager.py`, `database_schema.py`
-      - `demo_db.py`
-      - `ui/main_window.py`, `ui/mission_views.py`, `ui/locality_views.py`, `ui/specimen_views.py`, `ui/photo_viewer.py`, `ui/ui_services.py`
-      - `tests/test_database_manager.py`, `tests/test_ui_services.py`
-    - Added planning-track tests:
-      - `tests/test_trip_repository.py`
-    - `./scripts/check_file_sizes.sh .`: PASSED
-    - `python3 -m unittest -v`: PASSED
-    - Total tests: 3 passed (planning repository tests)
-- **2026-03-20 13:53**: Reassessment against CURRENT_STATE prompt.
-    - `./scripts/check_file_sizes.sh .`: FAILED
-      - `ui/planning_phase_window.py` at 325 lines (over 300-line limit)
-    - `python3 -m unittest -v`: PASSED
-    - Total tests: 16 passed
-    - Notes:
-      - Current tests validate legacy DB/service layers.
-      - Planning-phase UI/repository flows currently rely on manual testing.
-- **2026-03-19 13:39**: Hardening pass verification.
-    - `./scripts/check_file_sizes.sh .`: PASSED
-    - `python3 -m unittest -v`: PASSED
-    - Total tests: 16 passed
-    - Added coverage:
-      - invalid update-field rejection (`DatabaseManager`)
-      - invalid `photo.parent_type` rejection (`DatabaseManager`)
-      - sqlite error wrapping to `UIServiceError` (`UIService`)
-- **2026-03-19 13:27**: Ran file size checker and unit tests after architecture fixes.
-    - `./scripts/check_file_sizes.sh .`: PASSED
-    - `python3 -m unittest -v`: PASSED
-    - Total tests: 13 passed (`tests/test_database_manager.py` + `tests/test_ui_services.py`)
-- **2026-03-19 13:25**: Refactor and bug fix pass.
-    - Fixed broken specimen back-navigation call signature in `ui/specimen_views.py`
-    - Removed direct `ui_service.db` access from UI views (adapter methods in `UIService`)
-    - Moved app wiring to `app_composition.py`; `main.py` now delegates composition
-    - Added `scripts/check_file_sizes.sh` for regular file length validation
-- **2026-03-19 12:40**: Connected `coelo_01.jpg` and `coelo_02.jpg` to Ghost Ranch localities in `paleo_field.db`.
-- **2026-03-19 12:35**: Migrated locality `c5597bb3-d5a8-4d0d-830a-f50422ba1641` from `demo_paleo.db` to `paleo_field.db`.
-- **2026-03-19 11:40**: Migrated two existing localities from `demo_paleo.db` to `Coelo_01` mission in `paleo_field.db`.
-- **2026-03-19 11:30**: Added UI warning when viewing localities without mission selection.
-- **2026-03-19 11:35**: Updated `demo_db.py` to be mission-aware.
-- **2026-03-19 10:30**: Ran unit tests in `tests/test_database_manager.py` after adding Missions.
-    - Database initialization (inc. mission table): PASSED
-    - Mission CRUD: PASSED
-    - Locality CRUD (mission-aware): PASSED
-    - Specimen CRUD: PASSED
-    - Foreign key enforcement: PASSED
-    - Photo CRUD: PASSED
-    - Soft delete logic: PASSED
-    - Migration to "Initial Mission": VERIFIED
+- **2026-03-20 (current reassessment)**:
+  - Added/updated tests in `tests/test_trip_repository.py`:
+    - `test_migrate_region_to_location_and_drop_region_column`
+    - `test_list_location_names_sorted_and_non_blank`
+    - Existing trip/user/location tests retained.
+  - `python3 -m unittest -v`: **PASSED**
+    - Total: **7 passed**
+  - `./scripts/check_file_sizes.sh .`: **FAILED**
+    - `369 ./scripts/db_bootstrap.py`
+    - `570 ./trip_repository.py`
+    - `362 ./ui/planning_phase_window.py`
+  - `python3 -m py_compile tests/test_trip_repository.py`: **PASSED**

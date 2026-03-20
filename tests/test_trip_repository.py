@@ -34,20 +34,14 @@ class TestTripRepository(unittest.TestCase):
     def test_create_and_fetch_trip(self):
         row_id = self.repo.create_trip(
             {
-                "trip_code": "TRIP-0001",
                 "trip_name": "Test Trip",
-                "region": "Queensland, AU",
+                "location": "Queensland, AU",
             }
         )
         trip = self.repo.get_trip(row_id)
         self.assertIsNotNone(trip)
         self.assertEqual(trip["trip_name"], "Test Trip")
-        self.assertEqual(trip["trip_code"], "TRIP-0001")
-
-    def test_next_trip_code(self):
-        self.repo.create_trip({"trip_code": "TRIP-0003", "trip_name": "A"})
-        self.repo.create_trip({"trip_code": "TRIP-0012", "trip_name": "B"})
-        self.assertEqual(self.repo.next_trip_code(), "TRIP-0013")
+        self.assertEqual(trip["id"], row_id)
 
     def test_list_active_users(self):
         active = self.repo.list_active_users()
@@ -126,6 +120,70 @@ class TestTripRepository(unittest.TestCase):
         self.assertIsNotNone(location)
         self.assertEqual(location["name"], "No Event Site")
         self.assertEqual(location["collection_events"], [])
+
+    def test_migrate_region_to_location_and_drop_region_column(self):
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("DROP TABLE Trips")
+            conn.execute(
+                """
+                CREATE TABLE Trips (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    trip_name TEXT,
+                    region TEXT,
+                    notes TEXT
+                )
+                """
+            )
+            conn.execute(
+                "INSERT INTO Trips (trip_name, region, notes) VALUES (?, ?, ?)",
+                ("Legacy Trip", "Queensland, AU", "migrated"),
+            )
+            conn.commit()
+
+        self.repo.ensure_trips_table()
+
+        with sqlite3.connect(self.db_path) as conn:
+            cols = [row[1] for row in conn.execute("PRAGMA table_info(Trips)").fetchall()]
+            self.assertIn("location", cols)
+            self.assertNotIn("region", cols)
+            row = conn.execute("SELECT trip_name, location, notes FROM Trips").fetchone()
+            self.assertEqual(row[0], "Legacy Trip")
+            self.assertEqual(row[1], "Queensland, AU")
+            self.assertEqual(row[2], "migrated")
+
+    def test_list_location_names_sorted_and_non_blank(self):
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                """
+                INSERT INTO Locations (
+                    name, latitude, longitude, altitude_value, altitude_unit,
+                    country_code, state, lga, basin, geogscale, geography_comments
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                ("Beta Site", "-27.1", "153.1", "12", "m", "AU", "QLD", "Brisbane", "X", "local", "c1"),
+            )
+            conn.execute(
+                """
+                INSERT INTO Locations (
+                    name, latitude, longitude, altitude_value, altitude_unit,
+                    country_code, state, lga, basin, geogscale, geography_comments
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                ("", "-27.2", "153.2", "13", "m", "AU", "QLD", "Brisbane", "X", "local", "c2"),
+            )
+            conn.execute(
+                """
+                INSERT INTO Locations (
+                    name, latitude, longitude, altitude_value, altitude_unit,
+                    country_code, state, lga, basin, geogscale, geography_comments
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                ("Alpha Site", "-27.3", "153.3", "14", "m", "AU", "QLD", "Brisbane", "X", "local", "c3"),
+            )
+            conn.commit()
+
+        names = self.repo.list_location_names()
+        self.assertEqual(names, ["Alpha Site", "Beta Site"])
 
 
 if __name__ == "__main__":
