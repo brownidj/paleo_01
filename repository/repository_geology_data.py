@@ -1,6 +1,6 @@
 from typing import cast
 
-from domain_types import GeologyRecord, GeologyUpdatePayloadMap, LithologyRow
+from repository.domain_types import GeologyRecord, GeologyUpdatePayloadMap, LithologyRow
 
 class RepositoryGeologyDataMixin:
     def list_geology_records(self) -> list[GeologyRecord]:

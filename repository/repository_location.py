@@ -1,7 +1,7 @@
 from typing import cast
 
-from domain_types import CollectionEventPayload, LocationPayloadMap, LocationRecord
-from repository_base import LOCATION_FIELDS
+from repository.domain_types import CollectionEventPayload, LocationPayloadMap, LocationRecord
+from repository.repository_base import LOCATION_FIELDS
 
 
 class RepositoryLocationMixin:

@@ -5,7 +5,7 @@ import unittest
 from contextlib import closing
 
 from scripts.db_bootstrap import create_locations_table, create_users_table
-from trip_repository import TripRepository
+from repository.trip_repository import TripRepository
 
 
 class RepoTestCase(unittest.TestCase):

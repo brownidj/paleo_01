@@ -1,4 +1,4 @@
-from repository_finds import RepositoryFindsMixin
+from repository.repository_finds import RepositoryFindsMixin
 
 
 class FindsCollectionEventsMixin(RepositoryFindsMixin):

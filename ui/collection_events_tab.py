@@ -1,4 +1,4 @@
-from trip_repository import TripRepository
+from repository.trip_repository import TripRepository
 from ui.trip_filter_tree_tab import TripFilterTreeTab
 
 

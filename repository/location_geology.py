@@ -1,5 +1,5 @@
-from repository_geology_data import RepositoryGeologyDataMixin
-from repository_location import RepositoryLocationMixin
+from repository.repository_geology_data import RepositoryGeologyDataMixin
+from repository.repository_location import RepositoryLocationMixin
 
 
 class LocationGeologyMixin(RepositoryLocationMixin, RepositoryGeologyDataMixin):

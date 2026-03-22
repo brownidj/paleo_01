@@ -1,7 +1,7 @@
 from tkinter import ttk
 from typing import Callable
 
-from trip_repository import TripRepository
+from repository.trip_repository import TripRepository
 from ui.collection_events_tab import CollectionEventsTab
 from ui.finds_tab import FindsTab
 from ui.geology_tab import GeologyTab

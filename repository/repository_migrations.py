@@ -1,7 +1,7 @@
 import sqlite3
 from typing import Any
 
-from repository_base import LOCATION_FIELDS
+from repository.repository_base import LOCATION_FIELDS
 
 
 class RepositoryMigrationMixin:

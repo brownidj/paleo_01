@@ -11,8 +11,8 @@ Without explicit boundaries, import coupling can regress over time and blur resp
 We enforce lightweight import boundaries:
 
 1. UI layer (`ui/**`) must not import migration/bootstrap internals or repository implementation modules directly.
-UI should use the façade (`trip_repository`) and UI modules only.
-2. Repository layer (`trip_repository.py`, `repository_*.py`, `trip_crud.py`, `location_geology.py`, `finds_collection_events.py`, `migrations_schema.py`) must not import UI modules or Tkinter.
+UI should use the façade (`repository.trip_repository`) and UI modules only.
+2. Repository layer (`repository/**`) must not import UI modules or Tkinter.
 3. Boundaries are defined in `scripts/import_boundary_rules.json` and enforced by `scripts/check_import_boundaries.py`.
 4. Boundary checks are part of `scripts/ci_checks.sh`.
 

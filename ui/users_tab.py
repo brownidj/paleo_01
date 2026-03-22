@@ -1,7 +1,7 @@
 import sqlite3
 from tkinter import messagebox, ttk
 
-from trip_repository import TripRepository
+from repository.trip_repository import TripRepository
 from ui.user_form_dialog import UserFormDialog
 
 

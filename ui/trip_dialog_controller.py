@@ -2,8 +2,8 @@ import sqlite3
 
 from tkinter import messagebox
 
-from domain_types import TripPayloadMap, TripRecord
-from trip_repository import TripRepository
+from repository.domain_types import TripPayloadMap, TripRecord
+from repository.trip_repository import TripRepository
 from ui.trip_form_dialog import TripFormDialog
 
 

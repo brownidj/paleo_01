@@ -5,7 +5,7 @@ import tkinter as tk
 import unittest
 from contextlib import closing
 
-from trip_repository import TripRepository
+from repository.trip_repository import TripRepository
 from ui.planning_phase_window import PlanningPhaseWindow
 
 

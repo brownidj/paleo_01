@@ -4,7 +4,7 @@ from collections.abc import Callable, Sequence
 from tkinter import messagebox, ttk
 from typing import Mapping
 
-from trip_repository import TripRepository
+from repository.trip_repository import TripRepository
 
 
 class TripFilterTreeTab(ttk.Frame):

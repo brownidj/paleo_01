@@ -1,7 +1,7 @@
 from typing import cast
 
-from domain_types import TripPayloadMap, TripRecord, UserRecord
-from repository_base import DEFAULT_TRIP_FIELDS
+from repository.domain_types import TripPayloadMap, TripRecord, UserRecord
+from repository.repository_base import DEFAULT_TRIP_FIELDS
 
 
 class RepositoryTripUserMixin:

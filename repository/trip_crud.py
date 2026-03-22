@@ -1,4 +1,4 @@
-from repository_trip_user import RepositoryTripUserMixin
+from repository.repository_trip_user import RepositoryTripUserMixin
 
 
 class TripCrudMixin(RepositoryTripUserMixin):

@@ -3,7 +3,8 @@ import tkinter as tk
 import tkinter.font as tkfont
 from tkinter import messagebox, ttk
 
-from trip_repository import TripRepository
+from repository import DEFAULT_DB_PATH
+from repository.trip_repository import TripRepository
 from ui.planning_tabs_controller import PlanningTabsController
 from ui.trip_dialog_controller import TripDialogController
 from ui.trip_navigation_coordinator import TripNavigationCoordinator
@@ -40,7 +41,7 @@ class PlanningPhaseWindow(tk.Tk):
         },
     }
 
-    def __init__(self, db_path: str = "paleo_trips_01.db"):
+    def __init__(self, db_path: str = DEFAULT_DB_PATH):
         super().__init__()
         self.title("Planning Phase")
         self.geometry("980x560")

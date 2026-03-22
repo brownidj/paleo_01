@@ -1,6 +1,6 @@
 from typing import cast
 
-from domain_types import CollectionEventRecord, FindRecord
+from repository.domain_types import CollectionEventRecord, FindRecord
 
 
 class RepositoryFindsMixin:

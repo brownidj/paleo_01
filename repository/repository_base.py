@@ -2,6 +2,8 @@ import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 
+DEFAULT_DB_PATH = "data/paleo_trips_01.db"
+
 
 DEFAULT_TRIP_FIELDS = [
     "trip_name",
@@ -28,7 +30,7 @@ LOCATION_FIELDS = [
 
 
 class RepositoryBase:
-    def __init__(self, db_path: str = "paleo_trips_01.db"):
+    def __init__(self, db_path: str = DEFAULT_DB_PATH):
         self.db_path = Path(db_path).resolve()
 
     @contextmanager

@@ -127,21 +127,22 @@ rg --files "$ROOT_DIR" \
     - `scripts/ci_checks.sh`: strict local/CI quality gate (import-boundary check + `PYTHONWARNINGS=error::ResourceWarning` tests + file-size check).
     - `scripts/check_import_boundaries.py`: lightweight AST-based import-boundary enforcement.
       - Rules are config-driven via `scripts/import_boundary_rules.json` for easier evolution as modules/layers change.
-    - `scripts/check_types.sh` + `mypy.ini`: scoped static typing gate for repository + UI-controller modules.
+    - `scripts/check_types.sh` + `config/mypy.ini`: scoped static typing gate for repository + UI-controller modules.
     - `docs/adr/0001-architecture-boundaries.md`: architecture boundary decision record.
     - `scripts/init_db.py`: CLI initializer.
   - **Repository**:
-    - `trip_repository.py`: thin façade that composes focused modules; external `TripRepository` API remains unchanged.
-    - `trip_crud.py`: trip and user CRUD/list domain surface.
-    - `location_geology.py`: location + geology data access surface.
-    - `finds_collection_events.py`: finds and collection-event query surface.
-    - `migrations_schema.py`: schema setup and legacy migration surface.
+    - `repository/trip_repository.py`: thin façade that composes focused modules; external `TripRepository` API remains unchanged.
+    - `repository/trip_crud.py`: trip and user CRUD/list domain surface.
+    - `repository/location_geology.py`: location + geology data access surface.
+    - `repository/finds_collection_events.py`: finds and collection-event query surface.
+    - `repository/migrations_schema.py`: schema setup and legacy migration surface.
     - Supporting internal modules:
-      - `repository_base.py`: connection/transaction lifecycle (`commit`/`rollback` + guaranteed `close`) and shared constants.
-      - `repository_trip_user.py`, `repository_location.py`, `repository_finds.py`, `repository_geology_schema.py`, `repository_geology_data.py`, `repository_migrations.py`.
-    - `domain_types.py`: typed payload/row structures for core entities (Trip, Location/CollectionEvent, Find, Geology).
+      - `repository/repository_base.py`: connection/transaction lifecycle (`commit`/`rollback` + guaranteed `close`) and shared constants.
+      - `repository/repository_trip_user.py`, `repository/repository_location.py`, `repository/repository_finds.py`, `repository/repository_geology_schema.py`, `repository/repository_geology_data.py`, `repository/repository_migrations.py`.
+    - `repository/domain_types.py`: typed payload/row structures for core entities (Trip, Location/CollectionEvent, Find, Geology).
   - **UI Entrypoints**:
-    - `main.py` and `planning_phase_main.py` launch `PlanningPhaseWindow` only (thin entrypoints).
+    - `app/main.py` is the canonical executable entrypoint and launches `PlanningPhaseWindow`.
+    - `app/planning_phase_main.py` is a thin wrapper that forwards to `app.main.main`.
   - **UI Modules**:
     - `ui/planning_phase_window.py`: composition root for tabs, dialog controller, navigation coordinator, and app palette.
     - `ui/planning_tabs_controller.py`: notebook tab construction and initial tab-data loading.
@@ -160,7 +161,7 @@ rg --files "$ROOT_DIR" \
     - `scripts/seed_users.py`: users with fixed AU phone and active split.
     - `scripts/seed_locations.py`: fake locations; supports `--truncate`; optional one-time cardinal variants from first-pass records.
     - `scripts/seed_trips.py`: trips seeded from existing locations, writes `TripLocations`, supports second-pass multi-location trip generation via random boolean on similar-location matches.
-- **Planning Database (`paleo_trips_01.db`)**:
+- **Planning Database (`data/paleo_trips_01.db`)**:
   - `Users(id, name, phone_number, active)`
   - `Trips(id, trip_name, start_date, end_date, team, location, notes)` (`region` removed)
   - `Locations(id, name, latitude, longitude, altitude_value, altitude_unit, country_code, state, lga, basin, geogscale, geography_comments, geology_id)`
@@ -179,7 +180,7 @@ rg --files "$ROOT_DIR" \
   - From Trip Record, `Collection Events`/`Finds` chips switch tabs, turn trip filter on, and apply trip-specific filtering; returning to `Trips` restores the hidden Trip Record and reselects that trip.
   - Trip filtering in `Collection Events` is now strict to finds explicitly assigned to that trip (via `Finds.trip_id`), not broad location-level membership.
   - **Prompt Compliance Snapshot**:
-  - `main.py` remains thin: **compliant**.
+  - `app/main.py` remains thin: **compliant**.
   - DB layer uses parameterized queries and context managers: **compliant**.
   - File size <= 300 rule: **compliant**.
     - `trip_repository.py` and `ui/planning_phase_window.py` are now compliant.
@@ -187,18 +188,19 @@ rg --files "$ROOT_DIR" \
 
 ## Codebase Goodness Assessment (vs prompt)
 
-- **Overall rating**: **Strong (about 8.5/10)** for behavior stability, DB safety, and architecture clarity after repository/UI/bootstrap/test decomposition.
+- **Overall rating**: **Strong (about 8.8/10)** for behavior stability, DB safety, and architecture clarity after package-layout normalization (`app/`, `repository/`, `config/`, `requirements/`) and boundary-rule updates.
 - **Strong areas**:
-  - Thin entrypoints and clear app bootstrap flow are intact.
+  - Thin entrypoints and clear app bootstrap flow are intact (`app/main.py` canonical, wrapper retained only for compatibility).
   - Core DB work is pragmatic and robust (parameterized SQL, explicit transaction/close handling, schema/migration separation).
   - High-change UI behavior is now isolated via dedicated controllers/coordinator and covered by regression tests.
   - Current automated suite is stable (all tests passing) and test modules are domain-focused.
   - File-size constraint is now satisfied across the codebase.
   - Internal repository/controller interfaces now use typed payload structures, reducing `dict[str, Any]` usage.
+  - Import-boundary checks and mypy checks now align with package paths and are enforced by the shared CI entrypoint.
 - **Weak areas / debt**:
   - Legacy migration coverage is now exhaustive across currently known trip/location/trip-location historical schema permutations; risk now shifts to truly unknown future-discovered legacy variants.
   - UI flow coverage now includes smoke plus a higher-level handoff/filter-toggle/restore path; additional edge-case UI journeys can still be expanded over time.
-  - Mypy is now enforced for a scoped module set; broader project-wide typing coverage is still incremental.
+  - Mypy is enforced for a scoped module set; broader project-wide typing coverage is still incremental.
 
 ## Recommendations
 
@@ -207,11 +209,13 @@ Use `scripts/ci_checks.sh` as the default local/CI check entrypoint for all refa
 2. Keep `docs/CURRENT_STATE.md` synced after each refactor batch.
 Update architecture, schema, and test totals whenever meaningful codebase changes land.
 3. Continue widening typed coverage.
-Expand mypy scope module-by-module beyond current repository/UI-controller targets as annotations mature.
+Expand mypy scope module-by-module beyond current repository/UI-controller targets as annotations mature, prioritizing tab/dialog modules still using broad untyped dict payloads.
 4. Keep exhaustive migration matrix current.
-When new historical variants are discovered, add them to the exhaustive permutation tests and keep stepwise migrations idempotent.
-5. Add one or two additional edge-path UI integration scenarios.
-Build on current smoke + handoff/filter-toggle coverage with cases such as edit-mode transition persistence and validation-failure journeys.
+When new historical variants are discovered, add them to exhaustive permutation tests and verify idempotent upgrades to `SCHEMA_VERSION`.
+5. Expand UI integration confidence with failure-path coverage.
+Add integration tests for edit-mode save/validation failure and dialog-close auto-save behavior to complement current handoff/filter scenarios.
+6. Revisit boundary rules when new packages appear.
+Treat `scripts/import_boundary_rules.json` and ADR 0001 as required updates whenever introducing a new module layer.
 
 ## Test run report
 

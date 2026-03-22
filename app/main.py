@@ -2,7 +2,8 @@ from ui.planning_phase_window import PlanningPhaseWindow
 
 
 def main() -> None:
-    app = PlanningPhaseWindow("paleo_trips_01.db")
+    """Main entry point for the planning-phase Trip app."""
+    app = PlanningPhaseWindow()
     app.mainloop()
 
 
