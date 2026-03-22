@@ -131,8 +131,9 @@ rg --files "$ROOT_DIR" \
     - `ui/planning_phase_window.py`: orchestration, tab setup, theme/palette, trip list, tab switch handlers, and cross-tab navigation callbacks from Trip Record.
     - `ui/trip_form_dialog.py`: Trip edit form with guarded edit mode (`Edit` toggle), icon chip actions, and cross-tab handoff hooks for `Collection Events` and `Finds`.
     - `ui/geology_tab.py`, `ui/geology_form_dialog.py`: geology listing/details and edit dialog.
-    - `ui/collection_events_tab.py`: collection event listing + trip filter toggle.
-    - `ui/finds_tab.py`: finds listing + trip filter toggle.
+    - `ui/trip_filter_tree_tab.py`: shared base for list tabs with `Trip filter` radio behavior + tree population.
+    - `ui/collection_events_tab.py`: collection event listing; now uses shared trip-filter/tree base.
+    - `ui/finds_tab.py`: finds listing; now uses shared trip-filter/tree base.
     - `ui/team_editor_dialog.py`: active-user selector for team assignment.
     - `ui/location_picker_dialog.py`: location selector for trip location list.
     - `ui/location_tab.py`, `ui/location_form_dialog.py`: location CRUD + collection-events editing.
@@ -168,7 +169,7 @@ rg --files "$ROOT_DIR" \
 
 - **2026-03-22 (current reassessment)**:
   - `python3 -m unittest -v`: **PASSED**
-    - Total: **7 passed**
+    - Total: **11 passed**
   - `python3 -m py_compile main.py ui/planning_phase_window.py ui/trip_form_dialog.py ui/collection_events_tab.py ui/finds_tab.py ui/geology_tab.py ui/location_tab.py ui/users_tab.py trip_repository.py scripts/db_bootstrap.py`: **PASSED**
   - `./scripts/check_file_sizes.sh .`: **FAILED**
     - `409 ./scripts/db_bootstrap.py`
