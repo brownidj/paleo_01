@@ -125,6 +125,7 @@ rg --files "$ROOT_DIR" \
   - **Repository**:
     - `trip_repository.py`: data access and schema guard methods (`ensure_trips_table`, `ensure_locations_table`, `ensure_geology_tables`) plus CRUD/list helpers.
     - Added list/query helpers for geology, collection events, and finds, including trip-filtered query paths.
+    - SQLite connection lifecycle is now explicit in repository context handling (`commit`/`rollback` + guaranteed `close`).
   - **UI Entrypoints**:
     - `main.py` and `planning_phase_main.py` launch `PlanningPhaseWindow` only (thin entrypoints).
   - **UI Modules**:
@@ -169,7 +170,7 @@ rg --files "$ROOT_DIR" \
 
 - **2026-03-22 (current reassessment)**:
   - `python3 -m unittest -v`: **PASSED**
-    - Total: **11 passed**
+    - Total: **13 passed**
   - `python3 -m py_compile main.py ui/planning_phase_window.py ui/trip_form_dialog.py ui/collection_events_tab.py ui/finds_tab.py ui/geology_tab.py ui/location_tab.py ui/users_tab.py trip_repository.py scripts/db_bootstrap.py`: **PASSED**
   - `./scripts/check_file_sizes.sh .`: **FAILED**
     - `409 ./scripts/db_bootstrap.py`

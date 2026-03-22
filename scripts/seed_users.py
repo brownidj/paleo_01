@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 
 from faker import Faker
@@ -13,7 +14,7 @@ def seed_users(db_path: Path, count: int) -> int:
     fixed_phone = "0061-412-345-678"
     active_quota = 8
     inserted = 0
-    with sqlite3.connect(db_path) as conn:
+    with closing(sqlite3.connect(db_path)) as conn:
         create_users_table(conn)
         for i in range(count):
             is_active = 1 if i < min(active_quota, count) else 0

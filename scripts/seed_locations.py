@@ -3,6 +3,7 @@ import argparse
 import random
 import re
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 
 from faker import Faker
@@ -83,7 +84,7 @@ def seed_locations(db_path: Path, count: int, truncate: bool = False) -> int:
     placeholders = ", ".join(["?"] * len(fields))
     col_sql = ", ".join([f'"{name}"' for name in fields])
 
-    with sqlite3.connect(db_path) as conn:
+    with closing(sqlite3.connect(db_path)) as conn:
         create_locations_table(conn)
         if truncate:
             conn.execute("DELETE FROM TripLocations")

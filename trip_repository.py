@@ -1,4 +1,5 @@
 import sqlite3
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -31,10 +32,18 @@ class TripRepository:
     def __init__(self, db_path: str = "paleo_trips_01.db"):
         self.db_path = Path(db_path).resolve()
 
-    def _connect(self) -> sqlite3.Connection:
+    @contextmanager
+    def _connect(self):
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
-        return conn
+        try:
+            yield conn
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
 
     def ensure_trips_table(self, fields: list[str] | None = None) -> None:
         trip_fields = self._normalize_trip_fields(fields or DEFAULT_TRIP_FIELDS)

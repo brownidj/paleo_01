@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import csv
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 
 
@@ -278,7 +279,7 @@ def _migrate_legacy_county_to_lga(conn: sqlite3.Connection) -> None:
 
 def initialize_database(db_path: Path, classification_csv: Path) -> list[str]:
     trip_fields = get_trip_fields(classification_csv)
-    with sqlite3.connect(db_path) as conn:
+    with closing(sqlite3.connect(db_path)) as conn:
         create_users_table(conn)
         create_trips_table(conn, trip_fields)
         create_locations_table(conn)

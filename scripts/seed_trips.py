@@ -2,6 +2,7 @@
 import argparse
 import sqlite3
 import sys
+from contextlib import closing
 from datetime import timedelta
 from pathlib import Path
 from random import choice
@@ -76,7 +77,7 @@ def seed_trips(db_path: Path, fields: list[str], count: int) -> tuple[int, int]:
     fake = Faker("en_AU")
     first_pass_inserted = 0
     second_pass_inserted = 0
-    with sqlite3.connect(db_path) as conn:
+    with closing(sqlite3.connect(db_path)) as conn:
         conn.row_factory = sqlite3.Row
         create_trips_table(conn, fields)
         create_locations_table(conn)

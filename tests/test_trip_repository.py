@@ -2,6 +2,8 @@ import os
 import sqlite3
 import tempfile
 import unittest
+from contextlib import closing
+from unittest import mock
 
 from scripts.db_bootstrap import create_locations_table, create_users_table
 from trip_repository import TripRepository
@@ -14,7 +16,7 @@ class TestTripRepository(unittest.TestCase):
         self.db_path = path
         self.repo = TripRepository(self.db_path)
         self.repo.ensure_trips_table()
-        with sqlite3.connect(self.db_path) as conn:
+        with closing(sqlite3.connect(self.db_path)) as conn:
             create_users_table(conn)
             create_locations_table(conn)
             conn.executemany(
@@ -48,7 +50,7 @@ class TestTripRepository(unittest.TestCase):
         self.assertEqual(active, ["Alice", "Carol"])
 
     def test_list_users_active_group_and_last_name_order(self):
-        with sqlite3.connect(self.db_path) as conn:
+        with closing(sqlite3.connect(self.db_path)) as conn:
             conn.execute(
                 "INSERT INTO Users (name, phone_number, active) VALUES (?, ?, ?)",
                 ("Zoe Adams", "0061-412-345-678", 1),
@@ -122,7 +124,7 @@ class TestTripRepository(unittest.TestCase):
         self.assertEqual(location["collection_events"], [])
 
     def test_migrate_region_to_location_and_drop_region_column(self):
-        with sqlite3.connect(self.db_path) as conn:
+        with closing(sqlite3.connect(self.db_path)) as conn:
             conn.execute("DROP TABLE Trips")
             conn.execute(
                 """
@@ -142,7 +144,7 @@ class TestTripRepository(unittest.TestCase):
 
         self.repo.ensure_trips_table()
 
-        with sqlite3.connect(self.db_path) as conn:
+        with closing(sqlite3.connect(self.db_path)) as conn:
             cols = [row[1] for row in conn.execute("PRAGMA table_info(Trips)").fetchall()]
             self.assertIn("location", cols)
             self.assertNotIn("region", cols)
@@ -152,7 +154,7 @@ class TestTripRepository(unittest.TestCase):
             self.assertEqual(row[2], "migrated")
 
     def test_list_location_names_sorted_and_non_blank(self):
-        with sqlite3.connect(self.db_path) as conn:
+        with closing(sqlite3.connect(self.db_path)) as conn:
             conn.execute(
                 """
                 INSERT INTO Locations (
@@ -188,7 +190,7 @@ class TestTripRepository(unittest.TestCase):
     def test_list_collection_events_trip_filter_uses_finds_assignment(self):
         trip_a = self.repo.create_trip({"trip_name": "Trip A", "location": "Shared Site"})
         trip_b = self.repo.create_trip({"trip_name": "Trip B", "location": "Shared Site"})
-        with sqlite3.connect(self.db_path) as conn:
+        with closing(sqlite3.connect(self.db_path)) as conn:
             cur = conn.cursor()
             cur.execute(
                 """
@@ -245,7 +247,7 @@ class TestTripRepository(unittest.TestCase):
     def test_list_finds_trip_filter(self):
         trip_a = self.repo.create_trip({"trip_name": "Trip A", "location": "Filter Site"})
         trip_b = self.repo.create_trip({"trip_name": "Trip B", "location": "Filter Site"})
-        with sqlite3.connect(self.db_path) as conn:
+        with closing(sqlite3.connect(self.db_path)) as conn:
             cur = conn.cursor()
             cur.execute(
                 """
@@ -285,6 +287,25 @@ class TestTripRepository(unittest.TestCase):
         self.assertTrue({"F-A", "F-B"}.issubset(all_occurrences))
         self.assertEqual(trip_a_occurrences, {"F-A"})
         self.assertEqual(trip_b_occurrences, {"F-B"})
+
+    def test_connect_context_manager_commits_and_closes(self):
+        fake_conn = mock.MagicMock()
+        with mock.patch("trip_repository.sqlite3.connect", return_value=fake_conn):
+            with self.repo._connect() as conn:
+                self.assertIs(conn, fake_conn)
+        fake_conn.commit.assert_called_once()
+        fake_conn.close.assert_called_once()
+        fake_conn.rollback.assert_not_called()
+
+    def test_connect_context_manager_rolls_back_and_closes_on_error(self):
+        fake_conn = mock.MagicMock()
+        with mock.patch("trip_repository.sqlite3.connect", return_value=fake_conn):
+            with self.assertRaises(RuntimeError):
+                with self.repo._connect():
+                    raise RuntimeError("boom")
+        fake_conn.rollback.assert_called_once()
+        fake_conn.close.assert_called_once()
+        fake_conn.commit.assert_not_called()
 
 
 if __name__ == "__main__":
