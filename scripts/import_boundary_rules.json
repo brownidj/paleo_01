@@ -1,0 +1,41 @@
+{
+  "scan_roots": ["ui", "tests", "scripts", "repository"],
+  "scan_files": [],
+  "scan_globs": [],
+  "rules": [
+    {
+      "name": "ui",
+      "match": {
+        "path_prefixes": ["ui/"]
+      },
+      "forbidden_import_prefixes": [
+        "db_bootstrap",
+        "db_schema_helpers",
+        "db_migration_helpers",
+        "scripts.db_bootstrap",
+        "scripts.db_schema_helpers",
+        "scripts.db_migration_helpers",
+        "repository.repository_base",
+        "repository.repository_migrations",
+        "repository.repository_trip_user",
+        "repository.repository_location",
+        "repository.repository_finds",
+        "repository.repository_geology_schema",
+        "repository.repository_geology_data",
+        "repository.trip_crud",
+        "repository.location_geology",
+        "repository.finds_collection_events",
+        "repository.migrations_schema"
+      ],
+      "message": "UI should depend on repository.trip_repository facade, not internal migration/repository modules."
+    },
+    {
+      "name": "repository",
+      "match": {
+        "path_prefixes": ["repository/"]
+      },
+      "forbidden_import_prefixes": ["ui", "tkinter"],
+      "message": "Repository modules must not depend on UI/Tkinter."
+    }
+  ]
+}

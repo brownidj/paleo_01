@@ -2,12 +2,13 @@
 import argparse
 import sys
 
+from repository import DEFAULT_DB_PATH
 from db_bootstrap import initialize_database, resolve_classification_csv, resolve_db_path
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Initialize paleo_trips_01.db with required tables.")
-    parser.add_argument("--db", default="paleo_trips_01.db", help="SQLite database path")
+    parser = argparse.ArgumentParser(description=f"Initialize {DEFAULT_DB_PATH} with required tables.")
+    parser.add_argument("--db", default=DEFAULT_DB_PATH, help="SQLite database path")
     parser.add_argument(
         "--classification-csv",
         default="data/paleo_field_research_classification.csv",

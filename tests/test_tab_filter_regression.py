@@ -2,10 +2,11 @@ import os
 import sqlite3
 import tempfile
 import unittest
+from contextlib import closing
 
 import tkinter as tk
 
-from trip_repository import TripRepository
+from repository.trip_repository import TripRepository
 from ui.collection_events_tab import CollectionEventsTab
 from ui.finds_tab import FindsTab
 
@@ -32,7 +33,7 @@ class TestTabFilterRegression(unittest.TestCase):
                 ],
             }
         )
-        with sqlite3.connect(self.db_path) as conn:
+        with closing(sqlite3.connect(self.db_path)) as conn:
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
             event_rows = cur.execute(

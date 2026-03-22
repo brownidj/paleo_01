@@ -3,10 +3,12 @@ import argparse
 import random
 import re
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 
 from faker import Faker
 
+from repository import DEFAULT_DB_PATH
 from db_bootstrap import create_locations_table, resolve_db_path
 
 
@@ -83,7 +85,7 @@ def seed_locations(db_path: Path, count: int, truncate: bool = False) -> int:
     placeholders = ", ".join(["?"] * len(fields))
     col_sql = ", ".join([f'"{name}"' for name in fields])
 
-    with sqlite3.connect(db_path) as conn:
+    with closing(sqlite3.connect(db_path)) as conn:
         create_locations_table(conn)
         if truncate:
             conn.execute("DELETE FROM TripLocations")
@@ -99,8 +101,8 @@ def seed_locations(db_path: Path, count: int, truncate: bool = False) -> int:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Seed fake Locations into paleo_trips_01.db")
-    parser.add_argument("--db", default="paleo_trips_01.db", help="SQLite database path")
+    parser = argparse.ArgumentParser(description=f"Seed fake Locations into {DEFAULT_DB_PATH}")
+    parser.add_argument("--db", default=DEFAULT_DB_PATH, help="SQLite database path")
     parser.add_argument("--count", type=int, default=15, help="Number of locations to insert")
     parser.add_argument(
         "--truncate",
