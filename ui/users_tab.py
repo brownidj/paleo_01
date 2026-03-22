@@ -10,7 +10,6 @@ class UsersTab(ttk.Frame):
         super().__init__(parent)
         self.repo = repo
 
-        ttk.Label(self, text="Team Members", font=("Helvetica", 15, "bold")).pack(pady=10)
         self.users_tree = ttk.Treeview(
             self,
             columns=("name", "phone_number", "active"),

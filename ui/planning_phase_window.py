@@ -1,8 +1,12 @@
 import sqlite3
 import tkinter as tk
+import tkinter.font as tkfont
 from tkinter import messagebox, ttk
 
+from ui.collection_events_tab import CollectionEventsTab
+from ui.finds_tab import FindsTab
 from trip_repository import TripRepository
+from ui.geology_tab import GeologyTab
 from ui.location_tab import LocationTab
 from ui.trip_form_dialog import TripFormDialog
 from ui.users_tab import UsersTab
@@ -47,6 +51,8 @@ class PlanningPhaseWindow(tk.Tk):
 
         self.repo = TripRepository(db_path)
         self.open_edit_dialogs: dict[int, TripFormDialog] = {}
+        self.hidden_trip_dialog: TripFormDialog | None = None
+        self.hidden_trip_dialog_trip_id: int | None = None
         self.repo.ensure_trips_table()
         self.fields = self.repo.get_fields()
         self.list_fields = ["trip_name", "start_date", "end_date", "location"]
@@ -59,25 +65,30 @@ class PlanningPhaseWindow(tk.Tk):
 
         self.trips_tab = ttk.Frame(self.tabs)
         self.location_tab = LocationTab(self.tabs, self.repo)
-        self.geology_tab = ttk.Frame(self.tabs)
+        self.geology_tab = GeologyTab(self.tabs, self.repo)
+        self.collection_events_tab = CollectionEventsTab(self.tabs, self.repo)
+        self.finds_tab = FindsTab(self.tabs, self.repo)
         self.collection_plan_tab = ttk.Frame(self.tabs)
         self.users_tab = UsersTab(self.tabs, self.repo)
         self.tabs.add(self.trips_tab, text="Trips")
         self.tabs.add(self.location_tab, text="Location")
         self.tabs.add(self.geology_tab, text="Geology")
+        self.tabs.add(self.collection_events_tab, text="Collection Events")
+        self.tabs.add(self.finds_tab, text="Finds")
         self.tabs.add(self.collection_plan_tab, text="Collection Plan")
         self.tabs.add(self.users_tab, text="Team Members")
         self.tabs.bind("<<NotebookTabChanged>>", self._on_tab_changed)
 
         self._build_trips_tab()
-        self._build_placeholder_tab(self.geology_tab, "Geology")
         self._build_placeholder_tab(self.collection_plan_tab, "Collection Plan")
         self.load_trips()
         self.location_tab.load_locations()
+        self.geology_tab.load_geology()
+        self.collection_events_tab.load_collection_events()
+        self.finds_tab.load_finds()
         self.users_tab.load_users()
 
     def _build_trips_tab(self) -> None:
-        ttk.Label(self.trips_tab, text="Trips", font=("Helvetica", 15, "bold")).pack(pady=10)
         self.trips_tree = ttk.Treeview(
             self.trips_tab,
             columns=self.list_fields,
@@ -96,8 +107,7 @@ class PlanningPhaseWindow(tk.Tk):
 
     @staticmethod
     def _build_placeholder_tab(tab: ttk.Frame, title: str) -> None:
-        ttk.Label(tab, text=title, font=("Helvetica", 15, "bold")).pack(pady=(40, 10))
-        ttk.Label(tab, text="Scaffolded tab. Data form coming next.").pack()
+        ttk.Label(tab, text="Scaffolded tab. Data form coming next.").pack(pady=(16, 0))
 
     def load_trips(self) -> None:
         for item in self.trips_tree.get_children():
@@ -135,6 +145,9 @@ class PlanningPhaseWindow(tk.Tk):
             active_users=self.repo.list_active_users(),
             location_names=self.repo.list_location_names(),
             modal=True,
+            trip_id=None,
+            on_open_collection_events=None,
+            on_open_finds=None,
         )
 
     def edit_selected(self) -> None:
@@ -230,8 +243,23 @@ class PlanningPhaseWindow(tk.Tk):
             location_names=self.repo.list_location_names(),
             modal=False,
             on_close=lambda rid=trip_id: self._on_edit_dialog_closed(rid),
+            trip_id=trip_id,
+            on_open_collection_events=self.open_collection_events_for_trip,
+            on_open_finds=self.open_finds_for_trip,
         )
         self.open_edit_dialogs[trip_id] = dialog
+
+    def open_collection_events_for_trip(self, trip_id: int, dialog: TripFormDialog) -> None:
+        self.hidden_trip_dialog = dialog
+        self.hidden_trip_dialog_trip_id = trip_id
+        self.collection_events_tab.activate_trip_filter(trip_id)
+        self.tabs.select(self.collection_events_tab)
+
+    def open_finds_for_trip(self, trip_id: int, dialog: TripFormDialog) -> None:
+        self.hidden_trip_dialog = dialog
+        self.hidden_trip_dialog_trip_id = trip_id
+        self.finds_tab.activate_trip_filter(trip_id)
+        self.tabs.select(self.finds_tab)
 
     @staticmethod
     def _normalize_payload(payload: dict[str, str]) -> dict[str, str | None]:
@@ -247,6 +275,9 @@ class PlanningPhaseWindow(tk.Tk):
 
     def _on_edit_dialog_closed(self, row_id: int) -> None:
         self.open_edit_dialogs.pop(row_id, None)
+        if self.hidden_trip_dialog_trip_id == row_id:
+            self.hidden_trip_dialog = None
+            self.hidden_trip_dialog_trip_id = None
 
     def _active_edit_dialogs(self) -> list[TripFormDialog]:
         active: list[TripFormDialog] = []
@@ -262,10 +293,36 @@ class PlanningPhaseWindow(tk.Tk):
 
     def _on_tab_changed(self, _event) -> None:
         current_tab = self.tabs.select()
+        if current_tab == str(self.trips_tab):
+            self.load_trips()
+            if self.hidden_trip_dialog and self.hidden_trip_dialog.winfo_exists():
+                trip_id = self.hidden_trip_dialog_trip_id
+                if isinstance(trip_id, int):
+                    self._select_trip_row(trip_id)
+                self.hidden_trip_dialog.deiconify()
+                self.hidden_trip_dialog.lift()
+                self.hidden_trip_dialog.focus_force()
+                self.hidden_trip_dialog = None
+                self.hidden_trip_dialog_trip_id = None
+            return
         if current_tab == str(self.location_tab):
             self.location_tab.load_locations()
+        if current_tab == str(self.geology_tab):
+            self.geology_tab.load_geology()
+        if current_tab == str(self.collection_events_tab):
+            self.collection_events_tab.load_collection_events()
+        if current_tab == str(self.finds_tab):
+            self.finds_tab.load_finds()
         if current_tab == str(self.users_tab):
             self.users_tab.load_users()
+
+    def _select_trip_row(self, trip_id: int) -> None:
+        iid = str(trip_id)
+        if iid not in self.trips_tree.get_children():
+            return
+        self.trips_tree.selection_set(iid)
+        self.trips_tree.focus(iid)
+        self.trips_tree.see(iid)
 
     def _apply_palette(self) -> None:
         p = self.PALETTE
@@ -291,6 +348,8 @@ class PlanningPhaseWindow(tk.Tk):
         self.option_add("*Text.insertBackground", text_primary)
 
         style = ttk.Style(self)
+        self._tab_font_normal = tkfont.Font(self, family="Helvetica", size=10, weight="normal")
+        self._tab_font_selected = tkfont.Font(self, family="Helvetica", size=11, weight="bold")
         available_themes = set(style.theme_names())
         if "clam" in available_themes:
             style.theme_use("clam")
@@ -322,12 +381,15 @@ class PlanningPhaseWindow(tk.Tk):
             "TNotebook.Tab",
             background=surface_alt,
             foreground=text_secondary,
-            padding=(14, 8),
+            padding=(14, 6),
+            font=self._tab_font_normal,
         )
         style.map(
             "TNotebook.Tab",
             background=[("selected", primary), ("active", secondary)],
             foreground=[("selected", text_primary), ("active", text_primary)],
+            padding=[("selected", (14, 10)), ("active", (14, 8))],
+            font=[("selected", self._tab_font_selected), ("!selected", self._tab_font_normal)],
         )
 
         style.configure(

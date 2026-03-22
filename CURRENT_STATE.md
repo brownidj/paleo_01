@@ -118,17 +118,21 @@ rg --files "$ROOT_DIR" \
 
 ## Code base architecture state
 
-- **Architecture**: Planning-phase desktop app only (Tkinter + SQLite), with `Trips`, `Locations`, and `Team Members` tabs.
+- **Architecture**: Planning-phase desktop app only (Tkinter + SQLite), with `Trips`, `Location`, `Geology`, `Collection Events`, `Finds`, `Collection Plan`, and `Team Members` tabs.
   - **Infrastructure/Init**:
     - `scripts/db_bootstrap.py`: schema creation + migrations.
     - `scripts/init_db.py`: CLI initializer.
   - **Repository**:
-    - `trip_repository.py`: data access and schema guard methods (`ensure_trips_table`, `ensure_locations_table`), plus CRUD/list helpers.
+    - `trip_repository.py`: data access and schema guard methods (`ensure_trips_table`, `ensure_locations_table`, `ensure_geology_tables`) plus CRUD/list helpers.
+    - Added list/query helpers for geology, collection events, and finds, including trip-filtered query paths.
   - **UI Entrypoints**:
     - `main.py` and `planning_phase_main.py` launch `PlanningPhaseWindow` only (thin entrypoints).
   - **UI Modules**:
-    - `ui/planning_phase_window.py`: orchestration, tab setup, theme/palette, trip list, trip dialog lifecycle.
-    - `ui/trip_form_dialog.py`: Trip edit form; inline icon editors for `team` and `location`.
+    - `ui/planning_phase_window.py`: orchestration, tab setup, theme/palette, trip list, tab switch handlers, and cross-tab navigation callbacks from Trip Record.
+    - `ui/trip_form_dialog.py`: Trip edit form with guarded edit mode (`Edit` toggle), icon chip actions, and cross-tab handoff hooks for `Collection Events` and `Finds`.
+    - `ui/geology_tab.py`, `ui/geology_form_dialog.py`: geology listing/details and edit dialog.
+    - `ui/collection_events_tab.py`: collection event listing + trip filter toggle.
+    - `ui/finds_tab.py`: finds listing + trip filter toggle.
     - `ui/team_editor_dialog.py`: active-user selector for team assignment.
     - `ui/location_picker_dialog.py`: location selector for trip location list.
     - `ui/location_tab.py`, `ui/location_form_dialog.py`: location CRUD + collection-events editing.
@@ -140,14 +144,21 @@ rg --files "$ROOT_DIR" \
 - **Planning Database (`paleo_trips_01.db`)**:
   - `Users(id, name, phone_number, active)`
   - `Trips(id, trip_name, start_date, end_date, team, location, notes)` (`region` removed)
-  - `Locations(id, name, latitude, longitude, altitude_value, altitude_unit, country_code, state, lga, basin, geogscale, geography_comments)`
+  - `Locations(id, name, latitude, longitude, altitude_value, altitude_unit, country_code, state, lga, basin, geogscale, geography_comments, geology_id)`
   - `CollectionEvents(id, location_id, collection_name, collection_subset)` (0..many per location)
   - `TripLocations(id, location_id)` (many-to-many between trips and locations)
+  - `GeologyContext(id, location_id, location_name, source_system, source_reference_no, early_interval, late_interval, max_ma, min_ma, environment, geogscale, geology_comments, formation, stratigraphy_group, member, stratscale, stratigraphy_comments, geoplate, paleomodel, paleolat, paleolng, created_at, updated_at)`
+  - `Lithology(id, geology_context_id, slot, lithology, lithification, minor_lithology, lithology_adjectives, fossils_from, created_at, updated_at)`
+  - `Finds(id, trip_id, location_id, collection_event_id, source_system, source_occurrence_no, identified_name, accepted_name, identified_rank, accepted_rank, difference, identified_no, accepted_no, phylum, class_name, taxon_order, family, genus, abund_value, abund_unit, reference_no, taxonomy_comments, occurrence_comments, research_group, notes, created_at, updated_at)`
 - **Behavioral Notes**:
   - Trips use integer `id` auto-increment; no `trip_code`.
   - `team` and `location` list values are semicolon-separated.
   - `region -> location` migration exists; `region` column is removed in migration rebuild.
   - UI palette/theme is applied centrally in `PlanningPhaseWindow`.
+  - Trip Record editability is gated by `Edit` (off by default): with `Edit` off, fields are read-only and team/location editor chips are disabled.
+  - Closing Trip Record auto-saves changed fields; turning `Edit` from on to off also auto-saves changed fields.
+  - From Trip Record, `Collection Events`/`Finds` chips switch tabs, turn trip filter on, and apply trip-specific filtering; returning to `Trips` restores the hidden Trip Record and reselects that trip.
+  - Trip filtering in `Collection Events` is now strict to finds explicitly assigned to that trip (via `Finds.trip_id`), not broad location-level membership.
 - **Prompt Compliance Snapshot**:
   - `main.py` remains thin: **compliant**.
   - DB layer uses parameterized queries and context managers: **compliant**.
@@ -155,15 +166,11 @@ rg --files "$ROOT_DIR" \
 
 ## Test run report
 
-- **2026-03-20 (current reassessment)**:
-  - Added/updated tests in `tests/test_trip_repository.py`:
-    - `test_migrate_region_to_location_and_drop_region_column`
-    - `test_list_location_names_sorted_and_non_blank`
-    - Existing trip/user/location tests retained.
+- **2026-03-22 (current reassessment)**:
   - `python3 -m unittest -v`: **PASSED**
     - Total: **7 passed**
+  - `python3 -m py_compile main.py ui/planning_phase_window.py ui/trip_form_dialog.py ui/collection_events_tab.py ui/finds_tab.py ui/geology_tab.py ui/location_tab.py ui/users_tab.py trip_repository.py scripts/db_bootstrap.py`: **PASSED**
   - `./scripts/check_file_sizes.sh .`: **FAILED**
-    - `369 ./scripts/db_bootstrap.py`
-    - `570 ./trip_repository.py`
-    - `362 ./ui/planning_phase_window.py`
-  - `python3 -m py_compile tests/test_trip_repository.py`: **PASSED**
+    - `409 ./scripts/db_bootstrap.py`
+    - `1159 ./trip_repository.py`
+    - `424 ./ui/planning_phase_window.py`

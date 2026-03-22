@@ -12,7 +12,6 @@ class LocationTab(ttk.Frame):
         super().__init__(parent)
         self.repo = repo
 
-        ttk.Label(self, text="Locations", font=("Helvetica", 15, "bold")).pack(pady=10)
         self.tree = ttk.Treeview(
             self,
             columns=self.LIST_COLUMNS,

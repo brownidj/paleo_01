@@ -1,4 +1,5 @@
 import tkinter as tk
+import tkinter.font as tkfont
 from tkinter import ttk
 
 from ui.location_picker_dialog import LocationPickerDialog
@@ -18,6 +19,9 @@ class TripFormDialog(tk.Toplevel):
         location_names: list[str] | None = None,
         modal: bool = True,
         on_close=None,
+        trip_id: int | None = None,
+        on_open_collection_events=None,
+        on_open_finds=None,
     ):
         super().__init__(parent)
         self.title("Trip Record")
@@ -29,11 +33,45 @@ class TripFormDialog(tk.Toplevel):
         self.location_names = location_names or []
         self.modal = modal
         self.on_close = on_close
+        self.trip_id = trip_id
+        self.on_open_collection_events = on_open_collection_events
+        self.on_open_finds = on_open_finds
         self.inputs: dict[str, tk.Widget] = {}
+        self._icon_buttons: dict[str, ttk.Button] = {}
+        self._edit_var = tk.IntVar(value=0)
+        self._last_saved_payload: dict[str, str] = {}
         self.resizable(False, False)
 
         body = ttk.Frame(self, padding=10)
         body.pack(fill="both", expand=True)
+        body.columnconfigure(1, weight=1)
+
+        style = ttk.Style(self)
+        self._chip_icon_font = tkfont.Font(self, family="Helvetica", size=13, weight="bold")
+        style.configure(
+            "IconChip.TButton",
+            padding=1,
+            foreground="#FFFFFF",
+            background="#4A5A52",
+            font=self._chip_icon_font,
+        )
+        style.map(
+            "IconChip.TButton",
+            foreground=[("disabled", "#C4CCC8"), ("!disabled", "#FFFFFF")],
+            background=[("disabled", "#7A807B"), ("active", "#60726A"), ("!disabled", "#4A5A52")],
+        )
+        style.configure(
+            "FieldChip.TButton",
+            padding=1,
+            foreground="#FFFFFF",
+            background="#4A5A52",
+            font=self._chip_icon_font,
+        )
+        style.map(
+            "FieldChip.TButton",
+            foreground=[("disabled", "#C4CCC8"), ("!disabled", "#FFFFFF")],
+            background=[("disabled", "#7A807B"), ("active", "#60726A"), ("!disabled", "#4A5A52")],
+        )
 
         for i, field in enumerate(fields):
             ttk.Label(body, text=field).grid(row=i, column=0, sticky="e", padx=4, pady=4)
@@ -65,7 +103,9 @@ class TripFormDialog(tk.Toplevel):
                         edit_cmd = self._edit_team
                     else:
                         edit_cmd = self._edit_location
-                    ttk.Button(team_frame, text="✎", width=3, command=edit_cmd).pack(side="left", padx=(4, 0))
+                    icon_btn = ttk.Button(team_frame, text="✎", width=2, style="FieldChip.TButton", command=edit_cmd)
+                    icon_btn.pack(side="left", padx=(4, 0))
+                    self._icon_buttons[field] = icon_btn
                 else:
                     widget = ttk.Entry(body, width=42)
                     widget.grid(row=i, column=1, sticky="ew", padx=4, pady=4)
@@ -75,20 +115,47 @@ class TripFormDialog(tk.Toplevel):
                     widget.configure(state="readonly")
             self.inputs[field] = widget
 
-        btns = ttk.Frame(body)
-        btns.grid(row=len(fields), column=0, columnspan=3, sticky="ew", pady=8)
-        btns.columnconfigure(2, weight=1)
-        ttk.Button(btns, text="Save", command=self._save).grid(row=0, column=0, padx=4, sticky="w")
+        actions = ttk.Frame(body)
+        actions.grid(row=len(fields), column=0, columnspan=3, sticky="ew", pady=(6, 4))
+        collection_events_state = (
+            "normal" if callable(self.on_open_collection_events) and isinstance(self.trip_id, int) else "disabled"
+        )
+        ttk.Button(
+            actions,
+            text="Collection Events",
+            style="FieldChip.TButton",
+            state=collection_events_state,
+            command=self._open_collection_events,
+        ).grid(
+            row=0, column=0, padx=2, sticky="w"
+        )
+        finds_state = "normal" if callable(self.on_open_finds) and isinstance(self.trip_id, int) else "disabled"
+        ttk.Button(
+            actions,
+            text="Finds",
+            style="FieldChip.TButton",
+            state=finds_state,
+            command=self._open_finds,
+        ).grid(row=0, column=1, padx=2, sticky="w")
+        actions.columnconfigure(2, weight=1)
+        edit_radio = ttk.Radiobutton(actions, text="Edit", variable=self._edit_var, value=1)
+        edit_radio.grid(row=0, column=3, padx=(8, 4), sticky="e")
+        edit_radio.bind("<Button-1>", self._on_edit_radio_click, add="+")
         if callable(self.on_duplicate):
-            ttk.Button(btns, text="Duplicate", command=self._duplicate).grid(row=0, column=1, padx=4, sticky="w")
-        ttk.Button(btns, text="Cancel", command=self._close).grid(row=0, column=3, padx=4, sticky="e")
+            ttk.Button(actions, text="⧉", style="IconChip.TButton", width=2, command=self._duplicate).grid(
+                row=0, column=4, padx=2, sticky="e"
+            )
 
+        self._last_saved_payload = self._collect_payload()
+        self._set_edit_mode(False)
         self.transient(parent)
         if self.modal:
             self.grab_set()
         self.protocol("WM_DELETE_WINDOW", self._close)
 
     def _edit_team(self) -> None:
+        if self._edit_var.get() != 1:
+            return
         team_widget = self.inputs.get("team")
         if not isinstance(team_widget, ttk.Entry):
             return
@@ -110,6 +177,8 @@ class TripFormDialog(tk.Toplevel):
         TeamEditorDialog(self, self.active_users, existing_names, trip_name, save_team)
 
     def _edit_location(self) -> None:
+        if self._edit_var.get() != 1:
+            return
         location_widget = self.inputs.get("location")
         if not isinstance(location_widget, ttk.Entry):
             return
@@ -130,18 +199,27 @@ class TripFormDialog(tk.Toplevel):
 
         LocationPickerDialog(self, self.location_names, existing_names, trip_name, save_locations)
 
-    def _save(self) -> None:
-        payload = self._collect_payload()
-        should_close = self.on_save(payload)
-        if should_close is False:
-            return
-        self._close()
-
     def _duplicate(self) -> None:
         if not callable(self.on_duplicate):
             return
         payload = self._collect_payload()
         self.on_duplicate(payload)
+
+    def _open_collection_events(self) -> None:
+        if not callable(self.on_open_collection_events) or not isinstance(self.trip_id, int):
+            return
+        if not self._save_if_changed():
+            return
+        self.withdraw()
+        self.on_open_collection_events(self.trip_id, self)
+
+    def _open_finds(self) -> None:
+        if not callable(self.on_open_finds) or not isinstance(self.trip_id, int):
+            return
+        if not self._save_if_changed():
+            return
+        self.withdraw()
+        self.on_open_finds(self.trip_id, self)
 
     def _collect_payload(self) -> dict[str, str]:
         payload: dict[str, str] = {}
@@ -152,7 +230,44 @@ class TripFormDialog(tk.Toplevel):
                 payload[field] = widget.get().strip()
         return payload
 
-    def _close(self) -> None:
+    def _close(self, skip_save: bool = False) -> None:
+        if not skip_save and not self._save_if_changed():
+            return
         if callable(self.on_close):
             self.on_close()
         self.destroy()
+
+    def _save_if_changed(self) -> bool:
+        payload = self._collect_payload()
+        if payload == self._last_saved_payload:
+            return True
+        should_close = self.on_save(payload)
+        if should_close is False:
+            return False
+        self._last_saved_payload = payload
+        return True
+
+    def _set_edit_mode(self, editable: bool) -> None:
+        for field, widget in self.inputs.items():
+            if isinstance(widget, tk.Text):
+                widget.configure(state="normal" if editable else "disabled")
+                continue
+            if field == "trip_name":
+                widget.configure(state="readonly")
+            else:
+                widget.configure(state="normal" if editable else "readonly")
+        for button in self._icon_buttons.values():
+            button.configure(state="normal" if editable else "disabled")
+
+    def _on_edit_radio_click(self, _event) -> str:
+        # Toggle behavior on a single radio control.
+        currently_on = self._edit_var.get() == 1
+        if currently_on:
+            if not self._save_if_changed():
+                return "break"
+            self._edit_var.set(0)
+            self._set_edit_mode(False)
+            return "break"
+        self._edit_var.set(1)
+        self._set_edit_mode(True)
+        return "break"

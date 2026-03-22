@@ -137,6 +137,46 @@ def create_locations_table(conn: sqlite3.Connection) -> None:
     conn.execute("CREATE INDEX IF NOT EXISTS idx_trip_locations_trip ON TripLocations(id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_trip_locations_location ON TripLocations(location_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_collection_events_location ON CollectionEvents(location_id)")
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS Finds (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            trip_id INTEGER,
+            location_id INTEGER,
+            collection_event_id INTEGER,
+            source_system TEXT,
+            source_occurrence_no TEXT,
+            identified_name TEXT,
+            accepted_name TEXT,
+            identified_rank TEXT,
+            accepted_rank TEXT,
+            difference TEXT,
+            identified_no TEXT,
+            accepted_no TEXT,
+            phylum TEXT,
+            class_name TEXT,
+            taxon_order TEXT,
+            family TEXT,
+            genus TEXT,
+            abund_value TEXT,
+            abund_unit TEXT,
+            reference_no TEXT,
+            taxonomy_comments TEXT,
+            occurrence_comments TEXT,
+            research_group TEXT,
+            notes TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (trip_id) REFERENCES Trips(id) ON DELETE SET NULL,
+            FOREIGN KEY (location_id) REFERENCES Locations(id) ON DELETE SET NULL,
+            FOREIGN KEY (collection_event_id) REFERENCES CollectionEvents(id) ON DELETE SET NULL
+        )
+        """
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_finds_trip ON Finds(trip_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_finds_location ON Finds(location_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_finds_collection_event ON Finds(collection_event_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_finds_source_occurrence ON Finds(source_occurrence_no)")
     _migrate_legacy_collection_fields(conn)
     _rebuild_locations_table_without_legacy_columns(conn)
 

@@ -100,6 +100,46 @@ class TripRepository:
             conn.execute(
                 'CREATE INDEX IF NOT EXISTS idx_collection_events_location ON "CollectionEvents"(location_id)'
             )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS "Finds" (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    trip_id INTEGER,
+                    location_id INTEGER,
+                    collection_event_id INTEGER,
+                    source_system TEXT,
+                    source_occurrence_no TEXT,
+                    identified_name TEXT,
+                    accepted_name TEXT,
+                    identified_rank TEXT,
+                    accepted_rank TEXT,
+                    difference TEXT,
+                    identified_no TEXT,
+                    accepted_no TEXT,
+                    phylum TEXT,
+                    class_name TEXT,
+                    taxon_order TEXT,
+                    family TEXT,
+                    genus TEXT,
+                    abund_value TEXT,
+                    abund_unit TEXT,
+                    reference_no TEXT,
+                    taxonomy_comments TEXT,
+                    occurrence_comments TEXT,
+                    research_group TEXT,
+                    notes TEXT,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (trip_id) REFERENCES Trips(id) ON DELETE SET NULL,
+                    FOREIGN KEY (location_id) REFERENCES Locations(id) ON DELETE SET NULL,
+                    FOREIGN KEY (collection_event_id) REFERENCES CollectionEvents(id) ON DELETE SET NULL
+                )
+                """
+            )
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_finds_trip ON "Finds"(trip_id)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_finds_location ON "Finds"(location_id)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_finds_collection_event ON "Finds"(collection_event_id)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_finds_source_occurrence ON "Finds"(source_occurrence_no)')
 
     def get_fields(self) -> list[str]:
         with self._connect() as conn:
@@ -115,7 +155,14 @@ class TripRepository:
         col_sql = ", ".join([f'"{name}"' for name in fields])
         with self._connect() as conn:
             rows = conn.execute(
-                f'SELECT {col_sql} FROM "Trips" ORDER BY id DESC'
+                f'''
+                SELECT {col_sql}
+                FROM "Trips"
+                ORDER BY
+                    LOWER(COALESCE(trip_name, '')),
+                    COALESCE(start_date, ''),
+                    id
+                '''
             ).fetchall()
         return [dict(row) for row in rows]
 
@@ -338,6 +385,548 @@ class TripRepository:
                         """,
                         [(location_id, event["collection_name"], event["collection_subset"]) for event in events],
                     )
+
+    def ensure_geology_tables(self) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS "GeologyContext" (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    location_id INTEGER NOT NULL,
+                    location_name TEXT NOT NULL,
+                    source_system TEXT NOT NULL DEFAULT 'PBDB',
+                    source_reference_no TEXT,
+                    early_interval TEXT,
+                    late_interval TEXT,
+                    max_ma REAL,
+                    min_ma REAL,
+                    environment TEXT,
+                    geogscale TEXT,
+                    geology_comments TEXT,
+                    formation TEXT,
+                    stratigraphy_group TEXT,
+                    member TEXT,
+                    stratscale TEXT,
+                    stratigraphy_comments TEXT,
+                    geoplate TEXT,
+                    paleomodel TEXT,
+                    paleolat REAL,
+                    paleolng REAL,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (location_id) REFERENCES Locations(id) ON DELETE CASCADE
+                )
+                """
+            )
+            columns = {row["name"] for row in conn.execute('PRAGMA table_info("GeologyContext")').fetchall()}
+            if "collection_event_id" in columns and "location_id" not in columns:
+                self._migrate_legacy_geology_to_locations(conn)
+            conn.execute(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS "uq_geology_context_event_source"
+                ON "GeologyContext"(location_id, source_system)
+                """
+            )
+            conn.execute(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS "uq_geology_context_location_name"
+                ON "GeologyContext"(LOWER(TRIM(location_name)))
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS "Lithology" (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    geology_context_id INTEGER NOT NULL,
+                    slot INTEGER NOT NULL,
+                    lithology TEXT,
+                    lithification TEXT,
+                    minor_lithology TEXT,
+                    lithology_adjectives TEXT,
+                    fossils_from TEXT,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (geology_context_id) REFERENCES GeologyContext(id) ON DELETE CASCADE,
+                    UNIQUE (geology_context_id, slot)
+                )
+                """
+            )
+            self._ensure_locations_geology_fk(conn)
+            self._link_locations_to_geology(conn)
+
+    def list_geology_records(self) -> list[dict[str, Any]]:
+        self.ensure_locations_table()
+        self.ensure_geology_tables()
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT
+                    gc.id AS geology_id,
+                    gc.source_reference_no,
+                    gc.early_interval,
+                    gc.late_interval,
+                    gc.max_ma,
+                    gc.min_ma,
+                    gc.environment,
+                    gc.formation,
+                    gc.stratigraphy_group,
+                    gc.member,
+                    gc.stratigraphy_comments,
+                    gc.geology_comments,
+                    gc.geoplate,
+                    gc.paleomodel,
+                    gc.paleolat,
+                    gc.paleolng,
+                    l.id AS location_id,
+                    l.name AS location_name,
+                    l.state,
+                    l.country_code
+                FROM "GeologyContext" gc
+                JOIN "Locations" l ON l.id = gc.location_id
+                ORDER BY
+                    COALESCE(l.name, ''),
+                    gc.id
+                """
+            ).fetchall()
+            lith_rows = conn.execute(
+                """
+                SELECT
+                    geology_context_id,
+                    slot,
+                    lithology,
+                    lithification,
+                    minor_lithology,
+                    lithology_adjectives,
+                    fossils_from
+                FROM "Lithology"
+                ORDER BY geology_context_id, slot
+                """
+            ).fetchall()
+
+        lithology_by_geology: dict[int, list[dict[str, Any]]] = {}
+        for row in lith_rows:
+            geology_id = int(row["geology_context_id"])
+            lithology_by_geology.setdefault(geology_id, []).append(
+                {
+                    "slot": row["slot"],
+                    "lithology": row["lithology"],
+                    "lithification": row["lithification"],
+                    "minor_lithology": row["minor_lithology"],
+                    "lithology_adjectives": row["lithology_adjectives"],
+                    "fossils_from": row["fossils_from"],
+                }
+            )
+
+        records: list[dict[str, Any]] = []
+        for row in rows:
+            record = dict(row)
+            geology_id = int(record["geology_id"])
+            lithology_rows = lithology_by_geology.get(geology_id, [])
+            summary_parts: list[str] = []
+            for lith in lithology_rows:
+                label = str(lith.get("lithology") or "").strip()
+                if label:
+                    summary_parts.append(label)
+            record["lithology_rows"] = lithology_rows
+            record["lithology_summary"] = ", ".join(summary_parts)
+            records.append(record)
+        return records
+
+    def get_geology_record(self, geology_id: int) -> dict[str, Any] | None:
+        self.ensure_locations_table()
+        self.ensure_geology_tables()
+        with self._connect() as conn:
+            row = conn.execute(
+                """
+                SELECT
+                    gc.id AS geology_id,
+                    gc.location_id,
+                    gc.location_name,
+                    gc.source_reference_no,
+                    gc.early_interval,
+                    gc.late_interval,
+                    gc.max_ma,
+                    gc.min_ma,
+                    gc.environment,
+                    gc.geogscale,
+                    gc.geology_comments,
+                    gc.formation,
+                    gc.stratigraphy_group,
+                    gc.member,
+                    gc.stratscale,
+                    gc.stratigraphy_comments,
+                    gc.geoplate,
+                    gc.paleomodel,
+                    gc.paleolat,
+                    gc.paleolng
+                FROM "GeologyContext" gc
+                WHERE gc.id = ?
+                """,
+                (geology_id,),
+            ).fetchone()
+            if not row:
+                return None
+            lith_rows = conn.execute(
+                """
+                SELECT
+                    slot,
+                    lithology,
+                    lithification,
+                    minor_lithology,
+                    lithology_adjectives,
+                    fossils_from
+                FROM "Lithology"
+                WHERE geology_context_id = ?
+                ORDER BY slot
+                """,
+                (geology_id,),
+            ).fetchall()
+
+        record = dict(row)
+        record["lithology_rows"] = [dict(r) for r in lith_rows]
+        return record
+
+    def update_geology_record(self, geology_id: int, data: dict[str, Any]) -> None:
+        self.ensure_locations_table()
+        self.ensure_geology_tables()
+        allowed_fields = [
+            "source_reference_no",
+            "early_interval",
+            "late_interval",
+            "max_ma",
+            "min_ma",
+            "environment",
+            "geogscale",
+            "geology_comments",
+            "formation",
+            "stratigraphy_group",
+            "member",
+            "stratscale",
+            "stratigraphy_comments",
+            "geoplate",
+            "paleomodel",
+            "paleolat",
+            "paleolng",
+        ]
+        update_fields = [f for f in allowed_fields if f in data]
+        lithology_rows = data.get("lithology_rows", [])
+        with self._connect() as conn:
+            if update_fields:
+                set_sql = ", ".join([f'"{name}" = ?' for name in update_fields])
+                values = [data.get(name) for name in update_fields] + [geology_id]
+                conn.execute(f'UPDATE "GeologyContext" SET {set_sql} WHERE id = ?', values)
+                conn.execute(
+                    'UPDATE "GeologyContext" SET updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+                    (geology_id,),
+                )
+            conn.execute('DELETE FROM "Lithology" WHERE geology_context_id = ?', (geology_id,))
+            inserts: list[tuple[Any, ...]] = []
+            if isinstance(lithology_rows, list):
+                for raw in lithology_rows:
+                    if not isinstance(raw, dict):
+                        continue
+                    slot = raw.get("slot")
+                    if slot not in {1, 2}:
+                        continue
+                    lithology = raw.get("lithology")
+                    lithification = raw.get("lithification")
+                    minor_lithology = raw.get("minor_lithology")
+                    lithology_adjectives = raw.get("lithology_adjectives")
+                    fossils_from = raw.get("fossils_from")
+                    if not any([lithology, lithification, minor_lithology, lithology_adjectives, fossils_from]):
+                        continue
+                    inserts.append(
+                        (
+                            geology_id,
+                            slot,
+                            lithology,
+                            lithification,
+                            minor_lithology,
+                            lithology_adjectives,
+                            fossils_from,
+                        )
+                    )
+            if inserts:
+                conn.executemany(
+                    """
+                    INSERT INTO "Lithology" (
+                        geology_context_id,
+                        slot,
+                        lithology,
+                        lithification,
+                        minor_lithology,
+                        lithology_adjectives,
+                        fossils_from
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    inserts,
+                )
+
+    def list_collection_events(self, trip_id: int | None = None) -> list[dict[str, Any]]:
+        self.ensure_locations_table()
+        with self._connect() as conn:
+            if trip_id is None:
+                rows = conn.execute(
+                    """
+                    SELECT
+                        ce.id,
+                        ce.collection_name,
+                        ce.collection_subset,
+                        l.name AS location_name,
+                        COUNT(f.id) AS find_count
+                    FROM "CollectionEvents" ce
+                    JOIN "Locations" l ON l.id = ce.location_id
+                    LEFT JOIN "Finds" f ON f.collection_event_id = ce.id
+                    GROUP BY ce.id, ce.collection_name, ce.collection_subset, l.name
+                    ORDER BY LOWER(COALESCE(l.name, '')), LOWER(COALESCE(ce.collection_subset, '')), ce.id
+                    """
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    """
+                    SELECT
+                        ce.id,
+                        ce.collection_name,
+                        ce.collection_subset,
+                        l.name AS location_name,
+                        COUNT(f.id) AS find_count
+                    FROM "CollectionEvents" ce
+                    JOIN "Locations" l ON l.id = ce.location_id
+                    LEFT JOIN "Finds" f ON f.collection_event_id = ce.id
+                    WHERE ce.id IN (
+                        SELECT DISTINCT f2.collection_event_id
+                        FROM "Finds" f2
+                        WHERE f2.trip_id = ? AND f2.collection_event_id IS NOT NULL
+                    )
+                    GROUP BY ce.id, ce.collection_name, ce.collection_subset, l.name
+                    ORDER BY LOWER(COALESCE(l.name, '')), LOWER(COALESCE(ce.collection_subset, '')), ce.id
+                    """,
+                    (trip_id,),
+                ).fetchall()
+        return [dict(row) for row in rows]
+
+    def list_finds(self, trip_id: int | None = None) -> list[dict[str, Any]]:
+        self.ensure_locations_table()
+        with self._connect() as conn:
+            if trip_id is None:
+                rows = conn.execute(
+                    """
+                    SELECT
+                        f.id,
+                        f.source_occurrence_no,
+                        f.accepted_name,
+                        f.identified_name,
+                        f.reference_no,
+                        t.trip_name,
+                        l.name AS location_name,
+                        ce.collection_subset
+                    FROM "Finds" f
+                    LEFT JOIN "Trips" t ON t.id = f.trip_id
+                    LEFT JOIN "Locations" l ON l.id = f.location_id
+                    LEFT JOIN "CollectionEvents" ce ON ce.id = f.collection_event_id
+                    ORDER BY LOWER(COALESCE(l.name, '')), f.id
+                    """
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    """
+                    SELECT
+                        f.id,
+                        f.source_occurrence_no,
+                        f.accepted_name,
+                        f.identified_name,
+                        f.reference_no,
+                        t.trip_name,
+                        l.name AS location_name,
+                        ce.collection_subset
+                    FROM "Finds" f
+                    LEFT JOIN "Trips" t ON t.id = f.trip_id
+                    LEFT JOIN "Locations" l ON l.id = f.location_id
+                    LEFT JOIN "CollectionEvents" ce ON ce.id = f.collection_event_id
+                    WHERE f.trip_id = ?
+                    ORDER BY LOWER(COALESCE(l.name, '')), f.id
+                    """,
+                    (trip_id,),
+                ).fetchall()
+        return [dict(row) for row in rows]
+
+    @staticmethod
+    def _migrate_legacy_geology_to_locations(conn: sqlite3.Connection) -> None:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS "GeologyContext_new" (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                location_id INTEGER NOT NULL,
+                location_name TEXT NOT NULL,
+                source_system TEXT NOT NULL DEFAULT 'PBDB',
+                source_reference_no TEXT,
+                early_interval TEXT,
+                late_interval TEXT,
+                max_ma REAL,
+                min_ma REAL,
+                environment TEXT,
+                geogscale TEXT,
+                geology_comments TEXT,
+                formation TEXT,
+                stratigraphy_group TEXT,
+                member TEXT,
+                stratscale TEXT,
+                stratigraphy_comments TEXT,
+                geoplate TEXT,
+                paleomodel TEXT,
+                paleolat REAL,
+                paleolng REAL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (location_id) REFERENCES Locations(id) ON DELETE CASCADE
+            )
+            """
+        )
+        rows = conn.execute(
+            """
+            SELECT
+                gc.id,
+                ce.location_id,
+                l.name AS location_name,
+                gc.source_system,
+                gc.source_reference_no,
+                gc.early_interval,
+                gc.late_interval,
+                gc.max_ma,
+                gc.min_ma,
+                gc.environment,
+                gc.geogscale,
+                gc.geology_comments,
+                gc.formation,
+                gc.stratigraphy_group,
+                gc.member,
+                gc.stratscale,
+                gc.stratigraphy_comments,
+                gc.geoplate,
+                gc.paleomodel,
+                gc.paleolat,
+                gc.paleolng,
+                gc.created_at,
+                gc.updated_at
+            FROM "GeologyContext" gc
+            JOIN "CollectionEvents" ce ON ce.id = gc.collection_event_id
+            JOIN "Locations" l ON l.id = ce.location_id
+            ORDER BY gc.id
+            """
+        ).fetchall()
+        seen_names: set[str] = set()
+        for row in rows:
+            location_name = str(row["location_name"] or "").strip()
+            key = location_name.lower()
+            if not key or key in seen_names:
+                continue
+            seen_names.add(key)
+            conn.execute(
+                """
+                INSERT INTO "GeologyContext_new" (
+                    id, location_id, location_name, source_system, source_reference_no,
+                    early_interval, late_interval, max_ma, min_ma, environment, geogscale,
+                    geology_comments, formation, stratigraphy_group, member, stratscale,
+                    stratigraphy_comments, geoplate, paleomodel, paleolat, paleolng,
+                    created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    row["id"],
+                    row["location_id"],
+                    location_name,
+                    row["source_system"],
+                    row["source_reference_no"],
+                    row["early_interval"],
+                    row["late_interval"],
+                    row["max_ma"],
+                    row["min_ma"],
+                    row["environment"],
+                    row["geogscale"],
+                    row["geology_comments"],
+                    row["formation"],
+                    row["stratigraphy_group"],
+                    row["member"],
+                    row["stratscale"],
+                    row["stratigraphy_comments"],
+                    row["geoplate"],
+                    row["paleomodel"],
+                    row["paleolat"],
+                    row["paleolng"],
+                    row["created_at"],
+                    row["updated_at"],
+                ),
+            )
+        kept_ids = {row["id"] for row in conn.execute('SELECT id FROM "GeologyContext_new"').fetchall()}
+        if kept_ids:
+            placeholders = ", ".join(["?"] * len(kept_ids))
+            conn.execute(
+                f'DELETE FROM "Lithology" WHERE geology_context_id NOT IN ({placeholders})',
+                tuple(kept_ids),
+            )
+        else:
+            conn.execute('DELETE FROM "Lithology"')
+        conn.execute('DROP TABLE "GeologyContext"')
+        conn.execute('ALTER TABLE "GeologyContext_new" RENAME TO "GeologyContext"')
+
+    @staticmethod
+    def _ensure_locations_geology_fk(conn: sqlite3.Connection) -> None:
+        location_columns = [row["name"] for row in conn.execute('PRAGMA table_info("Locations")').fetchall()]
+        if "geology_id" in location_columns:
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_locations_geology ON "Locations"(geology_id)')
+            return
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS "Locations_new" (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT,
+                latitude TEXT,
+                longitude TEXT,
+                altitude_value TEXT,
+                altitude_unit TEXT,
+                country_code TEXT,
+                state TEXT,
+                lga TEXT,
+                basin TEXT,
+                geogscale TEXT,
+                geography_comments TEXT,
+                geology_id INTEGER,
+                FOREIGN KEY (geology_id) REFERENCES GeologyContext(id) ON DELETE SET NULL
+            )
+            """
+        )
+        conn.execute(
+            """
+            INSERT INTO "Locations_new" (
+                id, name, latitude, longitude, altitude_value, altitude_unit,
+                country_code, state, lga, basin, geogscale, geography_comments
+            )
+            SELECT
+                id, name, latitude, longitude, altitude_value, altitude_unit,
+                country_code, state, lga, basin, geogscale, geography_comments
+            FROM "Locations"
+            """
+        )
+        conn.execute('DROP TABLE "Locations"')
+        conn.execute('ALTER TABLE "Locations_new" RENAME TO "Locations"')
+        conn.execute('CREATE INDEX IF NOT EXISTS idx_locations_geology ON "Locations"(geology_id)')
+
+    @staticmethod
+    def _link_locations_to_geology(conn: sqlite3.Connection) -> None:
+        # Every location points to geology by normalized location name.
+        conn.execute(
+            """
+            UPDATE "Locations"
+            SET geology_id = (
+                SELECT gc.id
+                FROM "GeologyContext" gc
+                WHERE LOWER(TRIM(gc.location_name)) = LOWER(TRIM("Locations".name))
+                LIMIT 1
+            )
+            WHERE name IS NOT NULL AND TRIM(name) <> ''
+            """
+        )
 
     @staticmethod
     def _last_name(name: str) -> str:
