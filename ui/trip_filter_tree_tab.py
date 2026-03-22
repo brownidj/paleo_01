@@ -2,7 +2,7 @@ import sqlite3
 import tkinter as tk
 from collections.abc import Callable, Sequence
 from tkinter import messagebox, ttk
-from typing import Any
+from typing import Mapping
 
 from trip_repository import TripRepository
 
@@ -14,7 +14,7 @@ class TripFilterTreeTab(ttk.Frame):
         repo: TripRepository,
         list_columns: Sequence[str],
         widths: dict[str, int],
-        fetch_rows: Callable[[int | None], list[dict[str, Any]]],
+        fetch_rows: Callable[[int | None], list[Mapping[str, object]]],
     ):
         super().__init__(parent)
         self.repo = repo

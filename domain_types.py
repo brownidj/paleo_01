@@ -1,0 +1,133 @@
+from typing import TypedDict
+
+
+class TripPayload(TypedDict, total=False):
+    id: int
+    trip_name: str
+    start_date: str | None
+    end_date: str | None
+    team: str | None
+    location: str | None
+    notes: str | None
+
+
+class TripRecord(TripPayload, total=False):
+    pass
+
+
+TripPayloadMap = dict[str, str | None]
+
+
+class UserRecord(TypedDict, total=False):
+    id: int
+    name: str
+    phone_number: str
+    active: int
+
+
+class CollectionEventPayload(TypedDict):
+    collection_name: str
+    collection_subset: str | None
+
+
+class LocationPayload(TypedDict, total=False):
+    name: str | None
+    latitude: str | None
+    longitude: str | None
+    altitude_value: str | None
+    altitude_unit: str | None
+    country_code: str | None
+    state: str | None
+    lga: str | None
+    basin: str | None
+    geogscale: str | None
+    geography_comments: str | None
+    collection_events: list[CollectionEventPayload]
+
+
+class LocationRecord(LocationPayload, total=False):
+    id: int
+    collection_name: str | None
+    collection_subset: str | None
+
+
+LocationPayloadMap = dict[str, str | None | list[CollectionEventPayload]]
+
+
+class FindRecord(TypedDict, total=False):
+    id: int
+    source_occurrence_no: str | None
+    accepted_name: str | None
+    identified_name: str | None
+    reference_no: str | None
+    trip_name: str | None
+    location_name: str | None
+    collection_subset: str | None
+
+
+class CollectionEventRecord(TypedDict, total=False):
+    id: int
+    collection_name: str | None
+    collection_subset: str | None
+    location_name: str | None
+    find_count: int
+
+
+class LithologyRow(TypedDict, total=False):
+    slot: int
+    lithology: str | None
+    lithification: str | None
+    minor_lithology: str | None
+    lithology_adjectives: str | None
+    fossils_from: str | None
+
+
+class GeologyRecord(TypedDict, total=False):
+    geology_id: int
+    location_id: int
+    location_name: str | None
+    source_reference_no: str | None
+    early_interval: str | None
+    late_interval: str | None
+    max_ma: float | None
+    min_ma: float | None
+    environment: str | None
+    geogscale: str | None
+    geology_comments: str | None
+    formation: str | None
+    stratigraphy_group: str | None
+    member: str | None
+    stratscale: str | None
+    stratigraphy_comments: str | None
+    geoplate: str | None
+    paleomodel: str | None
+    paleolat: float | None
+    paleolng: float | None
+    state: str | None
+    country_code: str | None
+    lithology_rows: list[LithologyRow]
+    lithology_summary: str
+
+
+class GeologyUpdatePayload(TypedDict, total=False):
+    source_reference_no: str | None
+    early_interval: str | None
+    late_interval: str | None
+    max_ma: float | None
+    min_ma: float | None
+    environment: str | None
+    geogscale: str | None
+    geology_comments: str | None
+    formation: str | None
+    stratigraphy_group: str | None
+    member: str | None
+    stratscale: str | None
+    stratigraphy_comments: str | None
+    geoplate: str | None
+    paleomodel: str | None
+    paleolat: float | None
+    paleolng: float | None
+    lithology_rows: list[LithologyRow]
+
+
+GeologyUpdatePayloadMap = dict[str, object]
