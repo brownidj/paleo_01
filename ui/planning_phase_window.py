@@ -148,6 +148,8 @@ class PlanningPhaseWindow(tk.Tk):
             trip_id=None,
             on_open_collection_events=None,
             on_open_finds=None,
+            collection_events_count=0,
+            finds_count=0,
         )
 
     def edit_selected(self) -> None:
@@ -246,20 +248,24 @@ class PlanningPhaseWindow(tk.Tk):
             trip_id=trip_id,
             on_open_collection_events=self.open_collection_events_for_trip,
             on_open_finds=self.open_finds_for_trip,
+            collection_events_count=self.repo.count_collection_events_for_trip(trip_id),
+            finds_count=self.repo.count_finds_for_trip(trip_id),
         )
         self.open_edit_dialogs[trip_id] = dialog
 
     def open_collection_events_for_trip(self, trip_id: int, dialog: TripFormDialog) -> None:
         self.hidden_trip_dialog = dialog
         self.hidden_trip_dialog_trip_id = trip_id
+        self.tabs.select(str(self.collection_events_tab))
         self.collection_events_tab.activate_trip_filter(trip_id)
-        self.tabs.select(self.collection_events_tab)
+        self.collection_events_tab.update_idletasks()
 
     def open_finds_for_trip(self, trip_id: int, dialog: TripFormDialog) -> None:
         self.hidden_trip_dialog = dialog
         self.hidden_trip_dialog_trip_id = trip_id
+        self.tabs.select(str(self.finds_tab))
         self.finds_tab.activate_trip_filter(trip_id)
-        self.tabs.select(self.finds_tab)
+        self.finds_tab.update_idletasks()
 
     @staticmethod
     def _normalize_payload(payload: dict[str, str]) -> dict[str, str | None]:
@@ -302,6 +308,9 @@ class PlanningPhaseWindow(tk.Tk):
                 self.hidden_trip_dialog.deiconify()
                 self.hidden_trip_dialog.lift()
                 self.hidden_trip_dialog.focus_force()
+                self.hidden_trip_dialog = None
+                self.hidden_trip_dialog_trip_id = None
+            elif self.hidden_trip_dialog:
                 self.hidden_trip_dialog = None
                 self.hidden_trip_dialog_trip_id = None
             return

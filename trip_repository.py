@@ -750,6 +750,32 @@ class TripRepository:
                 ).fetchall()
         return [dict(row) for row in rows]
 
+    def count_collection_events_for_trip(self, trip_id: int) -> int:
+        self.ensure_locations_table()
+        with self._connect() as conn:
+            row = conn.execute(
+                """
+                SELECT COUNT(DISTINCT f.collection_event_id) AS event_count
+                FROM "Finds" f
+                WHERE f.trip_id = ? AND f.collection_event_id IS NOT NULL
+                """,
+                (trip_id,),
+            ).fetchone()
+        return int(row["event_count"] if row else 0)
+
+    def count_finds_for_trip(self, trip_id: int) -> int:
+        self.ensure_locations_table()
+        with self._connect() as conn:
+            row = conn.execute(
+                """
+                SELECT COUNT(*) AS find_count
+                FROM "Finds"
+                WHERE trip_id = ?
+                """,
+                (trip_id,),
+            ).fetchone()
+        return int(row["find_count"] if row else 0)
+
     @staticmethod
     def _migrate_legacy_geology_to_locations(conn: sqlite3.Connection) -> None:
         conn.execute(

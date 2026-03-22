@@ -22,6 +22,8 @@ class TripFormDialog(tk.Toplevel):
         trip_id: int | None = None,
         on_open_collection_events=None,
         on_open_finds=None,
+        collection_events_count: int = 0,
+        finds_count: int = 0,
     ):
         super().__init__(parent)
         self.title("Trip Record")
@@ -36,6 +38,8 @@ class TripFormDialog(tk.Toplevel):
         self.trip_id = trip_id
         self.on_open_collection_events = on_open_collection_events
         self.on_open_finds = on_open_finds
+        self.collection_events_count = collection_events_count
+        self.finds_count = finds_count
         self.inputs: dict[str, tk.Widget] = {}
         self._icon_buttons: dict[str, ttk.Button] = {}
         self._edit_var = tk.IntVar(value=0)
@@ -122,7 +126,7 @@ class TripFormDialog(tk.Toplevel):
         )
         ttk.Button(
             actions,
-            text="Collection Events",
+            text=f"{self.collection_events_count} Collection Events",
             style="FieldChip.TButton",
             state=collection_events_state,
             command=self._open_collection_events,
@@ -132,7 +136,7 @@ class TripFormDialog(tk.Toplevel):
         finds_state = "normal" if callable(self.on_open_finds) and isinstance(self.trip_id, int) else "disabled"
         ttk.Button(
             actions,
-            text="Finds",
+            text=f"{self.finds_count} Finds",
             style="FieldChip.TButton",
             state=finds_state,
             command=self._open_finds,
