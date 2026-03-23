@@ -214,24 +214,48 @@ rg --files "$ROOT_DIR" \
 
 ## Recommendations
 
-1. Keep quality-gate execution centralized.
-Use `scripts/ci_checks.sh` as the default local/CI check entrypoint for all refactor batches.
-2. Keep `docs/CURRENT_STATE.md` synced after each refactor batch.
-Update architecture, schema, and test totals whenever meaningful codebase changes land.
-3. Continue widening typed coverage.
-Expand mypy scope module-by-module beyond current repository/UI-controller targets as annotations mature, prioritizing tab/dialog modules still using broad untyped dict payloads.
-4. Keep exhaustive migration matrix current.
-When new historical variants are discovered, add them to exhaustive permutation tests and verify idempotent upgrades to `SCHEMA_VERSION`.
-5. Expand UI integration confidence with failure-path coverage.
-Add integration tests for edit-mode save/validation failure and dialog-close auto-save behavior to complement current handoff/filter scenarios.
-6. Revisit boundary rules when new packages appear.
-Treat `scripts/import_boundary_rules.json` and ADR 0001 as required updates whenever introducing a new module layer.
-7. Add a dedicated PBDB import service module.
-Move current script-level PBDB import/backfill logic into a typed repository/import service with explicit invariants (idempotency, duplicate handling, deterministic year inference option).
-8. Add regression tests for new schema fields.
-Cover `Team_members.recruitment_date`/`retirement_date` read-write paths in repository/UI and `Finds.collection_year_latest_estimate` visibility in finds tab/API.
-9. Document and enforce canonical DB path in app run configs.
-Keep all IDE/shared run configurations pointing to `data/paleo_trips_01.db`; retain wrapper/symlink only as compatibility layers.
+Best approach is a deterministic 3-pass reconciliation job, then enforce constraints.
+1. Validate current gaps
+•
+Find rows with collection_event_id IS NULL
+•
+Collection events with trip_id IS NULL
+•
+Mismatches where Finds.trip_id != CollectionEvents.trip_id
+•
+Mixed-trip events (same event linked to finds from multiple trips)
+2. Repair in order
+•
+Pass A: ensure every find has an event
+◦
+If a find has (trip_id, location_id, estimated_year), attach to existing matching event.
+◦
+Else create one event (single event_year) using your temporal rule (Yf-6..Yf-1, choose closest prior feasible year).
+•
+Pass B: ensure every event has a trip
+◦
+Set CollectionEvents.trip_id from dominant/only linked find trip.
+◦
+If event has no finds, infer from (location_id, event_year) against trip location+date window; else flag for manual review.
+•
+Pass C: normalize consistency
+◦
+For each find, set Finds.trip_id = CollectionEvents.trip_id.
+◦
+Split any mixed-trip event into one event per trip and re-point finds.
+3. Add guardrails
+•
+Add a periodic integrity check script (and CI test) asserting:
+◦
+no find without event
+◦
+no event without trip
+◦
+no trip mismatch between find and event
+•
+Keep DB FK constraints enabled (PRAGMA foreign_keys=ON).
+•
+Optional next step: eventually derive trip via event only and remove Finds.trip_id after UI/query refactor.
 
 ## ToDo
 

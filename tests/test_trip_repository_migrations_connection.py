@@ -52,6 +52,12 @@ class TestTripRepositoryMigrationsConnection(RepoTestCase):
             self.assertIsNotNone(row)
             self.assertEqual(row[0], "committed")
 
+    def test_connect_context_manager_enables_foreign_keys(self):
+        with self.repo._connect() as conn:
+            row = conn.execute("PRAGMA foreign_keys").fetchone()
+            self.assertIsNotNone(row)
+            self.assertEqual(int(row[0]), 1)
+
     def test_connect_context_manager_rolls_back_and_closes_on_error(self):
         with closing(sqlite3.connect(self.db_path)) as conn:
             conn.execute(
