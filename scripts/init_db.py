@@ -24,7 +24,7 @@ def main() -> None:
 
     fields = initialize_database(db_path, classification_csv)
     print(f"Initialized database: {db_path}")
-    print("Created/verified tables: Users, Trips, Locations, TripLocations, CollectionEvents")
+    print("Created/verified tables: Team_members, Trips, Locations, TripLocations, CollectionEvents")
     print("Trips fields:")
     for field in fields:
         print(f"- {field}")

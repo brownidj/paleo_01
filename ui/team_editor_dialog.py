@@ -25,7 +25,7 @@ class TeamEditorDialog(tk.Toplevel):
 
         source_frame = ttk.Frame(lists)
         source_frame.pack(side="left", fill="both", expand=True, padx=(0, 8))
-        ttk.Label(source_frame, text="Active users").pack(anchor="w", pady=(0, 2))
+        ttk.Label(source_frame, text="Active team members").pack(anchor="w", pady=(0, 2))
         ttk.Label(
             source_frame,
             text=f"Trip: {trip_name}",

@@ -10,7 +10,7 @@ class TripNavigationCoordinator:
         geology_tab: Any,
         collection_events_tab: Any,
         finds_tab: Any,
-        users_tab: Any,
+        team_members_tab: Any,
         load_trips: Callable[[], None],
         select_trip_row: Callable[[int], None],
     ):
@@ -20,7 +20,7 @@ class TripNavigationCoordinator:
         self.geology_tab = geology_tab
         self.collection_events_tab = collection_events_tab
         self.finds_tab = finds_tab
-        self.users_tab = users_tab
+        self.team_members_tab = team_members_tab
         self.load_trips = load_trips
         self.select_trip_row = select_trip_row
         self.hidden_trip_dialog: Any | None = None
@@ -59,8 +59,8 @@ class TripNavigationCoordinator:
             self.collection_events_tab.load_collection_events()
         if current_tab == str(self.finds_tab):
             self.finds_tab.load_finds()
-        if current_tab == str(self.users_tab):
-            self.users_tab.load_users()
+        if current_tab == str(self.team_members_tab):
+            self.team_members_tab.load_team_members()
 
     def _restore_hidden_trip_dialog(self) -> None:
         if self.hidden_trip_dialog and self.hidden_trip_dialog.winfo_exists():

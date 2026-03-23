@@ -85,7 +85,7 @@ class TestTripRepositoryLocationFinds(RepoTestCase):
         names = self.repo.list_location_names()
         self.assertEqual(names, ["Alpha Site", "Beta Site"])
 
-    def test_list_collection_events_trip_filter_uses_finds_assignment(self):
+    def test_list_collection_events_trip_filter_uses_collection_event_trip(self):
         trip_a = self.repo.create_trip({"trip_name": "Trip A", "location": "Shared Site"})
         trip_b = self.repo.create_trip({"trip_name": "Trip B", "location": "Shared Site"})
         with closing(sqlite3.connect(self.db_path)) as conn:
@@ -104,29 +104,29 @@ class TestTripRepositoryLocationFinds(RepoTestCase):
             cur.execute("INSERT INTO TripLocations (id, location_id) VALUES (?, ?)", (trip_b, location_id))
 
             cur.execute(
-                "INSERT INTO CollectionEvents (location_id, collection_name, collection_subset) VALUES (?, ?, ?)",
-                (location_id, "Shared Site", "CE-1"),
+                "INSERT INTO CollectionEvents (trip_id, location_id, collection_name, collection_subset) VALUES (?, ?, ?, ?)",
+                (trip_a, location_id, "Shared Site", "CE-1"),
             )
             ce1 = int(cur.lastrowid)
             cur.execute(
-                "INSERT INTO CollectionEvents (location_id, collection_name, collection_subset) VALUES (?, ?, ?)",
-                (location_id, "Shared Site", "CE-2"),
+                "INSERT INTO CollectionEvents (trip_id, location_id, collection_name, collection_subset) VALUES (?, ?, ?, ?)",
+                (trip_b, location_id, "Shared Site", "CE-2"),
             )
             ce2 = int(cur.lastrowid)
 
             cur.execute(
                 """
-                INSERT INTO Finds (trip_id, location_id, collection_event_id, source_system, source_occurrence_no)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO Finds (location_id, collection_event_id, source_system, source_occurrence_no)
+                VALUES (?, ?, ?, ?)
                 """,
-                (trip_a, location_id, ce1, "PBDB", "A-1"),
+                (location_id, ce1, "PBDB", "A-1"),
             )
             cur.execute(
                 """
-                INSERT INTO Finds (trip_id, location_id, collection_event_id, source_system, source_occurrence_no)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO Finds (location_id, collection_event_id, source_system, source_occurrence_no)
+                VALUES (?, ?, ?, ?)
                 """,
-                (trip_b, location_id, ce2, "PBDB", "B-1"),
+                (location_id, ce2, "PBDB", "B-1"),
             )
             conn.commit()
 
@@ -158,33 +158,47 @@ class TestTripRepositoryLocationFinds(RepoTestCase):
             )
             location_id = int(cur.lastrowid)
             cur.execute(
-                "INSERT INTO CollectionEvents (location_id, collection_name, collection_subset) VALUES (?, ?, ?)",
-                (location_id, "Filter Site", "CE-F"),
+                "INSERT INTO CollectionEvents (trip_id, location_id, collection_name, collection_subset) VALUES (?, ?, ?, ?)",
+                (trip_a, location_id, "Filter Site", "CE-A"),
             )
-            ce_id = int(cur.lastrowid)
+            ce_a = int(cur.lastrowid)
+            cur.execute(
+                "INSERT INTO CollectionEvents (trip_id, location_id, collection_name, collection_subset) VALUES (?, ?, ?, ?)",
+                (trip_b, location_id, "Filter Site", "CE-B"),
+            )
+            ce_b = int(cur.lastrowid)
             cur.execute(
                 """
-                INSERT INTO Finds (trip_id, location_id, collection_event_id, source_system, source_occurrence_no)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO Finds (location_id, collection_event_id, source_system, source_occurrence_no)
+                VALUES (?, ?, ?, ?)
                 """,
-                (trip_a, location_id, ce_id, "PBDB", "F-A"),
+                (location_id, ce_a, "PBDB", "F-A"),
             )
             cur.execute(
                 """
-                INSERT INTO Finds (trip_id, location_id, collection_event_id, source_system, source_occurrence_no)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO Finds (location_id, collection_event_id, source_system, source_occurrence_no)
+                VALUES (?, ?, ?, ?)
                 """,
-                (trip_b, location_id, ce_id, "PBDB", "F-B"),
+                (location_id, ce_b, "PBDB", "F-B"),
             )
             conn.commit()
 
         all_occurrences = {row["source_occurrence_no"] for row in self.repo.list_finds()}
-        trip_a_occurrences = {row["source_occurrence_no"] for row in self.repo.list_finds(trip_a)}
-        trip_b_occurrences = {row["source_occurrence_no"] for row in self.repo.list_finds(trip_b)}
+        trip_a_rows = self.repo.list_finds(trip_a)
+        trip_b_rows = self.repo.list_finds(trip_b)
+        trip_a_occurrences = {row["source_occurrence_no"] for row in trip_a_rows}
+        trip_b_occurrences = {row["source_occurrence_no"] for row in trip_b_rows}
 
         self.assertTrue({"F-A", "F-B"}.issubset(all_occurrences))
         self.assertEqual(trip_a_occurrences, {"F-A"})
         self.assertEqual(trip_b_occurrences, {"F-B"})
+        self.assertEqual({row["trip_name"] for row in trip_a_rows}, {"Trip A"})
+        self.assertEqual({row["trip_name"] for row in trip_b_rows}, {"Trip B"})
+
+    def test_finds_schema_includes_collection_year_latest_estimate(self):
+        with closing(sqlite3.connect(self.db_path)) as conn:
+            columns = [row[1] for row in conn.execute("PRAGMA table_info(Finds)").fetchall()]
+        self.assertIn("collection_year_latest_estimate", columns)
 
 
 if __name__ == "__main__":

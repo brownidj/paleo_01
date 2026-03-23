@@ -1,5 +1,6 @@
 from typing import cast
 
+from repository.finds_schema import rebuild_finds_table_without_trip_id
 from repository.domain_types import CollectionEventPayload, LocationPayloadMap, LocationRecord
 from repository.repository_base import LOCATION_FIELDS
 
@@ -23,13 +24,24 @@ class RepositoryLocationMixin:
                 """
                 CREATE TABLE IF NOT EXISTS "CollectionEvents" (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    trip_id INTEGER,
                     location_id INTEGER NOT NULL,
                     collection_name TEXT NOT NULL,
                     collection_subset TEXT,
+                    event_year INTEGER,
+                    FOREIGN KEY (trip_id) REFERENCES Trips(id) ON DELETE SET NULL,
                     FOREIGN KEY (location_id) REFERENCES Locations(id)
                 )
                 """
             )
+            collection_event_columns = {row["name"] for row in conn.execute('PRAGMA table_info("CollectionEvents")').fetchall()}
+            if "trip_id" not in collection_event_columns:
+                conn.execute('ALTER TABLE "CollectionEvents" ADD COLUMN trip_id INTEGER')
+                collection_event_columns = {
+                    row["name"] for row in conn.execute('PRAGMA table_info("CollectionEvents")').fetchall()
+                }
+            if "event_year" not in collection_event_columns:
+                conn.execute('ALTER TABLE "CollectionEvents" ADD COLUMN event_year INTEGER')
             self._migrate_legacy_collection_fields(conn)
             self._rebuild_locations_table_without_legacy_columns(conn)
             conn.execute(
@@ -49,11 +61,12 @@ class RepositoryLocationMixin:
             conn.execute(
                 'CREATE INDEX IF NOT EXISTS idx_collection_events_location ON "CollectionEvents"(location_id)'
             )
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_collection_events_trip ON "CollectionEvents"(trip_id)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_collection_events_event_year ON "CollectionEvents"(event_year)')
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS "Finds" (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    trip_id INTEGER,
                     location_id INTEGER,
                     collection_event_id INTEGER,
                     source_system TEXT,
@@ -77,15 +90,18 @@ class RepositoryLocationMixin:
                     occurrence_comments TEXT,
                     research_group TEXT,
                     notes TEXT,
+                    collection_year_latest_estimate INTEGER,
                     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (trip_id) REFERENCES Trips(id) ON DELETE SET NULL,
                     FOREIGN KEY (location_id) REFERENCES Locations(id) ON DELETE SET NULL,
                     FOREIGN KEY (collection_event_id) REFERENCES CollectionEvents(id) ON DELETE SET NULL
                 )
                 """
             )
-            conn.execute('CREATE INDEX IF NOT EXISTS idx_finds_trip ON "Finds"(trip_id)')
+            rebuild_finds_table_without_trip_id(conn)
+            find_columns = {row["name"] for row in conn.execute('PRAGMA table_info("Finds")').fetchall()}
+            if "collection_year_latest_estimate" not in find_columns:
+                conn.execute('ALTER TABLE "Finds" ADD COLUMN collection_year_latest_estimate INTEGER')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_finds_location ON "Finds"(location_id)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_finds_collection_event ON "Finds"(collection_event_id)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_finds_source_occurrence ON "Finds"(source_occurrence_no)')

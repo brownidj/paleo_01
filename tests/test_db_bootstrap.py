@@ -6,7 +6,7 @@ import unittest
 from contextlib import closing
 from pathlib import Path
 
-from scripts.db_bootstrap import SCHEMA_VERSION, create_trips_table, create_users_table, initialize_database
+from scripts.db_bootstrap import SCHEMA_VERSION, create_team_members_table, create_trips_table, initialize_database
 
 
 class TestDbBootstrap(unittest.TestCase):
@@ -45,7 +45,7 @@ class TestDbBootstrap(unittest.TestCase):
                     "SELECT name FROM sqlite_master WHERE type = 'table'"
                 ).fetchall()
             }
-            self.assertTrue({"Users", "Trips", "Locations", "TripLocations", "CollectionEvents", "Finds"}.issubset(table_names))
+            self.assertTrue({"Team_members", "Trips", "Locations", "TripLocations", "CollectionEvents", "Finds"}.issubset(table_names))
 
             trip_columns = {row[1] for row in conn.execute("PRAGMA table_info(Trips)").fetchall()}
             self.assertIn("trip_name", trip_columns)
@@ -53,8 +53,12 @@ class TestDbBootstrap(unittest.TestCase):
             self.assertNotIn("region", trip_columns)
             self.assertNotIn("trip_code", trip_columns)
 
-            user_columns = {row[1] for row in conn.execute("PRAGMA table_info(Users)").fetchall()}
+            user_columns = {row[1] for row in conn.execute("PRAGMA table_info(Team_members)").fetchall()}
             self.assertIn("active", user_columns)
+            self.assertIn("recruitment_date", user_columns)
+            self.assertIn("retirement_date", user_columns)
+            find_columns = {row[1] for row in conn.execute("PRAGMA table_info(Finds)").fetchall()}
+            self.assertNotIn("trip_id", find_columns)
 
     def test_initialize_database_is_idempotent_and_preserves_data(self):
         fields_first = initialize_database(self.db_path, self.csv_path)
@@ -77,7 +81,7 @@ class TestDbBootstrap(unittest.TestCase):
     def test_initialize_database_upgrades_from_partial_schema_version(self):
         trip_fields = ["id", "trip_name", "location", "start_date", "end_date"]
         with closing(sqlite3.connect(self.db_path)) as conn:
-            create_users_table(conn)
+            create_team_members_table(conn)
             create_trips_table(conn, trip_fields)
             conn.execute(
                 "INSERT INTO Trips (trip_name, location, start_date, end_date) VALUES (?, ?, ?, ?)",
@@ -102,6 +106,101 @@ class TestDbBootstrap(unittest.TestCase):
             trip_name = conn.execute("SELECT trip_name FROM Trips WHERE id = 1").fetchone()[0]
             self.assertEqual(version, SCHEMA_VERSION)
             self.assertEqual(trip_name, "Legacy Partial")
+            find_columns = {row[1] for row in conn.execute("PRAGMA table_info(Finds)").fetchall()}
+            self.assertNotIn("trip_id", find_columns)
+
+    def test_initialize_database_removes_legacy_finds_trip_id_and_preserves_rows(self):
+        with closing(sqlite3.connect(self.db_path)) as conn:
+            conn.execute(
+                """
+                CREATE TABLE Trips (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    trip_name TEXT,
+                    location TEXT,
+                    start_date TEXT,
+                    end_date TEXT
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE Locations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT,
+                    latitude TEXT,
+                    longitude TEXT,
+                    altitude_value TEXT,
+                    altitude_unit TEXT,
+                    country_code TEXT,
+                    state TEXT,
+                    lga TEXT,
+                    basin TEXT,
+                    geogscale TEXT,
+                    geography_comments TEXT
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE CollectionEvents (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    trip_id INTEGER,
+                    location_id INTEGER NOT NULL,
+                    collection_name TEXT NOT NULL,
+                    collection_subset TEXT,
+                    event_year INTEGER
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE Finds (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    trip_id INTEGER,
+                    location_id INTEGER,
+                    collection_event_id INTEGER,
+                    source_system TEXT,
+                    source_occurrence_no TEXT,
+                    accepted_name TEXT,
+                    collection_year_latest_estimate INTEGER,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            conn.execute("INSERT INTO Trips (id, trip_name, location) VALUES (1, 'Legacy Trip', 'Legacy Site')")
+            conn.execute(
+                "INSERT INTO Locations (id, name, latitude, longitude, country_code, state) VALUES (1, 'Legacy Site', '-20', '140', 'AU', 'QLD')"
+            )
+            conn.execute(
+                """
+                INSERT INTO CollectionEvents (id, trip_id, location_id, collection_name, collection_subset, event_year)
+                VALUES (1, 1, 1, 'Legacy Site', 'CE-1', 2000)
+                """
+            )
+            conn.execute(
+                """
+                INSERT INTO Finds (
+                    id, trip_id, location_id, collection_event_id, source_system, source_occurrence_no, accepted_name,
+                    collection_year_latest_estimate
+                ) VALUES (1, 1, 1, 1, 'PBDB', 'O-1', 'Taxon A', 2001)
+                """
+            )
+            conn.execute("PRAGMA user_version = 2")
+            conn.commit()
+
+        initialize_database(self.db_path, self.csv_path)
+        initialize_database(self.db_path, self.csv_path)
+
+        with closing(sqlite3.connect(self.db_path)) as conn:
+            version = conn.execute("PRAGMA user_version").fetchone()[0]
+            self.assertEqual(version, SCHEMA_VERSION)
+            find_columns = {row[1] for row in conn.execute("PRAGMA table_info(Finds)").fetchall()}
+            self.assertNotIn("trip_id", find_columns)
+            row = conn.execute(
+                "SELECT id, location_id, collection_event_id, source_occurrence_no, accepted_name FROM Finds WHERE id = 1"
+            ).fetchone()
+            self.assertEqual(row, (1, 1, 1, "O-1", "Taxon A"))
 
 
 if __name__ == "__main__":

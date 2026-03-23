@@ -1,10 +1,12 @@
 import sqlite3
 import tkinter as tk
 import tkinter.font as tkfont
+from collections.abc import Mapping
 from tkinter import messagebox, ttk
 
 from repository import DEFAULT_DB_PATH
 from repository.trip_repository import TripRepository
+from ui.auto_hide_scrollbars import attach_auto_hiding_scrollbars
 from ui.planning_tabs_controller import PlanningTabsController
 from ui.trip_dialog_controller import TripDialogController
 from ui.trip_navigation_coordinator import TripNavigationCoordinator
@@ -50,9 +52,10 @@ class PlanningPhaseWindow(tk.Tk):
         self.repo = TripRepository(db_path)
         self.repo.ensure_trips_table()
         self.fields = self.repo.get_fields()
-        self.list_fields = ["trip_name", "start_date", "end_date", "location"]
+        self.list_fields = ["trip_name", "start_date", "collection_events_count", "finds_count", "location"]
         self.edit_fields = ["trip_name", "start_date", "end_date", "location", "team", "notes"]
-        self.list_fields = [f for f in self.list_fields if f in self.fields]
+        static_list_fields = ["collection_events_count", "finds_count"]
+        self.list_fields = [f for f in self.list_fields if f in self.fields or f in static_list_fields]
         self.edit_fields = [f for f in self.edit_fields if f in self.fields]
 
         self.tabs_controller = PlanningTabsController(self, self.repo, self._on_tab_changed)
@@ -63,7 +66,7 @@ class PlanningPhaseWindow(tk.Tk):
         self.collection_events_tab = self.tabs_controller.collection_events_tab
         self.finds_tab = self.tabs_controller.finds_tab
         self.collection_plan_tab = self.tabs_controller.collection_plan_tab
-        self.users_tab = self.tabs_controller.users_tab
+        self.team_members_tab = self.tabs_controller.team_members_tab
         self.navigation = TripNavigationCoordinator(
             tabs=self.tabs,
             trips_tab=self.trips_tab,
@@ -71,7 +74,7 @@ class PlanningPhaseWindow(tk.Tk):
             geology_tab=self.geology_tab,
             collection_events_tab=self.collection_events_tab,
             finds_tab=self.finds_tab,
-            users_tab=self.users_tab,
+            team_members_tab=self.team_members_tab,
             load_trips=self.load_trips,
             select_trip_row=self._select_trip_row,
         )
@@ -99,7 +102,7 @@ class PlanningPhaseWindow(tk.Tk):
         for field in self.list_fields:
             self.trips_tree.heading(field, text=field)
             self.trips_tree.column(field, width=160, anchor="w")
-        self.trips_tree.pack(fill="both", expand=True, padx=10, pady=6)
+        attach_auto_hiding_scrollbars(self.trips_tab, self.trips_tree, padx=10, pady=6)
         buttons = ttk.Frame(self.trips_tab)
         buttons.pack(fill="x", padx=10, pady=8)
         ttk.Button(buttons, text="New Trip", command=self.new_trip).pack(side="left", padx=4)
@@ -116,8 +119,32 @@ class PlanningPhaseWindow(tk.Tk):
             messagebox.showerror("Database Error", str(e))
             return
         for record in records:
-            values = [record.get(field, "") for field in self.list_fields]
+            values = [self._trip_list_value(record, field) for field in self.list_fields]
             self.trips_tree.insert("", "end", iid=str(record["id"]), values=values)
+
+    def _trip_list_value(self, record: Mapping[str, object], field: str):
+        trip_id_raw = record.get("id")
+        try:
+            trip_id = int(trip_id_raw) if isinstance(trip_id_raw, (int, str)) else None
+        except (TypeError, ValueError):
+            trip_id = None
+        if field == "collection_events_count":
+            count_fn = getattr(self.repo, "count_collection_events_for_trip", None)
+            if callable(count_fn) and trip_id is not None:
+                try:
+                    return int(count_fn(trip_id))
+                except Exception:
+                    return 0
+            return 0
+        if field == "finds_count":
+            count_fn = getattr(self.repo, "count_finds_for_trip", None)
+            if callable(count_fn) and trip_id is not None:
+                try:
+                    return int(count_fn(trip_id))
+                except Exception:
+                    return 0
+            return 0
+        return record.get(field, "")
 
     def new_trip(self) -> None:
         self.dialog_controller.new_trip()

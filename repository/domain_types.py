@@ -18,11 +18,18 @@ class TripRecord(TripPayload, total=False):
 TripPayloadMap = dict[str, str | None]
 
 
-class UserRecord(TypedDict, total=False):
+class TeamMemberRecord(TypedDict, total=False):
     id: int
     name: str
     phone_number: str
+    institution: str | None
+    recruitment_date: str | None
+    retirement_date: str | None
     active: int
+
+
+# Backward compatibility alias.
+UserRecord = TeamMemberRecord
 
 
 class CollectionEventPayload(TypedDict):
@@ -60,6 +67,7 @@ class FindRecord(TypedDict, total=False):
     accepted_name: str | None
     identified_name: str | None
     reference_no: str | None
+    collection_year_latest_estimate: int | None
     trip_name: str | None
     location_name: str | None
     collection_subset: str | None
@@ -67,6 +75,8 @@ class FindRecord(TypedDict, total=False):
 
 class CollectionEventRecord(TypedDict, total=False):
     id: int
+    trip_id: int | None
+    event_year: int | None
     collection_name: str | None
     collection_subset: str | None
     location_name: str | None

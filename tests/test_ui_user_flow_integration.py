@@ -36,7 +36,7 @@ class TestUiUserFlowIntegration(unittest.TestCase):
             cur = conn.cursor()
             cur.execute(
                 """
-                CREATE TABLE IF NOT EXISTS Users (
+                CREATE TABLE IF NOT EXISTS Team_members (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT NOT NULL,
                     phone_number TEXT NOT NULL,
@@ -45,7 +45,7 @@ class TestUiUserFlowIntegration(unittest.TestCase):
                 """
             )
             cur.execute(
-                "INSERT INTO Users (name, phone_number, active) VALUES (?, ?, ?)",
+                "INSERT INTO Team_members (name, phone_number, active) VALUES (?, ?, ?)",
                 ("Alice Example", "+61 400 000 001", 1),
             )
             event_rows = cur.execute(
@@ -58,21 +58,23 @@ class TestUiUserFlowIntegration(unittest.TestCase):
                 (self.location_id,),
             ).fetchall()
             events = {row["collection_subset"]: int(row["id"]) for row in event_rows}
+            cur.execute("UPDATE CollectionEvents SET trip_id = ? WHERE id = ?", (self.trip_a, events["CE-1"]))
+            cur.execute("UPDATE CollectionEvents SET trip_id = ? WHERE id = ?", (self.trip_b, events["CE-2"]))
             cur.execute("INSERT OR IGNORE INTO TripLocations (id, location_id) VALUES (?, ?)", (self.trip_a, self.location_id))
             cur.execute("INSERT OR IGNORE INTO TripLocations (id, location_id) VALUES (?, ?)", (self.trip_b, self.location_id))
             cur.execute(
                 """
-                INSERT INTO Finds (trip_id, location_id, collection_event_id, source_system, source_occurrence_no, accepted_name)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO Finds (location_id, collection_event_id, source_system, source_occurrence_no, accepted_name)
+                VALUES (?, ?, ?, ?, ?)
                 """,
-                (self.trip_a, self.location_id, events["CE-1"], "PBDB", "A-001", "Taxon A"),
+                (self.location_id, events["CE-1"], "PBDB", "A-001", "Taxon A"),
             )
             cur.execute(
                 """
-                INSERT INTO Finds (trip_id, location_id, collection_event_id, source_system, source_occurrence_no, accepted_name)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO Finds (location_id, collection_event_id, source_system, source_occurrence_no, accepted_name)
+                VALUES (?, ?, ?, ?, ?)
                 """,
-                (self.trip_b, self.location_id, events["CE-2"], "PBDB", "B-001", "Taxon B"),
+                (self.location_id, events["CE-2"], "PBDB", "B-001", "Taxon B"),
             )
             conn.commit()
         self.window: PlanningPhaseWindow | None = None

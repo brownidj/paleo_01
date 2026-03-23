@@ -2,6 +2,7 @@ import sqlite3
 from tkinter import messagebox, ttk
 
 from repository.trip_repository import TripRepository
+from ui.auto_hide_scrollbars import attach_auto_hiding_scrollbars
 from ui.location_form_dialog import LocationFormDialog
 
 
@@ -29,7 +30,7 @@ class LocationTab(ttk.Frame):
             heading = "LGA" if col == "lga" else col.replace("_", " ")
             self.tree.heading(col, text=heading)
             self.tree.column(col, width=column_widths.get(col, 120), anchor="w")
-        self.tree.pack(fill="both", expand=True, padx=10, pady=6)
+        attach_auto_hiding_scrollbars(self, self.tree, padx=10, pady=6)
 
         buttons = ttk.Frame(self)
         buttons.pack(fill="x", padx=10, pady=8)

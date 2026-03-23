@@ -34,7 +34,7 @@ class FakeTab:
     def load_finds(self):
         self.load_calls += 1
 
-    def load_users(self):
+    def load_team_members(self):
         self.load_calls += 1
 
 
@@ -79,7 +79,7 @@ class TestTripNavigationCoordinator(unittest.TestCase):
         self.geology_tab = FakeTab("geology")
         self.collection_events_tab = FakeFilterTab("collection")
         self.finds_tab = FakeFilterTab("finds")
-        self.users_tab = FakeTab("users")
+        self.team_members_tab = FakeTab("team_members")
         self.load_trips_calls = 0
         self.selected_trip_ids: list[int] = []
 
@@ -96,7 +96,7 @@ class TestTripNavigationCoordinator(unittest.TestCase):
             geology_tab=self.geology_tab,
             collection_events_tab=self.collection_events_tab,
             finds_tab=self.finds_tab,
-            users_tab=self.users_tab,
+            team_members_tab=self.team_members_tab,
             load_trips=load_trips,
             select_trip_row=select_trip_row,
         )
@@ -159,14 +159,14 @@ class TestTripNavigationCoordinator(unittest.TestCase):
         self.coordinator.on_tab_changed()
         self.tabs.select(str(self.finds_tab))
         self.coordinator.on_tab_changed()
-        self.tabs.select(str(self.users_tab))
+        self.tabs.select(str(self.team_members_tab))
         self.coordinator.on_tab_changed()
 
         self.assertEqual(self.location_tab.load_calls, 1)
         self.assertEqual(self.geology_tab.load_calls, 1)
         self.assertEqual(self.collection_events_tab.load_calls, 1)
         self.assertEqual(self.finds_tab.load_calls, 1)
-        self.assertEqual(self.users_tab.load_calls, 1)
+        self.assertEqual(self.team_members_tab.load_calls, 1)
 
 
 if __name__ == "__main__":
