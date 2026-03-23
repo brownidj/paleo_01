@@ -1,7 +1,9 @@
 import sqlite3
 import tkinter as tk
 import tkinter.font as tkfont
+import json
 from collections.abc import Mapping
+from pathlib import Path
 from tkinter import messagebox, ttk
 
 from repository import DEFAULT_DB_PATH
@@ -48,8 +50,15 @@ class PlanningPhaseWindow(tk.Tk):
         self.title("Planning Phase")
         self.geometry("980x560")
         self._apply_palette()
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
+        self._db_path = self._resolve_db_path(db_path)
+        self._state_path = self._db_path.with_suffix(self._db_path.suffix + ".ui_state.json")
+        self._last_selected_trip_id, self._last_selected_trip_name = self._load_last_selected_trip_state()
+        self._suspend_trip_selection_persist = True
+        self._trip_toast_shown_count = 0
+        self._trip_toast_hide_after_id: str | None = None
 
-        self.repo = TripRepository(db_path)
+        self.repo = TripRepository(str(self._db_path))
         self.repo.ensure_trips_table()
         self.fields = self.repo.get_fields()
         self.list_fields = ["trip_name", "start_date", "collection_events_count", "finds_count", "location"]
@@ -94,23 +103,43 @@ class PlanningPhaseWindow(tk.Tk):
         )
         self.tabs_controller.build_collection_plan_placeholder()
         self.tabs_controller.load_initial_tab_data(self.load_trips)
+        self.after_idle(self._restore_trip_selection)
 
     def _build_trips_tab(self) -> None:
+        heading_labels = {
+            "trip_name": "Name",
+            "start_date": "Start",
+            "collection_events_count": "Collection Events",
+            "finds_count": "Finds",
+            "location": "Location",
+        }
         self.trips_tree = ttk.Treeview(
             self.trips_tab,
             columns=self.list_fields,
             show="headings",
+            style="Trips.Treeview",
         )
         for field in self.list_fields:
-            self.trips_tree.heading(field, text=field)
+            self.trips_tree.heading(field, text=heading_labels.get(field, field))
             self.trips_tree.column(field, width=160, anchor="w")
         attach_auto_hiding_scrollbars(self.trips_tab, self.trips_tree, padx=10, pady=6)
         buttons = ttk.Frame(self.trips_tab)
         buttons.pack(fill="x", padx=10, pady=8)
         ttk.Button(buttons, text="New Trip", command=self.new_trip).pack(side="left", padx=4)
-        ttk.Button(buttons, text="Edit Selected", command=self.edit_selected).pack(side="left", padx=4)
-        ttk.Button(buttons, text="Refresh", command=self.load_trips).pack(side="left", padx=4)
         self.trips_tree.bind("<Double-1>", lambda _: self.edit_selected())
+        self.trips_tree.bind("<<TreeviewSelect>>", self._on_trip_selected)
+        self._trip_toast = tk.Label(
+            self.trips_tab,
+            text="",
+            bg="#2B6E59",
+            fg="#FFFFFF",
+            font=("Helvetica", 12, "bold"),
+            bd=2,
+            relief="solid",
+            padx=14,
+            pady=8,
+        )
+        self._trip_toast.place_forget()
 
     def load_trips(self) -> None:
         for item in self.trips_tree.get_children():
@@ -123,6 +152,7 @@ class PlanningPhaseWindow(tk.Tk):
         for record in records:
             values = [self._trip_list_value(record, field) for field in self.list_fields]
             self.trips_tree.insert("", "end", iid=str(record["id"]), values=values)
+        self._restore_trip_selection()
 
     def _trip_list_value(self, record: Mapping[str, object], field: str):
         trip_id_raw = record.get("id")
@@ -156,6 +186,17 @@ class PlanningPhaseWindow(tk.Tk):
 
     def _on_tab_changed(self, _event) -> None:
         self.navigation.on_tab_changed()
+        current_tab = self.tabs.select()
+        if current_tab == str(self.trips_tab):
+            self._maybe_show_trip_edit_toast()
+        elif current_tab == str(self.location_tab):
+            maybe = getattr(self.location_tab, "maybe_show_edit_toast", None)
+            if callable(maybe):
+                maybe()
+        elif current_tab == str(self.team_members_tab):
+            maybe = getattr(self.team_members_tab, "maybe_show_edit_toast", None)
+            if callable(maybe):
+                maybe()
 
     def _select_trip_row(self, trip_id: int) -> None:
         iid = str(trip_id)
@@ -164,6 +205,7 @@ class PlanningPhaseWindow(tk.Tk):
         self.trips_tree.selection_set(iid)
         self.trips_tree.focus(iid)
         self.trips_tree.see(iid)
+        self._persist_trip_selection_from_iid(iid)
 
     def _trip_team_names(self, trip_id: int) -> list[str]:
         trip = self.repo.get_trip(trip_id)
@@ -173,6 +215,120 @@ class PlanningPhaseWindow(tk.Tk):
         if not team_value:
             return []
         return [name.strip() for name in team_value.split(";") if name.strip()]
+
+    def _restore_trip_selection(self) -> None:
+        children = tuple(self.trips_tree.get_children())
+        if not children:
+            self._last_selected_trip_id = None
+            self._last_selected_trip_name = None
+            self._save_last_selected_trip_state(None, None)
+            return
+        target_iid = None
+        if self._last_selected_trip_id is not None:
+            candidate = str(self._last_selected_trip_id)
+            if candidate in children:
+                target_iid = candidate
+        if target_iid is None and self._last_selected_trip_name:
+            for iid in children:
+                values = self.trips_tree.item(iid, "values")
+                trip_name = str(values[0]) if values else ""
+                if trip_name == self._last_selected_trip_name:
+                    target_iid = str(iid)
+                    break
+        if target_iid is None:
+            target_iid = children[0]
+        self.trips_tree.selection_set(target_iid)
+        self.trips_tree.focus(target_iid)
+        self.trips_tree.see(target_iid)
+        self._maybe_show_trip_edit_toast()
+        self._persist_trip_selection_from_iid(target_iid, force=True)
+        self._suspend_trip_selection_persist = False
+
+    def _on_trip_selected(self, _event) -> None:
+        if self._suspend_trip_selection_persist:
+            return
+        selected = self.trips_tree.selection()
+        if not selected:
+            return
+        self._maybe_show_trip_edit_toast()
+        self._persist_trip_selection_from_iid(str(selected[0]))
+
+    def _persist_trip_selection_from_iid(self, iid: str, force: bool = False) -> None:
+        if self._suspend_trip_selection_persist and not force:
+            return
+        try:
+            trip_id = int(iid)
+        except (TypeError, ValueError):
+            return
+        values = self.trips_tree.item(iid, "values")
+        trip_name = str(values[0]) if values else None
+        self._last_selected_trip_id = trip_id
+        self._last_selected_trip_name = trip_name
+        self._save_last_selected_trip_state(trip_id, trip_name)
+
+    def _load_last_selected_trip_state(self) -> tuple[int | None, str | None]:
+        try:
+            data = json.loads(self._state_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return None, None
+        raw = data.get("last_selected_trip_id")
+        trip_name_raw = data.get("last_selected_trip_name")
+        trip_name = str(trip_name_raw) if isinstance(trip_name_raw, str) and trip_name_raw.strip() else None
+        try:
+            trip_id = int(raw) if raw is not None else None
+        except (TypeError, ValueError):
+            trip_id = None
+        return trip_id, trip_name
+
+    def _save_last_selected_trip_state(self, trip_id: int | None, trip_name: str | None) -> None:
+        payload = {"last_selected_trip_id": trip_id, "last_selected_trip_name": trip_name}
+        try:
+            self._state_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        except OSError:
+            # Non-fatal: selection persistence should not block UI behavior.
+            return
+
+    def _on_close(self) -> None:
+        selected = self.trips_tree.selection()
+        if selected:
+            self._persist_trip_selection_from_iid(str(selected[0]), force=True)
+        self.destroy()
+
+    def _maybe_show_trip_edit_toast(self, duration_ms: int = 1400) -> None:
+        trips_tree = self.__dict__.get("trips_tree")
+        if trips_tree is None:
+            return
+        if not trips_tree.selection():
+            return
+        shown_count = int(self.__dict__.get("_trip_toast_shown_count", 0))
+        if shown_count >= 2:
+            return
+        toast = self.__dict__.get("_trip_toast")
+        if toast is None:
+            return
+        self._trip_toast_shown_count = shown_count + 1
+        toast.configure(text="Double-click to edit.")
+        toast.place(in_=trips_tree, relx=0.5, rely=1.0, anchor="s", y=-18)
+        hide_after_id = self.__dict__.get("_trip_toast_hide_after_id")
+        if hide_after_id is not None:
+            self.after_cancel(hide_after_id)
+        self._trip_toast_hide_after_id = self.after(duration_ms, self._hide_trip_toast)
+
+    def _hide_trip_toast(self) -> None:
+        toast = self.__dict__.get("_trip_toast")
+        if toast is None:
+            return
+        toast.place_forget()
+        self._trip_toast_hide_after_id = None
+
+    @staticmethod
+    def _resolve_db_path(db_path: str) -> Path:
+        path = Path(db_path)
+        if path.is_absolute():
+            return path.resolve()
+        # Anchor relative DB paths to project root, not process CWD.
+        project_root = Path(__file__).resolve().parent.parent
+        return (project_root / path).resolve()
 
     def _apply_palette(self) -> None:
         p = self.PALETTE
@@ -259,6 +415,25 @@ class PlanningPhaseWindow(tk.Tk):
             background=surface_alt,
             foreground=text_primary,
             relief="flat",
+        )
+        style.configure(
+            "Trips.Treeview",
+            background=surface,
+            fieldbackground=surface,
+            foreground=text_primary,
+            rowheight=24,
+        )
+        style.map(
+            "Trips.Treeview",
+            background=[("selected", selected)],
+            foreground=[("selected", text_primary)],
+        )
+        style.configure(
+            "Trips.Treeview.Heading",
+            background=surface_alt,
+            foreground=text_primary,
+            relief="flat",
+            font=("Helvetica", 10, "bold"),
         )
 
         style.configure(

@@ -13,6 +13,8 @@ class TeamMembersTab(ttk.Frame):
         self.repo = repo
         self.trip_filter_var = tk.IntVar(value=0)
         self._trip_filter_names: set[str] | None = None
+        self._toast_shown_count = 0
+        self._toast_hide_after_id: str | None = None
 
         trip_filter_radio = ttk.Radiobutton(self, text="Trip filter", variable=self.trip_filter_var, value=1)
         trip_filter_radio.pack(anchor="w", padx=10, pady=(10, 4))
@@ -37,6 +39,20 @@ class TeamMembersTab(ttk.Frame):
         buttons.pack(fill="x", padx=10, pady=8)
         ttk.Button(buttons, text="New Team Member", command=self.new_team_member).pack(side="left", padx=4)
         self.team_members_tree.bind("<Double-1>", lambda _: self.edit_team_member())
+        self.team_members_tree.bind("<<TreeviewSelect>>", self._on_tree_select)
+
+        self._toast = tk.Label(
+            self,
+            text="",
+            bg="#2B6E59",
+            fg="#FFFFFF",
+            font=("Helvetica", 12, "bold"),
+            bd=2,
+            relief="solid",
+            padx=14,
+            pady=8,
+        )
+        self._toast.place_forget()
 
     def load_team_members(self) -> None:
         for item in self.team_members_tree.get_children():
@@ -134,3 +150,24 @@ class TeamMembersTab(ttk.Frame):
     @staticmethod
     def _norm_name(value: str) -> str:
         return " ".join(value.strip().lower().split())
+
+    def maybe_show_edit_toast(self) -> None:
+        if self.team_members_tree.selection():
+            self._show_toast_if_available("Double-click to edit.")
+
+    def _on_tree_select(self, _event) -> None:
+        self._show_toast_if_available("Double-click to edit.")
+
+    def _show_toast_if_available(self, message: str, duration_ms: int = 1400) -> None:
+        if self._toast_shown_count >= 2:
+            return
+        self._toast_shown_count += 1
+        self._toast.configure(text=message)
+        self._toast.place(in_=self.team_members_tree, relx=0.5, rely=1.0, anchor="s", y=-18)
+        if self._toast_hide_after_id is not None:
+            self.after_cancel(self._toast_hide_after_id)
+        self._toast_hide_after_id = self.after(duration_ms, self._hide_toast)
+
+    def _hide_toast(self) -> None:
+        self._toast.place_forget()
+        self._toast_hide_after_id = None
