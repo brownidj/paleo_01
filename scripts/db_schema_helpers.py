@@ -43,6 +43,8 @@ def create_team_members_table(conn: sqlite3.Connection) -> None:
             name TEXT NOT NULL,
             phone_number TEXT NOT NULL,
             institution TEXT,
+            recruitment_date TEXT,
+            retirement_date TEXT,
             active INTEGER NOT NULL DEFAULT 0 CHECK(active IN (0, 1))
         )
         """
@@ -63,6 +65,12 @@ def create_team_members_table(conn: sqlite3.Connection) -> None:
     columns = [row[1] for row in conn.execute("PRAGMA table_info(Team_members)").fetchall()]
     if "institution" not in columns:
         conn.execute("ALTER TABLE Team_members ADD COLUMN institution TEXT")
+        columns = [row[1] for row in conn.execute("PRAGMA table_info(Team_members)").fetchall()]
+    if "recruitment_date" not in columns:
+        conn.execute("ALTER TABLE Team_members ADD COLUMN recruitment_date TEXT")
+        columns = [row[1] for row in conn.execute("PRAGMA table_info(Team_members)").fetchall()]
+    if "retirement_date" not in columns:
+        conn.execute("ALTER TABLE Team_members ADD COLUMN retirement_date TEXT")
         columns = [row[1] for row in conn.execute("PRAGMA table_info(Team_members)").fetchall()]
     if "active" not in columns:
         conn.execute(

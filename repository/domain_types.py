@@ -23,6 +23,8 @@ class TeamMemberRecord(TypedDict, total=False):
     name: str
     phone_number: str
     institution: str | None
+    recruitment_date: str | None
+    retirement_date: str | None
     active: int
 
 

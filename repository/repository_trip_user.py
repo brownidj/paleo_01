@@ -14,6 +14,8 @@ class RepositoryTripUserMixin:
                     name TEXT NOT NULL,
                     phone_number TEXT NOT NULL,
                     institution TEXT,
+                    recruitment_date TEXT,
+                    retirement_date TEXT,
                     active INTEGER NOT NULL DEFAULT 0 CHECK(active IN (0, 1))
                 )
                 """
@@ -33,6 +35,12 @@ class RepositoryTripUserMixin:
             columns = [row["name"] for row in conn.execute('PRAGMA table_info("Team_members")').fetchall()]
             if "institution" not in columns:
                 conn.execute('ALTER TABLE "Team_members" ADD COLUMN institution TEXT')
+                columns = [row["name"] for row in conn.execute('PRAGMA table_info("Team_members")').fetchall()]
+            if "recruitment_date" not in columns:
+                conn.execute('ALTER TABLE "Team_members" ADD COLUMN recruitment_date TEXT')
+                columns = [row["name"] for row in conn.execute('PRAGMA table_info("Team_members")').fetchall()]
+            if "retirement_date" not in columns:
+                conn.execute('ALTER TABLE "Team_members" ADD COLUMN retirement_date TEXT')
                 columns = [row["name"] for row in conn.execute('PRAGMA table_info("Team_members")').fetchall()]
             if "active" not in columns:
                 conn.execute(
@@ -136,7 +144,7 @@ class RepositoryTripUserMixin:
         self._ensure_team_members_table()
         with self._connect() as conn:
             rows = conn.execute(
-                'SELECT id, name, phone_number, institution, active FROM "Team_members"'
+                'SELECT id, name, phone_number, institution, recruitment_date, retirement_date, active FROM "Team_members"'
             ).fetchall()
         team_members = [cast(TeamMemberRecord, dict(row)) for row in rows]
         team_members.sort(
@@ -152,7 +160,7 @@ class RepositoryTripUserMixin:
         self._ensure_team_members_table()
         with self._connect() as conn:
             row = conn.execute(
-                'SELECT id, name, phone_number, institution, active FROM "Team_members" WHERE id = ?',
+                'SELECT id, name, phone_number, institution, recruitment_date, retirement_date, active FROM "Team_members" WHERE id = ?',
                 (team_member_id,),
             ).fetchone()
         return cast(TeamMemberRecord, dict(row)) if row else None

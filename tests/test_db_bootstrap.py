@@ -55,6 +55,8 @@ class TestDbBootstrap(unittest.TestCase):
 
             user_columns = {row[1] for row in conn.execute("PRAGMA table_info(Team_members)").fetchall()}
             self.assertIn("active", user_columns)
+            self.assertIn("recruitment_date", user_columns)
+            self.assertIn("retirement_date", user_columns)
 
     def test_initialize_database_is_idempotent_and_preserves_data(self):
         fields_first = initialize_database(self.db_path, self.csv_path)
