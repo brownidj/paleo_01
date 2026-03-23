@@ -149,9 +149,9 @@ rg --files "$ROOT_DIR" \
   - **UI Modules**:
     - `ui/planning_phase_window.py`: composition root for tabs, dialog controller, navigation coordinator, and app palette.
     - `ui/planning_tabs_controller.py`: notebook tab construction and initial tab-data loading.
-    - `ui/trip_navigation_coordinator.py`: Trips ↔ Collection Events/Finds handoff, tab-change loading, hidden dialog restore, trip row reselection.
+    - `ui/trip_navigation_coordinator.py`: Trips ↔ Collection Events/Finds/Team Members handoff, tab-change loading, hidden dialog restore, trip row reselection.
     - `ui/trip_dialog_controller.py`: trip dialog orchestration (new/edit/copy and open-dialog lifecycle).
-    - `ui/trip_form_dialog.py`: Trip edit form with guarded edit mode (`Edit` toggle), icon chip actions, and cross-tab handoff hooks for `Collection Events` and `Finds`.
+    - `ui/trip_form_dialog.py`: Trip edit form with guarded edit mode (`Edit` toggle), icon chip actions, and cross-tab handoff hooks for `Collection Events`, `Finds`, and `Team`.
     - `ui/geology_tab.py`, `ui/geology_form_dialog.py`: geology listing/details and edit dialog.
     - `ui/trip_filter_tree_tab.py`: shared base for list tabs with `Trip filter` radio behavior + tree population.
     - `ui/collection_events_tab.py`: collection event listing; now uses shared trip-filter/tree base.
@@ -159,7 +159,7 @@ rg --files "$ROOT_DIR" \
     - `ui/team_editor_dialog.py`: active-user selector for team assignment.
     - `ui/location_picker_dialog.py`: location selector for trip location list.
     - `ui/location_tab.py`, `ui/location_form_dialog.py`: location CRUD + collection-events editing.
-    - `ui/team_members_tab.py`, `ui/team_member_form_dialog.py`: team-members CRUD (no delete in UI flow).
+    - `ui/team_members_tab.py`, `ui/team_member_form_dialog.py`: team-members CRUD (no delete in UI flow) with optional trip-scoped filter mode.
   - **Seeding**:
     - `scripts/seed_users.py`: team members with fixed AU phone and active split.
     - `scripts/seed_locations.py`: fake locations; supports `--truncate`; optional one-time cardinal variants from first-pass records.
@@ -181,10 +181,13 @@ rg --files "$ROOT_DIR" \
   - Trip Record editability is gated by `Edit` (off by default): with `Edit` off, fields are read-only and team/location editor chips are disabled.
   - Closing Trip Record auto-saves changed fields; turning `Edit` from on to off also auto-saves changed fields.
   - From Trip Record, `Collection Events`/`Finds` chips switch tabs, turn trip filter on, and apply trip-specific filtering; returning to `Trips` restores the hidden Trip Record and reselects that trip.
+  - From Trip Record, `Team` chip switches to `Team Members`, turns Trip filter on, and filters members to names listed in that trip’s `team` value.
   - Trip filtering in `Collection Events`/`Finds` is now event-owned: trip context is derived via `CollectionEvents.trip_id` (legacy `Finds.trip_id` removed).
   - Full PBDB re-import is currently loaded in the working DB (`Finds = 2068`) with all finds linked to `Locations` and `CollectionEvents`.
   - `collection_year_latest_estimate` is populated from inferred publication year minus a random 2..6 year offset.
-  - Team-member bulk population from `data/team_members_from_pbdb_data-2_publication_enriched.csv` is currently loaded (`Team_members = 141`), with recruitment/retirement date rules applied.
+  - Team-member bulk population from `data/team_members_from_pbdb_data-2_publication_enriched.csv` is currently loaded (`Team_members = 142`), with recruitment/retirement date rules applied and later date-window widening for mandatory trip assignments.
+  - Team-member assignment to trips has been generated from publication authors plus random eligible additions; no trips are currently left without `team` members.
+  - Publication-mandatory team assignments are now date-consistent after widening affected team-member recruitment/retirement windows (`mandatory_assignments_outside_date_window = 0`).
   - Generated initial trip candidates from grouped collection-event CSV and inserted ~50 historical trips with date-derived naming conventions.
   - Reassigned a subset of finds to generated trips using strict location + year-window matching (`trip start_year` in `[estimated_year-6, estimated_year-1]`).
   - Collection events carry `trip_id` and `event_year`; trip->collection-events and trip->finds listing/count are wired via `CollectionEvents.trip_id`.
@@ -200,7 +203,7 @@ rg --files "$ROOT_DIR" \
 
 ## Codebase Goodness Assessment (vs prompt)
 
-- **Overall rating**: **Strong (about 8.8/10)** for behavior stability, DB safety, and architecture clarity after package-layout normalization (`app/`, `repository/`, `config/`, `requirements/`) and boundary-rule updates.
+- **Overall rating**: **Strong (about 9.0/10)** for behavior stability, DB safety, and architecture clarity after package-layout normalization (`app/`, `repository/`, `config/`, `requirements/`) and boundary-rule updates.
 - **Strong areas**:
   - Thin entrypoints and clear app bootstrap flow are intact (`app/main.py` canonical, wrapper retained only for compatibility).
   - Core DB work is pragmatic and robust (parameterized SQL, explicit transaction/close handling, schema/migration separation).
@@ -213,6 +216,7 @@ rg --files "$ROOT_DIR" \
   - Legacy migration coverage is now exhaustive across currently known trip/location/trip-location historical schema permutations; risk now shifts to truly unknown future-discovered legacy variants.
   - UI flow coverage now includes smoke plus a higher-level handoff/filter-toggle/restore path; additional edge-case UI journeys can still be expanded over time.
   - Mypy is enforced for a scoped module set; broader project-wide typing coverage is still incremental.
+  - Team-member publication-name matching is currently heuristic/string-based; canonical author identity mapping is not yet modeled.
 
 ## Recommendations
 
@@ -229,11 +233,15 @@ rg --files "$ROOT_DIR" \
 4. Continue incremental type tightening.
 - Replace remaining untyped `dict` signatures in UI controllers/tabs with explicit typed payload aliases.
 - Expand mypy scope only when modules are green to avoid noisy regressions.
+5. Improve team-assignment identity quality.
+- Introduce canonical author/team-member identity mapping (aliases/initial variants) to reduce ambiguity in publication-derived assignments.
+- Persist assignment provenance (`mandatory_publication` vs `random_eligible`) for auditability and future recalculation.
 
 ## ToDo
 
 1. Resolve remaining trip records with `0` collection events (currently 16) through deterministic reassignment or explicit archival.
 2. Add a reusable `--dry-run/--apply` script for event-ownership normalization with CSV diff output.
+3. Add an explicit team-assignment rebuild script (`--dry-run/--apply`) that can regenerate `Trips.team` deterministically from publication + date-window rules.
 
 ## Test run report
 
@@ -241,8 +249,8 @@ rg --files "$ROOT_DIR" \
   - `bash scripts/ci_checks.sh`: **PASSED**
     - Includes: import-boundary check + canonical DB path check + trip/event integrity check + mypy + unittest suite + file-size check.
   - `python3 -m unittest` (via `ci_checks.sh`): **PASSED**
-    - Total: **40 passed**
+    - Total: **41 passed**
   - Notable coverage in latest run includes:
     - event-owned trip linkage (`Finds` without `trip_id`)
     - legacy migration permutations (including `Finds.trip_id` removal)
-    - UI handoff/filter regression paths
+    - UI handoff/filter regression paths (including Team Members handoff/filter activation)
