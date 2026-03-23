@@ -97,7 +97,12 @@ def _get_or_create_location(conn: sqlite3.Connection, row: dict[str, str]) -> in
     return int(cur.lastrowid)
 
 
-def _get_or_create_collection_event(conn: sqlite3.Connection, location_id: int, row: dict[str, str]) -> int:
+def _get_or_create_collection_event(
+    conn: sqlite3.Connection,
+    trip_id: int,
+    location_id: int,
+    row: dict[str, str],
+) -> int:
     collection_name = (row.get("collection_name") or "").strip() or f"Location {location_id}"
     collection_no = (row.get("collection_no") or "").strip()
     collection_dates = (row.get("collection_dates") or "").strip()
@@ -111,7 +116,7 @@ def _get_or_create_collection_event(conn: sqlite3.Connection, location_id: int, 
         subset = None
     existing = conn.execute(
         """
-        SELECT id
+        SELECT id, trip_id
         FROM "CollectionEvents"
         WHERE location_id = ?
           AND collection_name = ?
@@ -121,20 +126,22 @@ def _get_or_create_collection_event(conn: sqlite3.Connection, location_id: int, 
         (location_id, collection_name, subset),
     ).fetchone()
     if existing:
-        return int(existing[0])
+        event_id = int(existing[0])
+        if existing[1] is None:
+            conn.execute('UPDATE "CollectionEvents" SET trip_id = ? WHERE id = ?', (trip_id, event_id))
+        return event_id
     cur = conn.execute(
         """
-        INSERT INTO "CollectionEvents" (location_id, collection_name, collection_subset)
-        VALUES (?, ?, ?)
+        INSERT INTO "CollectionEvents" (trip_id, location_id, collection_name, collection_subset)
+        VALUES (?, ?, ?, ?)
         """,
-        (location_id, collection_name, subset),
+        (trip_id, location_id, collection_name, subset),
     )
     return int(cur.lastrowid)
 
 
 def _insert_find(
     conn: sqlite3.Connection,
-    trip_id: int,
     location_id: int,
     collection_event_id: int,
     row: dict[str, str],
@@ -143,15 +150,14 @@ def _insert_find(
     conn.execute(
         """
         INSERT INTO "Finds" (
-            trip_id, location_id, collection_event_id, source_system, source_occurrence_no,
+            location_id, collection_event_id, source_system, source_occurrence_no,
             identified_name, accepted_name, identified_rank, accepted_rank, difference,
             identified_no, accepted_no, phylum, class_name, taxon_order, family, genus,
             abund_value, abund_unit, reference_no, taxonomy_comments, occurrence_comments,
             research_group, notes, collection_year_latest_estimate
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
-            trip_id,
             location_id,
             collection_event_id,
             "PBDB",
@@ -200,9 +206,9 @@ def import_pbdb_finds(
         seen_events: set[int] = set()
         for row in rows:
             location_id = _get_or_create_location(conn, row)
-            collection_event_id = _get_or_create_collection_event(conn, location_id, row)
+            collection_event_id = _get_or_create_collection_event(conn, trip_id, location_id, row)
             inferred = _infer_collection_year(row, rng)
-            _insert_find(conn, trip_id, location_id, collection_event_id, row, inferred)
+            _insert_find(conn, location_id, collection_event_id, row, inferred)
             imported += 1
             seen_locations.add(location_id)
             seen_events.add(collection_event_id)

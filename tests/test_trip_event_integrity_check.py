@@ -22,7 +22,7 @@ def _init_schema(conn: sqlite3.Connection) -> None:
         """
         CREATE TABLE Finds (
             id INTEGER PRIMARY KEY,
-            trip_id INTEGER,
+            location_id INTEGER,
             collection_event_id INTEGER
         )
         """
@@ -46,7 +46,7 @@ class TestTripEventIntegrityCheck(unittest.TestCase):
             conn.execute(
                 "INSERT INTO CollectionEvents (id, trip_id, location_id, event_year) VALUES (10, 1, 100, 2001)"
             )
-            conn.execute("INSERT INTO Finds (id, trip_id, collection_event_id) VALUES (1000, 1, 10)")
+            conn.execute("INSERT INTO Finds (id, location_id, collection_event_id) VALUES (1000, 100, 10)")
             conn.commit()
 
             fk_on = enable_foreign_keys(conn)
@@ -60,8 +60,8 @@ class TestTripEventIntegrityCheck(unittest.TestCase):
             {
                 "finds_without_event": 0,
                 "events_without_trip": 0,
-                "find_event_trip_mismatch": 0,
-                "mixed_trip_events": 0,
+                "finds_with_event_missing_trip": 0,
+                "find_location_event_location_mismatch": 0,
             },
         )
         self.assertFalse(has_violations(metrics))
@@ -79,10 +79,10 @@ class TestTripEventIntegrityCheck(unittest.TestCase):
             # One event with trip, used by mixed-trip/mismatch finds.
             conn.execute("INSERT INTO CollectionEvents (id, trip_id, location_id, event_year) VALUES (20, 1, 101, 2002)")
             # Find without event.
-            conn.execute("INSERT INTO Finds (id, trip_id, collection_event_id) VALUES (1000, 1, NULL)")
-            # Mismatch + mixed-trip event: same collection_event_id with different trip_ids.
-            conn.execute("INSERT INTO Finds (id, trip_id, collection_event_id) VALUES (1001, 1, 20)")
-            conn.execute("INSERT INTO Finds (id, trip_id, collection_event_id) VALUES (1002, 2, 20)")
+            conn.execute("INSERT INTO Finds (id, location_id, collection_event_id) VALUES (1000, 100, NULL)")
+            # Event-trip missing and location mismatch.
+            conn.execute("INSERT INTO Finds (id, location_id, collection_event_id) VALUES (1001, 100, 10)")
+            conn.execute("INSERT INTO Finds (id, location_id, collection_event_id) VALUES (1002, 999, 20)")
             conn.commit()
 
             metrics = collect_integrity_metrics(conn)
@@ -91,8 +91,8 @@ class TestTripEventIntegrityCheck(unittest.TestCase):
 
         self.assertEqual(metrics["finds_without_event"], 1)
         self.assertEqual(metrics["events_without_trip"], 1)
-        self.assertEqual(metrics["find_event_trip_mismatch"], 1)
-        self.assertEqual(metrics["mixed_trip_events"], 1)
+        self.assertEqual(metrics["finds_with_event_missing_trip"], 1)
+        self.assertEqual(metrics["find_location_event_location_mismatch"], 1)
         self.assertTrue(has_violations(metrics))
 
 

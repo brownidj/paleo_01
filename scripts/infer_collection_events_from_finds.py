@@ -9,7 +9,6 @@ from pathlib import Path
 @dataclass(frozen=True)
 class FindRow:
     find_id: int
-    trip_id: int | None
     location_id: int
     estimated_year: int
 
@@ -30,6 +29,32 @@ def _parse_year(value: str | None) -> int | None:
     if len(text) >= 4 and text[:4].isdigit():
         return int(text[:4])
     return None
+
+
+def _choose_trip_for_event(
+    trip_rows_by_location: dict[int, list[tuple[int, int | None, int | None]]],
+    location_id: int,
+    event_year: int,
+) -> int | None:
+    candidates = trip_rows_by_location.get(location_id, [])
+    if not candidates:
+        return None
+    valid = [
+        trip
+        for trip in candidates
+        if (trip[1] is None or trip[1] <= event_year) and (trip[2] is None or event_year <= trip[2])
+    ]
+    if len(valid) == 1:
+        return int(valid[0][0])
+    pool = valid if valid else candidates
+    closest = min(
+        pool,
+        key=lambda trip: (
+            abs((trip[1] if trip[1] is not None else event_year) - event_year),
+            int(trip[0]),
+        ),
+    )
+    return int(closest[0])
 
 
 def _choose_best_year(unassigned: list[FindRow], window: int) -> tuple[int, list[FindRow]]:
@@ -56,29 +81,45 @@ def infer_collection_events(db_path: Path, window: int, include_empty_trips: boo
         find_rows = [
             FindRow(
                 find_id=int(r["id"]),
-                trip_id=int(r["trip_id"]) if r["trip_id"] is not None else None,
                 location_id=int(r["location_id"]),
                 estimated_year=int(r["collection_year_latest_estimate"]),
             )
             for r in conn.execute(
                 """
-                SELECT id, trip_id, location_id, collection_year_latest_estimate
+                SELECT id, location_id, collection_year_latest_estimate
                 FROM Finds
                 WHERE location_id IS NOT NULL AND collection_year_latest_estimate IS NOT NULL
-                ORDER BY trip_id, location_id, collection_year_latest_estimate, id
+                ORDER BY location_id, collection_year_latest_estimate, id
                 """
             ).fetchall()
         ]
 
-        grouped: dict[tuple[int | None, int], list[FindRow]] = defaultdict(list)
+        grouped: dict[int, list[FindRow]] = defaultdict(list)
         for row in find_rows:
-            grouped[(row.trip_id, row.location_id)].append(row)
+            grouped[row.location_id].append(row)
+
+        trip_rows_by_location: dict[int, list[tuple[int, int | None, int | None]]] = defaultdict(list)
+        for trip_row in conn.execute(
+            """
+            SELECT tl.location_id, t.id, t.start_date, t.end_date
+            FROM TripLocations tl
+            JOIN Trips t ON t.id = tl.id
+            ORDER BY t.id
+            """
+        ).fetchall():
+            trip_rows_by_location[int(trip_row["location_id"])].append(
+                (
+                    int(trip_row["id"]),
+                    _parse_year(trip_row["start_date"]),
+                    _parse_year(trip_row["end_date"]),
+                )
+            )
 
         conn.execute("DELETE FROM CollectionEvents")
         find_to_event: dict[int, int] = {}
         event_count = 0
 
-        for (trip_id, location_id), rows in sorted(grouped.items(), key=lambda x: ((x[0][0] or 0), x[0][1])):
+        for location_id, rows in sorted(grouped.items(), key=lambda x: x[0]):
             unassigned = sorted(rows, key=lambda r: (r.estimated_year, r.find_id))
             seq = 1
             location_name_row = conn.execute("SELECT name FROM Locations WHERE id = ?", (location_id,)).fetchone()
@@ -86,13 +127,14 @@ def infer_collection_events(db_path: Path, window: int, include_empty_trips: boo
 
             while unassigned:
                 event_year, covered = _choose_best_year(unassigned, window)
-                collection_subset = f"inferred trip={trip_id or 'none'} loc={location_id} seq={seq} y={event_year}"
+                inferred_trip_id = _choose_trip_for_event(trip_rows_by_location, location_id, event_year)
+                collection_subset = f"inferred loc={location_id} seq={seq} y={event_year}"
                 cur = conn.execute(
                     """
                     INSERT INTO CollectionEvents (trip_id, location_id, collection_name, collection_subset, event_year)
                     VALUES (?, ?, ?, ?, ?)
                     """,
-                    (trip_id, location_id, location_name, collection_subset, event_year),
+                    (inferred_trip_id, location_id, location_name, collection_subset, event_year),
                 )
                 event_id = int(cur.lastrowid)
                 event_count += 1
@@ -136,24 +178,6 @@ def infer_collection_events(db_path: Path, window: int, include_empty_trips: boo
                 "UPDATE Finds SET collection_event_id = ? WHERE id = ?",
                 [(event_id, find_id) for find_id, event_id in find_to_event.items()],
             )
-
-        # Keep finds.trip_id aligned with event trip_id where available.
-        conn.execute(
-            """
-            UPDATE Finds
-            SET trip_id = (
-                SELECT ce.trip_id
-                FROM CollectionEvents ce
-                WHERE ce.id = Finds.collection_event_id
-            )
-            WHERE collection_event_id IS NOT NULL
-              AND (
-                trip_id IS NULL OR trip_id <> (
-                    SELECT ce2.trip_id FROM CollectionEvents ce2 WHERE ce2.id = Finds.collection_event_id
-                )
-              )
-            """
-        )
 
         conn.commit()
         stats = {

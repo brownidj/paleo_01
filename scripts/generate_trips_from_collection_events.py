@@ -73,9 +73,8 @@ def _delete_previous_generated_trips(conn: sqlite3.Connection) -> int:
     if not generated:
         return 0
     marks = ",".join(["?"] * len(generated))
-    # Revert attached finds/events to import trip 1 temporarily.
+    # Revert attached events to import trip 1 temporarily.
     conn.execute(f"UPDATE CollectionEvents SET trip_id = 1 WHERE trip_id IN ({marks})", generated)
-    conn.execute(f"UPDATE Finds SET trip_id = 1 WHERE trip_id IN ({marks})", generated)
     conn.execute(f"DELETE FROM TripLocations WHERE id IN ({marks})", generated)
     conn.execute(f"DELETE FROM Trips WHERE id IN ({marks})", generated)
     return len(generated)
@@ -179,7 +178,6 @@ def generate_trips(db_path: Path, location_km: float, date_gap_years: int) -> di
                 "events_considered": 0,
                 "new_trips_created": 0,
                 "events_reassigned": 0,
-                "finds_reassigned": 0,
             }
 
         cluster_by_location = _cluster_locations(
@@ -199,7 +197,6 @@ def generate_trips(db_path: Path, location_km: float, date_gap_years: int) -> di
         max_trip_id = int(conn.execute("SELECT COALESCE(MAX(id), 0) FROM Trips").fetchone()[0])
         new_trips_created = 0
         events_reassigned = 0
-        finds_reassigned = 0
 
         # Name sequencing per base location name.
         name_seq: dict[str, int] = defaultdict(int)
@@ -229,12 +226,10 @@ def generate_trips(db_path: Path, location_km: float, date_gap_years: int) -> di
                     (trip_id, loc_id),
                 )
 
-            # Repoint events + finds to the new trip.
+            # Repoint events to the new trip.
             for event in group:
                 conn.execute("UPDATE CollectionEvents SET trip_id = ? WHERE id = ?", (trip_id, event.event_id))
                 events_reassigned += int(conn.execute("SELECT changes()").fetchone()[0])
-                conn.execute("UPDATE Finds SET trip_id = ? WHERE collection_event_id = ?", (trip_id, event.event_id))
-                finds_reassigned += int(conn.execute("SELECT changes()").fetchone()[0])
 
         conn.commit()
         return {
@@ -244,7 +239,6 @@ def generate_trips(db_path: Path, location_km: float, date_gap_years: int) -> di
             "trip_groups_created": len(grouped_events),
             "new_trips_created": new_trips_created,
             "events_reassigned": events_reassigned,
-            "finds_reassigned": finds_reassigned,
         }
     finally:
         conn.close()

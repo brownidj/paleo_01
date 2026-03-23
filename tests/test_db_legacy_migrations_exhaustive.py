@@ -292,5 +292,6 @@ class TestDbLegacyMigrationsExhaustive(unittest.TestCase):
                                             self.assertEqual(events, [])
                                 finally:
                                     self._cleanup(db_path, csv_path)
+
 if __name__ == "__main__":
     unittest.main()

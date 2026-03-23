@@ -5,6 +5,7 @@ from tkinter import messagebox, ttk
 from typing import Mapping
 
 from repository.trip_repository import TripRepository
+from ui.auto_hide_scrollbars import attach_auto_hiding_scrollbars
 
 
 class TripFilterTreeTab(ttk.Frame):
@@ -31,7 +32,7 @@ class TripFilterTreeTab(ttk.Frame):
         for col in self._list_columns:
             self.tree.heading(col, text=col.replace("_", " "))
             self.tree.column(col, width=widths.get(col, 120), anchor="w")
-        self.tree.pack(fill="both", expand=True, padx=10, pady=6)
+        attach_auto_hiding_scrollbars(self, self.tree, padx=10, pady=6)
 
     def load_rows(self) -> None:
         for item in self.tree.get_children():

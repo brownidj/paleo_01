@@ -78,6 +78,40 @@ class TestTripRepositoryMigrationsConnection(RepoTestCase):
             count = conn.execute("SELECT COUNT(*) FROM __rollback_test").fetchone()[0]
             self.assertEqual(count, 0)
 
+    def test_ensure_locations_table_rebuilds_finds_without_trip_id(self):
+        with closing(sqlite3.connect(self.db_path)) as conn:
+            conn.execute("DROP TABLE IF EXISTS Finds")
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS Finds (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    trip_id INTEGER,
+                    location_id INTEGER,
+                    collection_event_id INTEGER,
+                    source_occurrence_no TEXT,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            conn.execute(
+                """
+                INSERT INTO Finds (id, trip_id, location_id, collection_event_id, source_occurrence_no)
+                VALUES (1, 7, NULL, NULL, 'occ-1')
+                """
+            )
+            conn.commit()
+
+        self.repo.ensure_locations_table()
+
+        with closing(sqlite3.connect(self.db_path)) as conn:
+            cols = {row[1] for row in conn.execute("PRAGMA table_info(Finds)").fetchall()}
+            self.assertNotIn("trip_id", cols)
+            row = conn.execute(
+                "SELECT id, location_id, collection_event_id, source_occurrence_no FROM Finds WHERE id = 1"
+            ).fetchone()
+            self.assertEqual(row, (1, None, None, "occ-1"))
+
 
 if __name__ == "__main__":
     unittest.main()

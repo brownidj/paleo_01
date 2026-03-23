@@ -7,6 +7,7 @@ try:
         _migrate_legacy_region_to_location,
         _migrate_legacy_trip_locations,
         _migrate_legacy_trips_table,
+        _rebuild_finds_table_without_trip_id,
         _rebuild_locations_table_without_legacy_columns,
         _rebuild_trips_table_without_region,
     )
@@ -17,6 +18,7 @@ except ImportError:
         _migrate_legacy_region_to_location,
         _migrate_legacy_trip_locations,
         _migrate_legacy_trips_table,
+        _rebuild_finds_table_without_trip_id,
         _rebuild_locations_table_without_legacy_columns,
         _rebuild_trips_table_without_region,
     )
@@ -169,7 +171,6 @@ def create_locations_table(conn: sqlite3.Connection) -> None:
         """
         CREATE TABLE IF NOT EXISTS Finds (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            trip_id INTEGER,
             location_id INTEGER,
             collection_event_id INTEGER,
             source_system TEXT,
@@ -196,16 +197,15 @@ def create_locations_table(conn: sqlite3.Connection) -> None:
             collection_year_latest_estimate INTEGER,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (trip_id) REFERENCES Trips(id) ON DELETE SET NULL,
             FOREIGN KEY (location_id) REFERENCES Locations(id) ON DELETE SET NULL,
             FOREIGN KEY (collection_event_id) REFERENCES CollectionEvents(id) ON DELETE SET NULL
         )
         """
     )
+    _rebuild_finds_table_without_trip_id(conn)
     find_columns = [row[1] for row in conn.execute("PRAGMA table_info(Finds)").fetchall()]
     if "collection_year_latest_estimate" not in find_columns:
         conn.execute("ALTER TABLE Finds ADD COLUMN collection_year_latest_estimate INTEGER")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_finds_trip ON Finds(trip_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_finds_location ON Finds(location_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_finds_collection_event ON Finds(collection_event_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_finds_source_occurrence ON Finds(source_occurrence_no)")

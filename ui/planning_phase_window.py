@@ -1,10 +1,12 @@
 import sqlite3
 import tkinter as tk
 import tkinter.font as tkfont
+from collections.abc import Mapping
 from tkinter import messagebox, ttk
 
 from repository import DEFAULT_DB_PATH
 from repository.trip_repository import TripRepository
+from ui.auto_hide_scrollbars import attach_auto_hiding_scrollbars
 from ui.planning_tabs_controller import PlanningTabsController
 from ui.trip_dialog_controller import TripDialogController
 from ui.trip_navigation_coordinator import TripNavigationCoordinator
@@ -100,7 +102,7 @@ class PlanningPhaseWindow(tk.Tk):
         for field in self.list_fields:
             self.trips_tree.heading(field, text=field)
             self.trips_tree.column(field, width=160, anchor="w")
-        self.trips_tree.pack(fill="both", expand=True, padx=10, pady=6)
+        attach_auto_hiding_scrollbars(self.trips_tab, self.trips_tree, padx=10, pady=6)
         buttons = ttk.Frame(self.trips_tab)
         buttons.pack(fill="x", padx=10, pady=8)
         ttk.Button(buttons, text="New Trip", command=self.new_trip).pack(side="left", padx=4)
@@ -120,20 +122,25 @@ class PlanningPhaseWindow(tk.Tk):
             values = [self._trip_list_value(record, field) for field in self.list_fields]
             self.trips_tree.insert("", "end", iid=str(record["id"]), values=values)
 
-    def _trip_list_value(self, record: dict, field: str):
+    def _trip_list_value(self, record: Mapping[str, object], field: str):
+        trip_id_raw = record.get("id")
+        try:
+            trip_id = int(trip_id_raw) if isinstance(trip_id_raw, (int, str)) else None
+        except (TypeError, ValueError):
+            trip_id = None
         if field == "collection_events_count":
             count_fn = getattr(self.repo, "count_collection_events_for_trip", None)
-            if callable(count_fn):
+            if callable(count_fn) and trip_id is not None:
                 try:
-                    return int(count_fn(int(record["id"])))
+                    return int(count_fn(trip_id))
                 except Exception:
                     return 0
             return 0
         if field == "finds_count":
             count_fn = getattr(self.repo, "count_finds_for_trip", None)
-            if callable(count_fn):
+            if callable(count_fn) and trip_id is not None:
                 try:
-                    return int(count_fn(int(record["id"])))
+                    return int(count_fn(trip_id))
                 except Exception:
                     return 0
             return 0

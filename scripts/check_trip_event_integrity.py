@@ -18,29 +18,25 @@ def collect_integrity_metrics(conn: sqlite3.Connection) -> dict[str, int]:
     metrics["events_without_trip"] = int(
         conn.execute("SELECT COUNT(*) FROM CollectionEvents WHERE trip_id IS NULL").fetchone()[0]
     )
-    metrics["find_event_trip_mismatch"] = int(
+    metrics["finds_with_event_missing_trip"] = int(
         conn.execute(
             """
             SELECT COUNT(*)
             FROM Finds f
             JOIN CollectionEvents ce ON ce.id = f.collection_event_id
-            WHERE (f.trip_id IS NULL AND ce.trip_id IS NOT NULL)
-               OR (f.trip_id IS NOT NULL AND ce.trip_id IS NULL)
-               OR (f.trip_id IS NOT NULL AND ce.trip_id IS NOT NULL AND f.trip_id <> ce.trip_id)
+            WHERE ce.trip_id IS NULL
             """
         ).fetchone()[0]
     )
-    metrics["mixed_trip_events"] = int(
+    metrics["find_location_event_location_mismatch"] = int(
         conn.execute(
             """
             SELECT COUNT(*)
-            FROM (
-                SELECT collection_event_id
-                FROM Finds
-                WHERE collection_event_id IS NOT NULL
-                GROUP BY collection_event_id
-                HAVING COUNT(DISTINCT trip_id) > 1
-            )
+            FROM Finds f
+            JOIN CollectionEvents ce ON ce.id = f.collection_event_id
+            WHERE f.location_id IS NOT NULL
+              AND ce.location_id IS NOT NULL
+              AND f.location_id <> ce.location_id
             """
         ).fetchone()[0]
     )

@@ -2,6 +2,7 @@ import sqlite3
 from tkinter import messagebox, ttk
 
 from repository.trip_repository import TripRepository
+from ui.auto_hide_scrollbars import attach_auto_hiding_scrollbars
 from ui.geology_form_dialog import GeologyFormDialog
 
 
@@ -30,7 +31,7 @@ class GeologyTab(ttk.Frame):
         for col in self.LIST_COLUMNS:
             self.tree.heading(col, text=col.replace("_", " "))
             self.tree.column(col, width=column_widths.get(col, 120), anchor="w")
-        self.tree.pack(fill="both", expand=True, padx=10, pady=6)
+        attach_auto_hiding_scrollbars(self, self.tree, padx=10, pady=6)
         self.tree.bind("<<TreeviewSelect>>", lambda _: self._show_selected_details())
         self.tree.bind("<Double-1>", lambda _: self.edit_selected())
 

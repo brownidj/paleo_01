@@ -2,6 +2,7 @@ import sqlite3
 from tkinter import messagebox, ttk
 
 from repository.trip_repository import TripRepository
+from ui.auto_hide_scrollbars import attach_auto_hiding_scrollbars
 from ui.team_member_form_dialog import TeamMemberFormDialog
 
 
@@ -23,7 +24,7 @@ class TeamMembersTab(ttk.Frame):
         self.team_members_tree.column("phone_number", width=180, anchor="w")
         self.team_members_tree.column("institution", width=200, anchor="w")
         self.team_members_tree.column("active", width=100, anchor="center")
-        self.team_members_tree.pack(fill="both", expand=True, padx=10, pady=6)
+        attach_auto_hiding_scrollbars(self, self.team_members_tree, padx=10, pady=6)
 
         buttons = ttk.Frame(self)
         buttons.pack(fill="x", padx=10, pady=8)

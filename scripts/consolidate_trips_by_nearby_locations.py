@@ -134,7 +134,7 @@ def consolidate_generated_trips_by_location(db_path: Path, threshold_km: float) 
             for location_id in location_set:
                 location_to_anchor_trip[location_id] = anchor
 
-        # Reassign events and finds.
+        # Reassign events.
         events_reassigned = 0
         for row in event_rows:
             event_id = int(row["event_id"])
@@ -144,7 +144,6 @@ def consolidate_generated_trips_by_location(db_path: Path, threshold_km: float) 
             if new_trip == old_trip:
                 continue
             conn.execute("UPDATE CollectionEvents SET trip_id = ? WHERE id = ?", (new_trip, event_id))
-            conn.execute("UPDATE Finds SET trip_id = ? WHERE collection_event_id = ?", (new_trip, event_id))
             events_reassigned += 1
 
         # Ensure anchor trips know all cluster locations in TripLocations.
