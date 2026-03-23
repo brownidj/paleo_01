@@ -12,6 +12,8 @@ class RepositoryFindsMixin:
                     """
                     SELECT
                         ce.id,
+                        ce.trip_id,
+                        ce.event_year,
                         ce.collection_name,
                         ce.collection_subset,
                         l.name AS location_name,
@@ -28,6 +30,8 @@ class RepositoryFindsMixin:
                     """
                     SELECT
                         ce.id,
+                        ce.trip_id,
+                        ce.event_year,
                         ce.collection_name,
                         ce.collection_subset,
                         l.name AS location_name,
@@ -35,15 +39,19 @@ class RepositoryFindsMixin:
                     FROM "CollectionEvents" ce
                     JOIN "Locations" l ON l.id = ce.location_id
                     LEFT JOIN "Finds" f ON f.collection_event_id = ce.id
-                    WHERE ce.id IN (
-                        SELECT DISTINCT f2.collection_event_id
-                        FROM "Finds" f2
-                        WHERE f2.trip_id = ? AND f2.collection_event_id IS NOT NULL
-                    )
-                    GROUP BY ce.id, ce.collection_name, ce.collection_subset, l.name
+                    WHERE ce.trip_id = ?
+                       OR (
+                            ce.trip_id IS NULL
+                            AND ce.id IN (
+                                SELECT DISTINCT f2.collection_event_id
+                                FROM "Finds" f2
+                                WHERE f2.trip_id = ? AND f2.collection_event_id IS NOT NULL
+                            )
+                       )
+                    GROUP BY ce.id, ce.trip_id, ce.event_year, ce.collection_name, ce.collection_subset, l.name
                     ORDER BY LOWER(COALESCE(l.name, '')), LOWER(COALESCE(ce.collection_subset, '')), ce.id
                     """,
-                    (trip_id,),
+                    (trip_id, trip_id),
                 ).fetchall()
         return [cast(CollectionEventRecord, dict(row)) for row in rows]
 
@@ -99,11 +107,19 @@ class RepositoryFindsMixin:
         with self._connect() as conn:
             row = conn.execute(
                 """
-                SELECT COUNT(DISTINCT f.collection_event_id) AS event_count
-                FROM "Finds" f
-                WHERE f.trip_id = ? AND f.collection_event_id IS NOT NULL
+                SELECT COUNT(DISTINCT ce.id) AS event_count
+                FROM "CollectionEvents" ce
+                WHERE ce.trip_id = ?
+                   OR (
+                        ce.trip_id IS NULL
+                        AND ce.id IN (
+                            SELECT DISTINCT f.collection_event_id
+                            FROM "Finds" f
+                            WHERE f.trip_id = ? AND f.collection_event_id IS NOT NULL
+                        )
+                   )
                 """,
-                (trip_id,),
+                (trip_id, trip_id),
             ).fetchone()
         return int(row["event_count"] if row else 0)
 

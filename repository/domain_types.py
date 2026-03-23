@@ -75,6 +75,8 @@ class FindRecord(TypedDict, total=False):
 
 class CollectionEventRecord(TypedDict, total=False):
     id: int
+    trip_id: int | None
+    event_year: int | None
     collection_name: str | None
     collection_subset: str | None
     location_name: str | None

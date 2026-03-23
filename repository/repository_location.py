@@ -23,13 +23,24 @@ class RepositoryLocationMixin:
                 """
                 CREATE TABLE IF NOT EXISTS "CollectionEvents" (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    trip_id INTEGER,
                     location_id INTEGER NOT NULL,
                     collection_name TEXT NOT NULL,
                     collection_subset TEXT,
+                    event_year INTEGER,
+                    FOREIGN KEY (trip_id) REFERENCES Trips(id) ON DELETE SET NULL,
                     FOREIGN KEY (location_id) REFERENCES Locations(id)
                 )
                 """
             )
+            collection_event_columns = {row["name"] for row in conn.execute('PRAGMA table_info("CollectionEvents")').fetchall()}
+            if "trip_id" not in collection_event_columns:
+                conn.execute('ALTER TABLE "CollectionEvents" ADD COLUMN trip_id INTEGER')
+                collection_event_columns = {
+                    row["name"] for row in conn.execute('PRAGMA table_info("CollectionEvents")').fetchall()
+                }
+            if "event_year" not in collection_event_columns:
+                conn.execute('ALTER TABLE "CollectionEvents" ADD COLUMN event_year INTEGER')
             self._migrate_legacy_collection_fields(conn)
             self._rebuild_locations_table_without_legacy_columns(conn)
             conn.execute(
@@ -49,6 +60,8 @@ class RepositoryLocationMixin:
             conn.execute(
                 'CREATE INDEX IF NOT EXISTS idx_collection_events_location ON "CollectionEvents"(location_id)'
             )
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_collection_events_trip ON "CollectionEvents"(trip_id)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_collection_events_event_year ON "CollectionEvents"(event_year)')
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS "Finds" (

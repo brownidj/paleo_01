@@ -144,6 +144,7 @@ rg --files "$ROOT_DIR" \
     - `repository/domain_types.py`: typed payload/row structures for core entities (Trip, Location/CollectionEvent, Find, Geology).
   - **UI Entrypoints**:
     - `app/main.py` is the canonical executable entrypoint and launches `PlanningPhaseWindow`.
+    - `main.py` at project root is a thin compatibility wrapper forwarding to `app.main.main`.
     - `app/planning_phase_main.py` is a thin wrapper that forwards to `app.main.main`.
   - **UI Modules**:
     - `ui/planning_phase_window.py`: composition root for tabs, dialog controller, navigation coordinator, and app palette.
@@ -164,14 +165,14 @@ rg --files "$ROOT_DIR" \
     - `scripts/seed_locations.py`: fake locations; supports `--truncate`; optional one-time cardinal variants from first-pass records.
     - `scripts/seed_trips.py`: trips seeded from existing locations, writes `TripLocations`, supports second-pass multi-location trip generation via random boolean on similar-location matches.
 - **Planning Database (`data/paleo_trips_01.db`)**:
-  - `Team_members(id, name, phone_number, active)`
+  - `Team_members(id, name, phone_number, institution, recruitment_date, retirement_date, active)`
   - `Trips(id, trip_name, start_date, end_date, team, location, notes)` (`region` removed)
   - `Locations(id, name, latitude, longitude, altitude_value, altitude_unit, country_code, state, lga, basin, geogscale, geography_comments, geology_id)`
-  - `CollectionEvents(id, location_id, collection_name, collection_subset)` (0..many per location)
+  - `CollectionEvents(id, trip_id, location_id, collection_name, collection_subset, event_year)` (0..many per location, trip-linked, single-year events)
   - `TripLocations(id, location_id)` (many-to-many between trips and locations)
   - `GeologyContext(id, location_id, location_name, source_system, source_reference_no, early_interval, late_interval, max_ma, min_ma, environment, geogscale, geology_comments, formation, stratigraphy_group, member, stratscale, stratigraphy_comments, geoplate, paleomodel, paleolat, paleolng, created_at, updated_at)`
   - `Lithology(id, geology_context_id, slot, lithology, lithification, minor_lithology, lithology_adjectives, fossils_from, created_at, updated_at)`
-  - `Finds(id, trip_id, location_id, collection_event_id, source_system, source_occurrence_no, identified_name, accepted_name, identified_rank, accepted_rank, difference, identified_no, accepted_no, phylum, class_name, taxon_order, family, genus, abund_value, abund_unit, reference_no, taxonomy_comments, occurrence_comments, research_group, notes, created_at, updated_at)`
+  - `Finds(id, trip_id, location_id, collection_event_id, source_system, source_occurrence_no, identified_name, accepted_name, identified_rank, accepted_rank, difference, identified_no, accepted_no, phylum, class_name, taxon_order, family, genus, abund_value, abund_unit, reference_no, taxonomy_comments, occurrence_comments, research_group, notes, collection_year_latest_estimate, created_at, updated_at)`
 - **Behavioral Notes**:
   - Trips use integer `id` auto-increment; no `trip_code`.
   - `team` and `location` list values are semicolon-separated.
@@ -181,8 +182,15 @@ rg --files "$ROOT_DIR" \
   - Closing Trip Record auto-saves changed fields; turning `Edit` from on to off also auto-saves changed fields.
   - From Trip Record, `Collection Events`/`Finds` chips switch tabs, turn trip filter on, and apply trip-specific filtering; returning to `Trips` restores the hidden Trip Record and reselects that trip.
   - Trip filtering in `Collection Events` is now strict to finds explicitly assigned to that trip (via `Finds.trip_id`), not broad location-level membership.
+  - Full PBDB re-import is currently loaded in the working DB (`Finds = 2068`) with all finds linked to `Locations` and `CollectionEvents`.
+  - `collection_year_latest_estimate` is populated from inferred publication year minus a random 2..6 year offset.
+  - Team-member bulk population from `data/team_members_from_pbdb_data-2_publication_enriched.csv` is currently loaded (`Team_members = 141`), with recruitment/retirement date rules applied.
+  - Generated initial trip candidates from grouped collection-event CSV and inserted ~50 historical trips with date-derived naming conventions.
+  - Reassigned a subset of finds to generated trips using strict location + year-window matching (`trip start_year` in `[estimated_year-6, estimated_year-1]`).
+  - Collection events now carry `trip_id` and `event_year`; trip->collection-events listing/count is wired primarily via `CollectionEvents.trip_id`.
   - **Prompt Compliance Snapshot**:
   - `app/main.py` remains thin: **compliant**.
+  - root `main.py` remains thin compatibility-only: **compliant**.
   - DB layer uses parameterized queries and context managers: **compliant**.
   - File size <= 300 rule: **compliant**.
     - `trip_repository.py` and `ui/planning_phase_window.py` are now compliant.
@@ -218,6 +226,16 @@ When new historical variants are discovered, add them to exhaustive permutation 
 Add integration tests for edit-mode save/validation failure and dialog-close auto-save behavior to complement current handoff/filter scenarios.
 6. Revisit boundary rules when new packages appear.
 Treat `scripts/import_boundary_rules.json` and ADR 0001 as required updates whenever introducing a new module layer.
+7. Add a dedicated PBDB import service module.
+Move current script-level PBDB import/backfill logic into a typed repository/import service with explicit invariants (idempotency, duplicate handling, deterministic year inference option).
+8. Add regression tests for new schema fields.
+Cover `Team_members.recruitment_date`/`retirement_date` read-write paths in repository/UI and `Finds.collection_year_latest_estimate` visibility in finds tab/API.
+9. Document and enforce canonical DB path in app run configs.
+Keep all IDE/shared run configurations pointing to `data/paleo_trips_01.db`; retain wrapper/symlink only as compatibility layers.
+
+## ToDo
+
+1. Remove fallback to find-based linkage for legacy/null cases.
 
 ## Test run report
 
@@ -227,3 +245,10 @@ Treat `scripts/import_boundary_rules.json` and ADR 0001 as required updates when
   - `bash scripts/ci_checks.sh`: **PASSED**
     - Includes: import-boundary check + mypy (`scripts/check_types.sh`) + warnings-as-errors unittest + file-size check
   - `./scripts/check_file_sizes.sh .`: **PASSED**
+- **2026-03-23 (latest updates)**:
+  - `python3 -m unittest tests.test_trip_repository_location_finds -v`: **PASSED**
+    - Total: **6 passed**
+  - `python3 -m unittest tests.test_db_bootstrap tests.test_trip_repository_trip_user -v`: **PASSED**
+    - Total: **6 passed**
+  - `python3 -m unittest tests.test_tab_filter_regression -v`: **PASSED**
+    - Total: **2 passed**

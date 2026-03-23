@@ -50,9 +50,10 @@ class PlanningPhaseWindow(tk.Tk):
         self.repo = TripRepository(db_path)
         self.repo.ensure_trips_table()
         self.fields = self.repo.get_fields()
-        self.list_fields = ["trip_name", "start_date", "end_date", "location"]
+        self.list_fields = ["trip_name", "start_date", "collection_events_count", "finds_count", "location"]
         self.edit_fields = ["trip_name", "start_date", "end_date", "location", "team", "notes"]
-        self.list_fields = [f for f in self.list_fields if f in self.fields]
+        static_list_fields = ["collection_events_count", "finds_count"]
+        self.list_fields = [f for f in self.list_fields if f in self.fields or f in static_list_fields]
         self.edit_fields = [f for f in self.edit_fields if f in self.fields]
 
         self.tabs_controller = PlanningTabsController(self, self.repo, self._on_tab_changed)
@@ -116,8 +117,27 @@ class PlanningPhaseWindow(tk.Tk):
             messagebox.showerror("Database Error", str(e))
             return
         for record in records:
-            values = [record.get(field, "") for field in self.list_fields]
+            values = [self._trip_list_value(record, field) for field in self.list_fields]
             self.trips_tree.insert("", "end", iid=str(record["id"]), values=values)
+
+    def _trip_list_value(self, record: dict, field: str):
+        if field == "collection_events_count":
+            count_fn = getattr(self.repo, "count_collection_events_for_trip", None)
+            if callable(count_fn):
+                try:
+                    return int(count_fn(int(record["id"])))
+                except Exception:
+                    return 0
+            return 0
+        if field == "finds_count":
+            count_fn = getattr(self.repo, "count_finds_for_trip", None)
+            if callable(count_fn):
+                try:
+                    return int(count_fn(int(record["id"])))
+                except Exception:
+                    return 0
+            return 0
+        return record.get(field, "")
 
     def new_trip(self) -> None:
         self.dialog_controller.new_trip()
