@@ -13,6 +13,7 @@ class TripNavigationCoordinator:
         team_members_tab: Any,
         load_trips: Callable[[], None],
         select_trip_row: Callable[[int], None],
+        get_trip_team_names: Callable[[int], list[str]],
     ):
         self.tabs = tabs
         self.trips_tab = trips_tab
@@ -23,6 +24,7 @@ class TripNavigationCoordinator:
         self.team_members_tab = team_members_tab
         self.load_trips = load_trips
         self.select_trip_row = select_trip_row
+        self.get_trip_team_names = get_trip_team_names
         self.hidden_trip_dialog: Any | None = None
         self.hidden_trip_dialog_trip_id: int | None = None
 
@@ -39,6 +41,14 @@ class TripNavigationCoordinator:
         self.tabs.select(str(self.finds_tab))
         self.finds_tab.activate_trip_filter(trip_id)
         self.finds_tab.update_idletasks()
+
+    def open_team_members_for_trip(self, trip_id: int, dialog: Any) -> None:
+        self.hidden_trip_dialog = dialog
+        self.hidden_trip_dialog_trip_id = trip_id
+        self.tabs.select(str(self.team_members_tab))
+        team_names = self.get_trip_team_names(trip_id)
+        self.team_members_tab.activate_trip_filter(team_names)
+        self.team_members_tab.update_idletasks()
 
     def on_edit_dialog_closed(self, row_id: int) -> None:
         if self.hidden_trip_dialog_trip_id == row_id:

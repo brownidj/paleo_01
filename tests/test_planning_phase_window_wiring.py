@@ -48,6 +48,9 @@ class _FakeNavigationCoordinator:
     def open_finds_for_trip(self, *_):
         return None
 
+    def open_team_members_for_trip(self, *_):
+        return None
+
     def on_edit_dialog_closed(self, *_):
         return None
 
@@ -102,6 +105,7 @@ class TestPlanningPhaseWindowWiring(unittest.TestCase):
         self.assertIs(dialog_kwargs["trips_tree"], window.trips_tree)
         self.assertEqual(dialog_kwargs["on_open_collection_events"], window.navigation.open_collection_events_for_trip)
         self.assertEqual(dialog_kwargs["on_open_finds"], window.navigation.open_finds_for_trip)
+        self.assertEqual(dialog_kwargs["on_open_team"], window.navigation.open_team_members_for_trip)
 
         window.new_trip()
         window.edit_selected()

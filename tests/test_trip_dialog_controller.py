@@ -86,6 +86,7 @@ class TestTripDialogController(unittest.TestCase):
             load_trips=_load_trips,
             on_open_collection_events=lambda *_: None,
             on_open_finds=lambda *_: None,
+            on_open_team=lambda *_: None,
             on_edit_dialog_closed=lambda rid: self.closed_row_ids.append(rid),
         )
 

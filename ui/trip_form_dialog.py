@@ -7,6 +7,10 @@ from ui.team_editor_dialog import TeamEditorDialog
 
 
 class TripFormDialog(tk.Toplevel):
+    @staticmethod
+    def _count_label(count: int, singular: str, plural: str) -> str:
+        return f"{count} {singular if count == 1 else plural}"
+
     def __init__(
         self,
         parent: tk.Widget,
@@ -22,6 +26,7 @@ class TripFormDialog(tk.Toplevel):
         trip_id: int | None = None,
         on_open_collection_events=None,
         on_open_finds=None,
+        on_open_team=None,
         collection_events_count: int = 0,
         finds_count: int = 0,
     ):
@@ -38,6 +43,7 @@ class TripFormDialog(tk.Toplevel):
         self.trip_id = trip_id
         self.on_open_collection_events = on_open_collection_events
         self.on_open_finds = on_open_finds
+        self.on_open_team = on_open_team
         self.collection_events_count = collection_events_count
         self.finds_count = finds_count
         self.inputs: dict[str, tk.Widget] = {}
@@ -126,7 +132,7 @@ class TripFormDialog(tk.Toplevel):
         )
         ttk.Button(
             actions,
-            text=f"{self.collection_events_count} Collection Events",
+            text=self._count_label(self.collection_events_count, "Collection Event", "Collection Events"),
             style="FieldChip.TButton",
             state=collection_events_state,
             command=self._open_collection_events,
@@ -136,18 +142,26 @@ class TripFormDialog(tk.Toplevel):
         finds_state = "normal" if callable(self.on_open_finds) and isinstance(self.trip_id, int) else "disabled"
         ttk.Button(
             actions,
-            text=f"{self.finds_count} Finds",
+            text=self._count_label(self.finds_count, "Find", "Finds"),
             style="FieldChip.TButton",
             state=finds_state,
             command=self._open_finds,
         ).grid(row=0, column=1, padx=2, sticky="w")
-        actions.columnconfigure(2, weight=1)
+        team_state = "normal" if callable(self.on_open_team) and isinstance(self.trip_id, int) else "disabled"
+        ttk.Button(
+            actions,
+            text="Team",
+            style="FieldChip.TButton",
+            state=team_state,
+            command=self._open_team,
+        ).grid(row=0, column=2, padx=2, sticky="w")
+        actions.columnconfigure(3, weight=1)
         edit_radio = ttk.Radiobutton(actions, text="Edit", variable=self._edit_var, value=1)
-        edit_radio.grid(row=0, column=3, padx=(8, 4), sticky="e")
+        edit_radio.grid(row=0, column=4, padx=(8, 4), sticky="e")
         edit_radio.bind("<Button-1>", self._on_edit_radio_click, add="+")
         if callable(self.on_duplicate):
             ttk.Button(actions, text="⧉", style="IconChip.TButton", width=2, command=self._duplicate).grid(
-                row=0, column=4, padx=2, sticky="e"
+                row=0, column=5, padx=2, sticky="e"
             )
 
         self._last_saved_payload = self._collect_payload()
@@ -224,6 +238,14 @@ class TripFormDialog(tk.Toplevel):
             return
         self.withdraw()
         self.on_open_finds(self.trip_id, self)
+
+    def _open_team(self) -> None:
+        if not callable(self.on_open_team) or not isinstance(self.trip_id, int):
+            return
+        if not self._save_if_changed():
+            return
+        self.withdraw()
+        self.on_open_team(self.trip_id, self)
 
     def _collect_payload(self) -> dict[str, str]:
         payload: dict[str, str] = {}

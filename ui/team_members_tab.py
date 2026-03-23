@@ -1,4 +1,5 @@
 import sqlite3
+import tkinter as tk
 from tkinter import messagebox, ttk
 
 from repository.trip_repository import TripRepository
@@ -10,6 +11,12 @@ class TeamMembersTab(ttk.Frame):
     def __init__(self, parent, repo: TripRepository):
         super().__init__(parent)
         self.repo = repo
+        self.trip_filter_var = tk.IntVar(value=0)
+        self._trip_filter_names: set[str] | None = None
+
+        trip_filter_radio = ttk.Radiobutton(self, text="Trip filter", variable=self.trip_filter_var, value=1)
+        trip_filter_radio.pack(anchor="w", padx=10, pady=(10, 4))
+        trip_filter_radio.bind("<Button-1>", self._on_trip_filter_click, add="+")
 
         self.team_members_tree = ttk.Treeview(
             self,
@@ -39,7 +46,12 @@ class TeamMembersTab(ttk.Frame):
         except sqlite3.Error as e:
             messagebox.showerror("Database Error", str(e))
             return
+        use_trip_filter = self.trip_filter_var.get() == 1 and self._trip_filter_names
         for team_member in team_members:
+            if use_trip_filter:
+                name = self._norm_name(str(team_member.get("name", "")))
+                if name not in self._trip_filter_names:
+                    continue
             self.team_members_tree.insert(
                 "",
                 "end",
@@ -107,3 +119,18 @@ class TeamMembersTab(ttk.Frame):
             return True
 
         TeamMemberFormDialog(self, team_member, save_team_member)
+
+    def activate_trip_filter(self, team_names: list[str]) -> None:
+        self._trip_filter_names = {self._norm_name(name) for name in team_names if self._norm_name(name)}
+        self.trip_filter_var.set(1)
+        self.load_team_members()
+
+    def _on_trip_filter_click(self, _event) -> str:
+        currently_on = self.trip_filter_var.get() == 1
+        self.trip_filter_var.set(0 if currently_on else 1)
+        self.load_team_members()
+        return "break"
+
+    @staticmethod
+    def _norm_name(value: str) -> str:
+        return " ".join(value.strip().lower().split())

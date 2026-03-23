@@ -51,6 +51,19 @@ class FakeFilterTab(FakeTab):
         self.idle_updates += 1
 
 
+class FakeTeamFilterTab(FakeTab):
+    def __init__(self, token: str):
+        super().__init__(token)
+        self.activated_team_names: list[list[str]] = []
+        self.idle_updates = 0
+
+    def activate_trip_filter(self, team_names: list[str]):
+        self.activated_team_names.append(list(team_names))
+
+    def update_idletasks(self):
+        self.idle_updates += 1
+
+
 class FakeDialog:
     def __init__(self, exists: bool = True):
         self.exists = exists
@@ -79,7 +92,7 @@ class TestTripNavigationCoordinator(unittest.TestCase):
         self.geology_tab = FakeTab("geology")
         self.collection_events_tab = FakeFilterTab("collection")
         self.finds_tab = FakeFilterTab("finds")
-        self.team_members_tab = FakeTab("team_members")
+        self.team_members_tab = FakeTeamFilterTab("team_members")
         self.load_trips_calls = 0
         self.selected_trip_ids: list[int] = []
 
@@ -99,6 +112,7 @@ class TestTripNavigationCoordinator(unittest.TestCase):
             team_members_tab=self.team_members_tab,
             load_trips=load_trips,
             select_trip_row=select_trip_row,
+            get_trip_team_names=lambda trip_id: ["Alice", "Bob"] if trip_id == 7 else [],
         )
 
     def test_open_collection_events_for_trip_activates_filter_and_selects_tab(self):
@@ -118,6 +132,16 @@ class TestTripNavigationCoordinator(unittest.TestCase):
         self.assertEqual(self.tabs.select(), str(self.finds_tab))
         self.assertEqual(self.finds_tab.activated_trip_ids, [7])
         self.assertEqual(self.finds_tab.idle_updates, 1)
+        self.assertIs(self.coordinator.hidden_trip_dialog, dialog)
+        self.assertEqual(self.coordinator.hidden_trip_dialog_trip_id, 7)
+
+    def test_open_team_members_for_trip_activates_filter_and_selects_tab(self):
+        dialog = FakeDialog()
+        self.coordinator.open_team_members_for_trip(7, dialog)
+
+        self.assertEqual(self.tabs.select(), str(self.team_members_tab))
+        self.assertEqual(self.team_members_tab.activated_team_names, [["Alice", "Bob"]])
+        self.assertEqual(self.team_members_tab.idle_updates, 1)
         self.assertIs(self.coordinator.hidden_trip_dialog, dialog)
         self.assertEqual(self.coordinator.hidden_trip_dialog_trip_id, 7)
 

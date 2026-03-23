@@ -17,6 +17,7 @@ class TripDialogController:
         load_trips,
         on_open_collection_events,
         on_open_finds,
+        on_open_team,
         on_edit_dialog_closed,
     ):
         self.parent = parent
@@ -26,6 +27,7 @@ class TripDialogController:
         self.load_trips = load_trips
         self.on_open_collection_events = on_open_collection_events
         self.on_open_finds = on_open_finds
+        self.on_open_team = on_open_team
         self.on_edit_dialog_closed = on_edit_dialog_closed
         self.open_edit_dialogs: dict[int, TripFormDialog] = {}
 
@@ -55,6 +57,7 @@ class TripDialogController:
             trip_id=None,
             on_open_collection_events=None,
             on_open_finds=None,
+            on_open_team=None,
             collection_events_count=0,
             finds_count=0,
         )
@@ -155,6 +158,7 @@ class TripDialogController:
             trip_id=trip_id,
             on_open_collection_events=self.on_open_collection_events,
             on_open_finds=self.on_open_finds,
+            on_open_team=self.on_open_team,
             collection_events_count=self.repo.count_collection_events_for_trip(trip_id),
             finds_count=self.repo.count_finds_for_trip(trip_id),
         )

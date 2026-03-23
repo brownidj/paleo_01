@@ -77,6 +77,7 @@ class PlanningPhaseWindow(tk.Tk):
             team_members_tab=self.team_members_tab,
             load_trips=self.load_trips,
             select_trip_row=self._select_trip_row,
+            get_trip_team_names=self._trip_team_names,
         )
 
         self._build_trips_tab()
@@ -88,6 +89,7 @@ class PlanningPhaseWindow(tk.Tk):
             load_trips=self.load_trips,
             on_open_collection_events=self.navigation.open_collection_events_for_trip,
             on_open_finds=self.navigation.open_finds_for_trip,
+            on_open_team=self.navigation.open_team_members_for_trip,
             on_edit_dialog_closed=self.navigation.on_edit_dialog_closed,
         )
         self.tabs_controller.build_collection_plan_placeholder()
@@ -162,6 +164,15 @@ class PlanningPhaseWindow(tk.Tk):
         self.trips_tree.selection_set(iid)
         self.trips_tree.focus(iid)
         self.trips_tree.see(iid)
+
+    def _trip_team_names(self, trip_id: int) -> list[str]:
+        trip = self.repo.get_trip(trip_id)
+        if not trip:
+            return []
+        team_value = str(trip.get("team") or "").strip()
+        if not team_value:
+            return []
+        return [name.strip() for name in team_value.split(";") if name.strip()]
 
     def _apply_palette(self) -> None:
         p = self.PALETTE
