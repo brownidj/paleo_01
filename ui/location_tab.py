@@ -54,17 +54,23 @@ class LocationTab(ttk.Frame):
             )
 
     def new_location(self) -> None:
+        geology_choices = self._list_geology_choices()
+
         def save_location(payload: dict[str, object]) -> bool:
             normalized = self._normalize_payload(payload)
+            create_new_geology = bool(payload.get("new_geology"))
             try:
-                self.repo.create_location(normalized)
+                location_id = self.repo.create_location(normalized)
+                if create_new_geology:
+                    geology_id = self.repo.create_geology_record(location_id, {})
+                    self.repo.update_location(location_id, {"geology_id": geology_id})
             except (sqlite3.Error, ValueError) as e:
                 messagebox.showerror("Save Error", str(e))
                 return False
             self.load_locations()
             return True
 
-        LocationFormDialog(self, None, save_location)
+        LocationFormDialog(self, None, save_location, geology_choices=geology_choices, is_new=True)
 
     def edit_location(self) -> None:
         selected = self.tree.selection()
@@ -82,6 +88,8 @@ class LocationTab(ttk.Frame):
             self.load_locations()
             return
 
+        geology_choices = self._list_geology_choices()
+
         def save_location(payload: dict[str, object]) -> bool:
             normalized = self._normalize_payload(payload)
             try:
@@ -92,29 +100,40 @@ class LocationTab(ttk.Frame):
             self.load_locations()
             return True
 
-        LocationFormDialog(self, location, save_location)
+        LocationFormDialog(self, location, save_location, geology_choices=geology_choices, is_new=False)
+
+    def _list_geology_choices(self) -> list[tuple[int, str]]:
+        try:
+            rows = self.repo.list_geology_records()
+        except sqlite3.Error:
+            return []
+        choices: list[tuple[int, str]] = []
+        for row in rows:
+            geology_id_raw = row.get("geology_id")
+            if geology_id_raw is None:
+                continue
+            geology_id = int(geology_id_raw)
+            location_name = str(row.get("location_name") or "").strip() or "n/a"
+            formation = str(row.get("formation") or "").strip()
+            if formation:
+                label = f"{location_name} | {formation}"
+            else:
+                label = location_name
+            choices.append((geology_id, label))
+        choices.sort(key=lambda item: item[1].lower())
+        return choices
 
     @staticmethod
     def _normalize_payload(payload: dict[str, object]) -> dict[str, object]:
         normalized: dict[str, object] = {}
         for key, value in payload.items():
-            if key == "collection_events":
-                events = []
-                raw_events = value if isinstance(value, list) else []
-                for event in raw_events:
-                    if not isinstance(event, dict):
-                        continue
-                    name = str(event.get("collection_name") or "").strip()
-                    if not name:
-                        continue
-                    subset = str(event.get("collection_subset") or "").strip()
-                    events.append(
-                        {
-                            "collection_name": name,
-                            "collection_subset": subset or None,
-                        }
-                    )
-                normalized[key] = events
+            if key == "new_geology":
+                continue
+            if key == "geology_id":
+                if value is None or value == "":
+                    normalized[key] = None
+                else:
+                    normalized[key] = int(value)
                 continue
             normalized[key] = value if value else None
         return normalized

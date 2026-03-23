@@ -19,6 +19,8 @@ class RepositoryLocationMixin:
             for field in LOCATION_FIELDS:
                 if field not in existing:
                     conn.execute(f'ALTER TABLE "Locations" ADD COLUMN "{field}" TEXT')
+            if "geology_id" not in existing:
+                conn.execute('ALTER TABLE "Locations" ADD COLUMN geology_id INTEGER')
             self._migrate_legacy_county_to_lga(conn)
             conn.execute(
                 """
@@ -123,7 +125,7 @@ class RepositoryLocationMixin:
         self.ensure_locations_table()
         col_sql = ", ".join([f'"{f}"' for f in LOCATION_FIELDS])
         with self._connect() as conn:
-            location_rows = conn.execute(f'SELECT id, {col_sql} FROM "Locations"').fetchall()
+            location_rows = conn.execute(f'SELECT id, geology_id, {col_sql} FROM "Locations"').fetchall()
             event_rows = conn.execute(
                 """
                 SELECT location_id, collection_name, collection_subset
@@ -161,7 +163,7 @@ class RepositoryLocationMixin:
         col_sql = ", ".join([f'"{f}"' for f in LOCATION_FIELDS])
         with self._connect() as conn:
             row = conn.execute(
-                f'SELECT id, {col_sql} FROM "Locations" WHERE id = ?',
+                f'SELECT id, geology_id, {col_sql} FROM "Locations" WHERE id = ?',
                 (location_id,),
             ).fetchone()
             events = conn.execute(
@@ -193,6 +195,8 @@ class RepositoryLocationMixin:
         self.ensure_locations_table()
         events = self._normalize_collection_events(data.get("collection_events"))
         insert_fields = [name for name in LOCATION_FIELDS if name in data]
+        if "geology_id" in data:
+            insert_fields.append("geology_id")
         with self._connect() as conn:
             if insert_fields:
                 col_sql = ", ".join([f'"{name}"' for name in insert_fields])
@@ -220,6 +224,8 @@ class RepositoryLocationMixin:
         has_events_key = "collection_events" in data
         events = self._normalize_collection_events(data.get("collection_events"))
         update_fields = [name for name in LOCATION_FIELDS if name in data]
+        if "geology_id" in data:
+            update_fields.append("geology_id")
         if not update_fields and not has_events_key:
             raise ValueError("No valid Location fields supplied.")
         with self._connect() as conn:

@@ -23,9 +23,9 @@ class GeologyFormDialog(tk.Toplevel):
         "paleolng",
     ]
 
-    def __init__(self, parent: tk.Widget, initial_data: dict[str, object], on_save):
+    def __init__(self, parent: tk.Widget, initial_data: dict[str, object], on_save, title: str = "Edit Geology"):
         super().__init__(parent)
-        self.title("Edit Geology")
+        self.title(title)
         self.on_save = on_save
         self.resizable(False, False)
         self.entries: dict[str, ttk.Entry] = {}

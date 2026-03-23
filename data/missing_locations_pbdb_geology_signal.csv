@@ -1,0 +1,576 @@
+location_id,location_name,match_method,pbdb_geo_rows,pbdb_total_rows,latitude,longitude
+41,"UQL4841, Top Hut Lst Mbr, Quinton Fmn, Broken River Province, NE Queensland",collection_name_exact,6,6,-20.000000,145.000000
+42,"UQL4842, Top Hut Lst Mbr, Quinton Fmn, Broken River Province, NE Queensland",collection_name_exact,8,8,-20.000000,145.000000
+43,"UQL4844, Gray Creek Lst Mbr, Quinton Fmn, Broken River Province, NE Queensland",collection_name_exact,2,2,-20.000000,145.000000
+44,"JCUL153, Gray Creek Lst Mbr, Quinton Fmn, Broken River Province, NE Queensland",collection_name_exact,2,2,-20.000000,145.000000
+45,"UQL4847, Tomcat Creek Lst Mbr, Quinton Fmn, Broken River Province, NE Queensland",collection_name_exact,4,4,-20.000000,145.000000
+46,"UQL4848, Tomcat Creek Lst Mbr, Quinton Fmn, Broken River Province, NE Queensland",collection_name_exact,5,5,-20.000000,145.000000
+47,"UQL4849, Tomcat Creek Lst Mbr, Quinton Fmn, Broken River Province, NE Queensland",collection_name_exact,3,3,-20.000000,145.000000
+48,"QML 1094, near Little Rocks, 27km NW of Charters Towers",collection_name_exact,24,24,-20.000000,146.000000
+49,"QML 1019, ridge of silicrete 100 meters north of road 500m East of Storm Dam 190",collection_name_exact,13,13,-19.533333,144.666672
+50,"QML 1083 - Nuggety Gully, East Gorge along PharLap Rd.",collection_name_exact,2,2,-19.466389,144.747772
+51,"QML 1092, 500 m northwest of type section creek for Dosey Limestone",collection_name_exact,18,18,-19.499722,144.731110
+52,"Gastropods of the Ukalunda Beds and related Douglas Creek Lst, N Queensland",collection_name_exact,4,4,-21.000000,147.000000
+53,"B84F, Mary Creek, Ukalunda Beds",collection_name_exact,9,9,-20.850000,147.166672
+54,"B76F, Mary Creek, Ukalunda Beds",collection_name_exact,16,16,-20.850000,147.166672
+55,"B220, W of Pyramid, Ukalunda Beds",collection_name_exact,8,8,-20.850000,147.166672
+56,"B610F, W of Pyramid, Ukalunda Beds",collection_name_exact,6,6,-20.850000,147.166672
+57,"Section HID, Mary Creek, Ukalunda Beds",collection_name_exact,15,15,-20.850000,147.166672
+58,"Section SHID, Mary Creek, Ukalunda Beds",collection_name_exact,13,13,-20.850000,147.166672
+59,"CL172, Douglas Creek siltstones, N Queensland",collection_name_exact,6,6,-22.916668,147.699997
+60,"UQ L3725, Exmoor Homestead",collection_name_exact,23,23,-20.976000,148.167007
+61,"Locality UQL2953, Shield Creek Fmn, N Queensland",collection_name_exact,13,13,-19.000000,145.000000
+62,"Locality UQL2954, Shield Creek Fmn, N Queensland",collection_name_exact,7,7,-19.000000,145.000000
+63,"Locality UQL2715, Shield Creek Fmn, N Queensland",collection_name_exact,1,1,-19.000000,145.000000
+64,"Locality UQL3574, Shield Creek Fmn, N Queensland",collection_name_exact,19,19,-19.000000,145.000000
+65,"Chinaman Creek Lst Lower Fauna, Broken River Province, N Queensland",collection_name_exact,23,23,-19.500000,145.000000
+66,"Chinaman Creek Lst Middle Fauna, Broken River Province, N Queensland",collection_name_exact,17,17,-19.500000,145.000000
+67,"Chinaman Creek Lst Upper Fauna, Broken River Province, N Queensland",collection_name_exact,13,13,-19.500000,145.000000
+68,"Martins Well Lst, Broken River Province, N Queensland",collection_name_exact,29,29,-19.500000,145.000000
+69,"Quinton Fmn trilobite faunule, Gray Creek, NE Queensland",collection_name_exact,9,9,-19.283333,144.883331
+70,"Locality PL1906, Poley Cow Fmn, Broken River Province, N Queensland",collection_name_exact,23,23,-19.000000,145.000000
+71,"Upper Martins Well Lst crinoids, Shield Creek Fmn, Martins Wells, N Queensland",collection_name_exact,4,4,-19.000000,145.000000
+72,"UQL5209, Burges Fmn crinoids, Broken River Group, N Queensland",collection_name_exact,1,1,-19.000000,145.000000
+73,"UQL5372, Burges Fmn crinoids, Broken River Group, N Queensland",collection_name_exact,1,1,-19.000000,145.000000
+74,"UQL5234, Dosey Lst crinoids, Broken River Group, N Queensland",collection_name_exact,1,1,-19.000000,145.000000
+75,"Papilio Fmn crinoids, Broken River Group, N Queensland",collection_name_exact,8,8,-19.000000,145.000000
+76,"Burdekin River near Big Bend, N of Charters Towers",collection_name_exact,2,2,-20.000000,146.000000
+77,"Marathon Station, Flinders River (QM)",collection_name_exact,7,7,-20.866667,143.583328
+78,Dunluce Station (QM),collection_name_exact,1,1,-20.883329,143.800003
+79,"Bluff Downs station, Main Quarry",collection_name_exact,8,8,-19.716667,145.600006
+80,"QML 1006 - Unnamed tributary of Mary Creek, 200 meters northeast of QML1005",collection_name_exact,1,1,-20.795000,147.338333
+81,QML 1008. Small unnamed creek 1.5 kilometers south of Sugarloaf Dam.,collection_name_exact,2,2,-20.923332,147.063339
+82,"""Rock Hole"", Rosebery Downs, Muttaburra",collection_name_exact,5,5,-22.667500,144.600555
+83,"Iona Station, Hughenden",collection_name_exact,1,1,-20.850000,144.199997
+84,"Pelican Bore, Stewart Creek",collection_name_exact,1,1,-20.850000,144.199997
+85,Selwyn Park Sheep Station,collection_name_exact,2,2,-22.683332,143.566666
+86,Alni Station,collection_name_exact,1,1,-22.183332,142.466660
+87,Lovelle Downs Station (3 km east-southeast),collection_name_exact,1,1,-22.150000,142.566666
+88,Lovelle Downs Station (2 km east),collection_name_exact,1,1,-22.150000,142.550003
+89,"Triangle Paddock, Elderslie Station (QM L313)",collection_name_exact,4,4,-22.250000,142.483337
+90,"Triangle Paddock, Elderslie Station (QM F7880)",collection_name_exact,1,1,-22.216667,142.483337
+91,Iona Station,collection_name_exact,2,2,-20.966667,144.383331
+92,"M8M windmill, Bladensburg Station",collection_name_exact,2,2,-22.516945,143.038895
+94,Dunraven Station,collection_name_exact,2,2,-23.633333,145.133331
+95,Jones Valley Station,collection_name_exact,1,1,-20.600000,143.850006
+96,Rosebery Station (Toolebuc),collection_name_exact,1,1,-22.666668,144.600006
+97,"QM L735, Brutus Creek, ""Currane"", near Longreach",collection_name_exact,8,8,-23.250000,144.399994
+98,"QM L657, Collier Dam, ""Willoughby"" near Barealedine",collection_name_exact,1,1,-23.133333,145.133331
+99,"QM L905, ""Auteuil"" near Barealdine",collection_name_exact,1,1,-23.150000,145.199997
+100,"QM L791, Boree Park near Richmond",collection_name_exact,3,3,-20.629999,143.035004
+101,"QML 1090 - Above ‘PharLap’ crossing on Broken River, N side on washed out track",collection_name_exact,3,3,-19.478611,144.734161
+102,"QML 1018 - Low rise, 1 kilometer south of Storm Dam, 200 meters west of road",collection_name_exact,2,2,-19.548611,144.675278
+103,"QML 1016 - Hill above crossing, south side of river near PharLap prospect",collection_name_exact,8,8,-19.466667,144.716660
+104,"QML 1017 -west south west of Storm Dam, 200 meters west of road",collection_name_exact,2,2,-19.547222,144.676392
+105,"L806. 14 meters. “Little Rocks,” Fletcherview Station, 26 km nw Charters Towers",collection_name_exact,7,7,-20.066668,146.233337
+106,"L885. Small hill directly behind Burdekin Downs Homestead, NW of Charters Towers",collection_name_exact,1,1,-20.066668,146.233337
+107,"L798. Paynes Lagoon Station, 200m south of Boundary Creek.",collection_name_exact,4,4,-19.266666,146.333328
+108,"Silver Hills, Richmond (QM)",collection_name_exact,1,1,-20.611340,143.073303
+109,Richmond area sauropod site (QM),collection_name_exact,1,1,-20.611340,143.073303
+110,"Fanning River area, Grypophyllum-Chostophyllum association",collection_name_exact,26,26,-19.733334,146.433334
+111,"Fanning River area, Dendrostella trigemme association",collection_name_exact,33,33,-19.733334,146.433334
+112,"Fanning River-Burdekin Downs, Aphyllum-Stringophyllum association",collection_name_exact,13,13,-19.900000,146.233337
+113,"Fanning River, Endophyllum-Stringophyllum association",collection_name_exact,9,9,-19.733334,146.433334
+114,"Lime Creek Area, Spongophyllum association",collection_name_exact,6,6,-19.500000,146.333328
+115,"Boundary Creek Area, Blysmatophyllum-Iowaphyllum association",collection_name_exact,8,8,-19.466667,146.083328
+116,"-519 feet, Borehole 2, Cleeve, near Longreach",collection_name_exact,1,1,-23.433332,144.399994
+117,"-447 feet, Borehole 2, Cleeve, near Longreach",collection_name_exact,5,5,-23.433332,144.399994
+118,Birralee Hill,collection_name_exact,1,1,-20.666668,147.666672
+119,"BMR B1570, Parrot Creek, Mulgrave Yards",collection_name_exact,3,3,-20.788000,147.746002
+120,"BMR B1634, Collinsville",collection_name_exact,1,1,-20.833332,147.699997
+121,"BMR B261e, Nebo Synclinorium",collection_name_exact,3,3,-20.741667,147.949997
+122,"BMR B270a, Exmoor Homestead",collection_name_exact,4,4,-20.950001,148.133331
+123,"BMR B628, Collinsville Shelf",collection_name_exact,2,2,-20.820833,147.716660
+124,"BMR B634, Bowen Basin",collection_name_exact,1,1,-20.941999,147.688004
+125,"BMR B635, Collinsville Shelf",collection_name_exact,1,1,-20.941668,147.699997
+126,"BMR B683, Exmoor Homestead",collection_name_exact,3,3,-20.945000,148.132996
+127,"BMR B686, Nebo Synclinorium",collection_name_exact,5,5,-20.929167,148.141663
+128,"BMR B712, Nebo Synclinorium",collection_name_exact,1,1,-20.941668,148.133331
+129,"BMR CL12/1, Pelecypod Bed, Capella Block",collection_name_exact,6,6,-22.110001,148.179993
+130,"BMR CL12/2, Clarkei Bed, Capella Block",collection_name_exact,3,3,-22.110001,148.179993
+131,"BMR CL132, Clarkei Bed, Capella Block",collection_name_exact,1,1,-22.400000,147.899994
+132,"BMR CL14, Capella Block",collection_name_exact,4,4,-22.379999,148.000000
+133,"BMR CL142, Mount Lebanon/Logan Downs Homesteads, Clermont Area",collection_name_exact,1,1,-22.400000,148.000000
+134,"BMR CL225/1, Clarkei Bed, Capella Block",collection_name_exact,3,3,-22.730000,148.229996
+135,"BMR CL25/1, Pelecypod Bed, Capella Block",collection_name_exact,2,2,-22.700001,148.250000
+136,"BMR CL50/1, Capella Block",collection_name_exact,1,1,-22.750000,148.300003
+137,"BMR Du519, Myrtle Park Homestead",collection_name_exact,1,1,-23.600000,148.500000
+138,"BMR EM209, Clarkei Bed, Capella Block",collection_name_exact,2,2,-23.049999,148.029999
+139,Warriana bore [Allaru Fm],collection_name_exact,1,1,-21.166668,143.916672
+140,Currane Homestead [Allaru Fm],collection_name_exact,4,4,-23.333332,144.666672
+141,Torrento Park Homestead [Allaru Fm],collection_name_exact,1,1,-20.833332,143.083328
+142,Barcaldine [Allaru Fm],collection_name_exact,1,1,-23.566668,145.283340
+143,Rodney Downs [Allaru Fm],collection_name_exact,1,1,-22.966667,145.250000
+144,"Hughenden, Flinders River [Roma Series]",collection_name_exact,1,1,-20.850000,144.199997
+145,Lind River [Roma Series],collection_name_exact,1,1,-20.750000,143.516663
+146,"Hughenden Station, Flinders River [Tambo Series]",collection_name_exact,6,6,-20.850000,144.199997
+147,Yandamah Creek [Tambo Series],collection_name_exact,1,1,-20.850000,144.199997
+148,Marathon [Tambo Series],collection_name_exact,1,1,-20.816668,143.566666
+149,"Tower Hill, Mutabara [Tambo Series]",collection_name_exact,2,2,-22.049999,144.600006
+150,Landsborough Creek [Tambo Series],collection_name_exact,1,1,-22.500000,144.550003
+151,Longreach [Tambo Series],collection_name_exact,2,2,-23.450001,144.250000
+152,Kensington [Tambo Series],collection_name_exact,1,1,-22.500000,144.183334
+153,Aramac [Tambo Series],collection_name_exact,1,1,-22.966667,145.250000
+154,Wellshot [Tambo Series],collection_name_exact,2,2,-23.900000,144.449997
+155,Beaconsfield [Tambo Series],collection_name_exact,3,3,-23.333332,144.600006
+156,"BMR M12F, Nebo Synclinorium",collection_name_exact,3,3,-21.500000,148.500000
+157,"BMR MC1065, Blenheim Homestead",collection_name_exact,2,2,-21.059999,148.210007
+158,"BMR MC311, Lenton Downs Homestead",collection_name_exact,1,1,-21.514999,147.929993
+159,"BMR MC414, Nebo Synclinorium",collection_name_exact,2,2,-21.500000,148.000000
+160,"BMR MC420, Bowen River",collection_name_exact,3,3,-20.764999,147.845001
+161,"BMR MC479, Hazelwood Creek",collection_name_exact,7,7,-21.195000,148.315002
+162,"BMR MC485, Hazelwood Creek",collection_name_exact,6,6,-21.195000,148.315002
+163,"BMR MC485 Diel, Hazelwood Creek",collection_name_exact,1,1,-21.195000,148.315002
+164,"BMR MC485 AF, Hazelwood Creek",collection_name_exact,3,3,-21.195000,148.315002
+165,"BMR MC485 BF, Hazelwood Creek",collection_name_exact,1,1,-21.195000,148.315002
+166,4 miles SW of Eungella Station,collection_name_exact,1,1,-21.155001,148.164993
+167,"BMR MC485 CF, Hazelwood Creek",collection_name_exact,1,1,-21.195000,148.315002
+168,"BMR MC553, Homevale-Elphinstone Road",collection_name_exact,1,1,-21.549999,148.399994
+169,"BMR MC657, Blenheim Homestead",collection_name_exact,5,5,-21.100000,148.250000
+170,"BMR MC957, Mount Cona Creek",collection_name_exact,2,2,-21.365000,148.449997
+171,"BMR MC803, Blenheim Homestead",collection_name_exact,10,10,-21.055000,148.210007
+172,"BMR B1572, Parrot Creek, Mulgrave Road Crossing",collection_name_exact,1,1,-20.788000,147.746002
+173,"BMR CL21/5, Tay Glen Crossing, Phillips Creek",collection_name_exact,2,2,-22.350000,148.500000
+174,"Telemon lease, Dunluce Station",collection_name_exact,3,3,-20.883329,143.800003
+175,"Coral Creek Mouth, Bowen River Coalfield",collection_name_exact,1,1,-20.605000,147.811996
+176,"Matilda Site, Elderslie Station (AODL 0085)",collection_name_exact,5,5,-22.199722,142.528610
+177,"BMR MC293, Blenheim",collection_name_exact,1,1,-21.073000,148.218994
+178,Alderly station,collection_name_exact,1,1,-20.841667,143.895828
+179,Belmont Station,collection_name_exact,2,2,-22.083330,143.516693
+180,"CPA 20, Bowen River Coalfield",collection_name_exact,1,1,-20.600000,147.800003
+181,Rattlesnake Island,collection_name_exact,4,4,-19.033333,146.616669
+182,Orpheus Island,collection_name_exact,5,5,-18.600000,146.483337
+183,"Yambore Creek, near Maxwelton",collection_name_exact,1,1,-20.716667,142.666672
+184,"Army Downs, 35 miles north of Richmond",collection_name_exact,1,1,-20.221111,143.133331
+185,East of Hughenden,collection_name_exact,1,1,-20.833332,145.000000
+186,Vellum Downs,collection_name_exact,1,1,-21.666668,143.666672
+187,Dunluce Station (upper),collection_name_exact,2,2,-20.883329,143.800003
+188,"GSQ D28, east bank Bowen River near Exmoor",collection_name_exact,1,1,-20.795000,148.074997
+189,"UQ L3134, Parrot Creek, Mulgrave Yards",collection_name_exact,4,4,-20.788000,147.746002
+190,"GSQ D235, Mulgrave Yards, Havilah Homestead",collection_name_exact,2,2,-20.850000,147.759995
+191,"GSQ D236, Mount Lebanon Road",collection_name_exact,1,1,-22.280001,147.970001
+192,"UQ L3135, Little Charwell Creek",collection_name_exact,5,5,-22.110001,148.179993
+193,"UQ L1363, Rosella Creek, Havilah",collection_name_exact,3,3,-20.820000,147.858002
+194,"GSQ L1981, St. Joseph Phelps Dodge P4/14, 248.5-251.5 m",collection_name_exact,1,1,-21.816999,147.867004
+195,"GSQ D227, Elphinstone-Homevale Road",collection_name_exact,3,3,-21.450001,148.494995
+196,"GSQ D231, Corduroy Creek",collection_name_exact,2,2,-20.549999,147.625000
+197,"GSQ D233, Scottville Mine",collection_name_exact,1,1,-20.570000,147.830002
+198,"GSQ D234, Corduroy Creek",collection_name_exact,2,2,-20.549999,147.625000
+199,"GSQ D237, Little Cherwell Creek, Mount Lebanon Homestead",collection_name_exact,2,2,-22.257999,147.970001
+200,"GSQ D238, Isabella Creek, Woollamba Station",collection_name_exact,2,2,-22.952999,148.278000
+201,"GSQ D26, Homevale-Elphinstone Road",collection_name_exact,2,2,-21.549999,148.399994
+202,"GSQ D27, Blenheim Homestead",collection_name_exact,1,1,-21.055000,148.210007
+203,"GSQ D31, Gebbie Creek",collection_name_exact,2,2,-20.737000,147.947998
+204,"GSQ D76, Crystal Creek, Crystal Plains Homestead",collection_name_exact,1,1,-23.299999,147.899994
+205,"GSQ L1158, Blenheim Homestead",collection_name_exact,1,1,-21.065001,148.220001
+206,"GSQ L1308, Blackwater NS 190 well, 117.6 m",collection_name_exact,1,1,-23.020000,148.399994
+207,"GSQ L1348, Blackwater NS 190 well, 117 m",collection_name_exact,1,1,-23.020000,148.399994
+208,"GSQ L1353, Eaglefield Homestead",collection_name_exact,2,2,-21.485001,147.794998
+209,"GSQ L1385, Quarry Hill Shaft",collection_name_exact,1,1,-22.799999,147.600006
+210,"GSQ L1641, Nebo Synclinorium",collection_name_exact,3,3,-21.500000,147.300003
+211,"GSQ L1642, Black Gate, Wall Homestead",collection_name_exact,2,2,-21.500000,147.300003
+212,"GSQ L1657, Emerald Area, Springsure Anticline",collection_name_exact,1,1,-23.500000,148.000000
+213,"GSQ L1713, Gebbie Creek",collection_name_exact,1,1,-20.705000,147.940002
+214,"GSQ L1714, Gebbie Creek",collection_name_exact,1,1,-20.705000,147.940002
+215,"GSQ L1715, Gebbie Creek",collection_name_exact,1,1,-20.705000,147.940002
+216,"GSQ L1716, Gebbie Creek",collection_name_exact,1,1,-20.705000,147.940002
+217,"GSQ L1719, Gebbie Creek",collection_name_exact,1,1,-20.705000,147.940002
+218,"GSQ L1720, Gebbie Creek",collection_name_exact,1,1,-20.705000,147.940002
+219,"GSQ L1726, Gebbie Creek, Bowen River Pumping Station",collection_name_exact,1,1,-20.737000,147.947998
+220,"GSQ L1728, Gebbie Creek, Bowen River Pumping Station",collection_name_exact,1,1,-20.737000,147.947998
+221,"GSQ L1729, Gebbie Creek, Bowen River Pumping Station",collection_name_exact,2,2,-20.737000,147.947998
+222,"GSQ L1731, Gebbie Creek, Bowen River Pumping Station",collection_name_exact,2,2,-20.737000,147.947998
+223,"GSQ L1732, Gebbie Creek, Bowen River Pumping Station",collection_name_exact,2,2,-20.737000,147.947998
+224,"GSQ L1733, Gebbie Creek, Bowen River Pumping Station",collection_name_exact,1,1,-20.737000,147.947998
+225,"GSQ L1734, Gebbie Creek, Bowen River Pumping Station",collection_name_exact,1,1,-20.737000,147.947998
+226,"GSQ L1735, Gebbie Creek, Bowen River Pumping Station",collection_name_exact,1,1,-20.737000,147.947998
+227,"GSQ L1736, Gebbie Creek, Bowen River Pumping Station",collection_name_exact,2,2,-20.737000,147.947998
+228,"GSQ L1737, Gebbie Creek, Bowen River Pumping Station",collection_name_exact,1,1,-20.737000,147.947998
+229,"GSQ L1738, Gebbie Creek, Bowen River Pumping Station",collection_name_exact,2,2,-20.737000,147.947998
+230,"GSQ L1739, Gebbie Creek, Bowen River Pumping Station",collection_name_exact,1,1,-20.737000,147.947998
+231,"GSQ L1742, Bowen River Pumping Station Road",collection_name_exact,1,1,-20.737000,147.945999
+232,"GSQ L1895, Basin Creek, Pumping Station Road Crossing",collection_name_exact,1,1,-20.712999,147.912994
+233,"GSQ L2578, Emerald NS 9R, 410.43-410.49 m",collection_name_exact,1,1,-23.500000,148.000000
+234,"GSQ L2579, Emerald NS 9R, 410.49-410.58 m",collection_name_exact,1,1,-23.500000,148.000000
+235,"GSQ L2580, Emerald NS 9R, 410.58-410.74 m",collection_name_exact,2,2,-23.500000,148.000000
+236,"GSQ L2581, Emerald NS 9R, 410.84-410.89 m",collection_name_exact,1,1,-23.500000,148.000000
+237,"GSQ L2582, Emerald NS 9R, 410.89-411.02 m",collection_name_exact,1,1,-23.500000,148.000000
+238,"GSQ L2583, Emerald NS 9R, 411.02-411.12 m",collection_name_exact,1,1,-23.500000,148.000000
+239,"GSQ L2584, Emerald NS 9R, 411.12-411.25 m",collection_name_exact,1,1,-23.500000,148.000000
+240,"GSQ L2585, Emerald NS 9R, 411.25-411.45 m",collection_name_exact,2,2,-23.500000,148.000000
+241,"GSQ L2586, Emerald NS 9R, 411.45-411.65 m",collection_name_exact,1,1,-23.500000,148.000000
+242,"GSQ L395, Blenheim Homestead",collection_name_exact,3,3,-21.100000,148.250000
+243,"GSQ L396, Blenheim Homestead",collection_name_exact,1,1,-21.059999,148.210007
+245,"GSQ L427, Hazelwood Creek",collection_name_exact,4,4,-21.195000,148.315002
+246,"GSQ L795, No. 3 Camp, Corduroy Creek, off Pelican Creek",collection_name_exact,3,3,-20.549999,147.625000
+247,"GSQ L887, NW Corner of CPA18",collection_name_exact,1,1,-20.590000,147.929993
+248,"GSQ L888, Sonoma - Camp Road Junction",collection_name_exact,2,2,-20.590000,147.929993
+249,"UQ L1367, Parrot Creek",collection_name_exact,1,1,-20.790001,147.750000
+250,"UQ L1368, Mulgrave Cattle Yards",collection_name_exact,1,1,-20.850000,147.759995
+251,"UQ L1377, Pelican Creek",collection_name_exact,2,2,-20.820000,147.845001
+252,"UQ L1384, Bull Creek, Nebo",collection_name_exact,1,1,-20.830000,147.699997
+253,"UQ L3133, Corduroy Creek",collection_name_exact,1,1,-20.549999,147.625000
+254,"UQ L3136, Wollombi Station",collection_name_exact,1,1,-22.950001,148.283005
+255,"UQ L3543, Parrot Creek, Mulgrave Yards",collection_name_exact,1,1,-20.788000,147.746002
+256,"UQ L3727, Exmoor Homestead",collection_name_exact,1,1,-20.788000,147.746002
+257,"UQ L4639, Bowen River, Exmoor Homestead",collection_name_exact,20,20,-20.934099,148.122696
+258,"UQ L4640, Bowen River, Exmoor Homestead",collection_name_exact,6,6,-20.934500,148.123199
+259,"UQ L4641, Bowen River, Exmoor Homestead",collection_name_exact,11,11,-20.935200,148.123596
+260,"UQ L4643, Bowen River, Exmoor Homestead",collection_name_exact,17,17,-20.943001,148.130997
+261,"UQ L4645, Bowen River, Exmoor Homestead",collection_name_exact,13,13,-20.937300,148.125305
+262,"UQ L4646, Bowen River, Exmoor Homestead",collection_name_exact,4,4,-20.937700,148.125793
+263,"UQ L4647, Gebbie Creek",collection_name_exact,1,1,-20.735001,147.949997
+264,"UQ L4648, Bowen River, Exmoor Homestead",collection_name_exact,5,5,-20.937599,148.124405
+265,"UQ L4650, Bowen River, Exmoor Homestead",collection_name_exact,3,3,-20.938101,148.123901
+266,"UQ L4651, Bowen River, Exmoor Homestead",collection_name_exact,8,8,-20.938101,148.123901
+267,"UQ L4652, Bowen River, Exmoor Homestead",collection_name_exact,6,6,-20.938101,148.123901
+268,"UQ L4653, Bowen River, Exmoor Homestead",collection_name_exact,4,4,-20.938101,148.123901
+269,"UQ L4654, Bowen River, Exmoor Homestead",collection_name_exact,6,6,-20.937700,148.126495
+270,"UQ L949, Parrot Creek, Havilah Homestead",collection_name_exact,1,1,-20.788000,147.746002
+271,"CPA 14, Marine Gully - Birralee Road",collection_name_exact,1,1,-20.600000,147.750000
+272,Marine Gully M137,collection_name_exact,1,1,-20.620001,147.750000
+273,"Parrot Creek, Musgrave Road crossing",collection_name_exact,1,1,-20.788000,147.744995
+274,"Minerva Homestead, Springsure",collection_name_exact,1,1,-21.450001,148.050003
+275,"Parish North Britton, Homevale",collection_name_exact,1,1,-21.450001,148.500000
+276,"Upper Cooper Creek, Mt. Robert, Homevale",collection_name_exact,1,1,-21.450001,148.500000
+277,Ridge 1 mile W of Homevale,collection_name_exact,1,1,-21.450001,148.500000
+278,Gate 1.5 miles W of Homevale,collection_name_exact,1,1,-21.450001,148.500000
+279,"UQ L4633, Exmoor Homestead",collection_name_exact,11,11,-20.928499,148.125504
+280,"UQ L4634, Exmoor Homestead",collection_name_exact,4,4,-20.927999,148.126495
+281,"UQ L4635, Exmoor Homestead",collection_name_exact,10,10,-20.928301,148.125702
+282,"UQ L4637, Bowen River, Exmoor Homestead",collection_name_exact,1,1,-20.950001,148.134995
+283,"UQ L4642, Bowen River, Exmoor Homestead",collection_name_exact,9,9,-20.934500,148.123001
+284,"UQ L4644, Exmoor Homestead",collection_name_exact,5,5,-20.948000,148.134506
+285,"UQ L4647, Bowen River, Exmoor Homestead",collection_name_exact,1,1,-20.937201,148.125198
+286,"UQ L4649, Bowen River, Exmoor Homestead",collection_name_exact,3,3,-20.940001,148.126999
+287,"UQ L3702, Gebbie Creek",collection_name_exact,1,1,-20.737000,147.947998
+288,"UQ L3706, Gebbie Creek pipeline",collection_name_exact,1,1,-20.719999,147.929993
+289,"UQ L3714, Bowen River, Exmoor Homestead",collection_name_exact,1,1,-20.945000,148.132507
+290,"UQ L3719, Exmoor Homestead",collection_name_exact,3,3,-20.927000,148.125000
+291,"UQ L3723, Exmoor Homestead",collection_name_exact,1,1,-20.930000,148.126999
+292,"UQ L3722, Exmoor Homestead",collection_name_exact,1,1,-20.930000,148.126999
+293,"Hazelwood Creek, Eungella Station",collection_name_exact,1,1,-21.155001,148.164993
+294,"Corduroy Creek, Collinsville",collection_name_exact,1,1,-20.549999,147.625000
+295,"Pelican Creek, CPA21, Bowen River Coalfield",collection_name_exact,3,3,-20.549999,147.649994
+296,"Derbyia Gully, CPA21, Bowen River Coalfield",collection_name_exact,1,1,-20.600000,147.800003
+297,Flinders River,collection_name_exact,2,2,-20.760000,143.679993
+298,Flinders River (UQ collection),collection_name_exact,1,1,-20.760000,143.679993
+299,Pelican Bore,collection_name_exact,1,1,-20.535000,143.983994
+300,"Horse Shoe Bend, Lekanophyllum association",collection_name_exact,6,6,-19.783333,146.449997
+301,"Kirkland Downs, Australophyllum-Sanidophyllum association",collection_name_exact,11,11,-19.466667,145.983337
+302,Mount Podge,collection_name_exact,15,15,-19.299999,145.966660
+303,"Mount Podge, Laroona Formation",collection_name_exact,2,2,-19.299999,145.966660
+304,"BMR MC292, Collinsville Road, Blenheim Creek",collection_name_exact,1,1,-20.983000,148.136002
+305,"UDC1, Lyra Park",collection_name_exact,8,8,-23.250000,148.500000
+306,Horseshoe Bay,collection_name_exact,1,1,-19.118055,146.860275
+307,Townsville,collection_name_exact,1,1,-19.257500,146.817780
+308,"Dunraven Station, Hughenden area",collection_name_exact,4,4,-20.841667,144.199997
+309,"Glendower Station, near Prairie",collection_name_exact,1,1,-20.669443,144.536118
+310,"UQ L3132, Rosella Creek, Havilah Homestead",collection_name_exact,1,1,-20.834999,147.850006
+311,BMR Collinsville 1,collection_name_exact,3,3,-20.830000,147.699997
+312,"BMR B1633, Collinsville",collection_name_exact,1,1,-20.816668,147.683334
+313,"BMR M418, Mackay Area",collection_name_exact,1,1,-21.459999,148.500000
+314,"BMR C113, Capella Block",collection_name_exact,1,1,-22.379999,148.000000
+315,"BMR C144/3, Capella Block",collection_name_exact,1,1,-22.379999,148.000000
+316,"BMR Em208, Capella Block",collection_name_exact,1,1,-23.049999,148.029999
+317,"BMR C1318/1, Clermont area",collection_name_exact,1,1,-22.110001,148.179993
+318,"BMR MC423a, Blenheim Homestead",collection_name_exact,1,1,-21.049999,148.210007
+319,"BMR MC423b, Blenheim Homestead",collection_name_exact,1,1,-21.049999,148.210007
+320,BMR Collinsville 4a,collection_name_exact,1,1,-20.830000,147.699997
+321,Richmond 'pliosaur' locality,collection_name_exact,1,1,-20.729445,143.141663
+322,"Galah Creek, Hughenden",collection_name_exact,1,1,-20.841667,144.199997
+323,"Y1, CPA21, Bowen River Coalfield",collection_name_exact,1,1,-20.549999,147.649994
+324,"Y2, Pelican Creek, Bowen River Coalfield",collection_name_exact,1,1,-20.549999,147.649994
+325,"Homevale Station, 25 km NW of Nebo",collection_name_exact,1,1,-21.469999,148.500000
+326,Ashgrove Station,collection_name_exact,1,1,-20.883329,143.800003
+327,"Lydia Downs Station, Nelia",collection_name_exact,1,1,-20.883329,143.800003
+328,"Stewart Park, near Flinders River",collection_name_exact,1,1,-20.866667,143.583328
+329,Branch of Flinders River between Flinders and Borree Park Homestead,collection_name_exact,1,1,-20.866667,143.583328
+330,Boremba Station,collection_name_exact,1,1,-20.866667,143.583328
+331,"Canary Station, Hughenden area",collection_name_exact,5,5,-20.841667,144.199997
+332,Accord,collection_name_exact,1,1,-23.466667,144.866669
+333,"GSQ L1161, Pelican Creek",collection_name_exact,1,1,-20.549999,147.649994
+334,"GSQ D232, Pelican Creek",collection_name_exact,1,1,-20.549999,147.625000
+335,"Havilah-Byerwin Road, 1 mile south of Rosella Creek crossing",collection_name_exact,2,2,-20.860001,147.860001
+336,"Pelican creek, three-quarters of a mile above Sonoma road-crossing",collection_name_exact,1,1,-20.549999,147.854996
+337,"UQ L2167, Corduroy Creek",collection_name_exact,1,1,-20.549999,147.625000
+338,"UQ L1379, Gattonvale Homestead",collection_name_exact,1,1,-20.770000,147.949997
+339,"UQ L1399, Gattonvale Homestead",collection_name_exact,2,2,-20.770000,147.949997
+340,"GSQ L794, No. 3 Camp, Corduroy Creek, off Pelican Creek",collection_name_exact,2,2,-20.549999,147.625000
+341,"GSQ L861, Bowen River",collection_name_exact,1,1,-20.549999,147.625000
+342,"Coral Creek, below Sonoma road-crossing",collection_name_exact,10,10,-20.605000,147.850006
+343,"Stonelumpy Creek, Bowen River coalfield",collection_name_exact,2,2,-20.600000,147.800003
+344,"Parrot Creek, four and a quarter miles up",collection_name_exact,2,2,-20.830000,147.740005
+345,"Pelican Creek, two and a half miles above Sonoma road-crossing",collection_name_exact,1,1,-20.549999,147.850006
+346,"Parrot Creek, four and a half miles up",collection_name_exact,1,1,-20.840000,147.740005
+347,"Pelican Creek, five miles north of Sonoma Station",collection_name_exact,2,2,-20.600000,147.759995
+348,"GSQ L852, Pelican Creek, opposite Palmer's Old Station",collection_name_exact,2,2,-20.600000,147.759995
+349,"Parrot Creek, eight miles up",collection_name_exact,1,1,-20.879999,147.699997
+350,"Bowen River, between traverse stations 25 and 26",collection_name_exact,1,1,-20.700001,147.699997
+351,"Bowen River, at No. 25 traverse station",collection_name_exact,2,2,-20.700001,147.699997
+352,"Pelican creek, half a mile above Sonoma road-crossing",collection_name_exact,1,1,-20.549999,147.854996
+353,"Pelican Creek, above Garrick coal seam",collection_name_exact,1,1,-20.600000,147.759995
+354,"Head of Pelican creek, near Mount Diolin",collection_name_exact,1,1,-20.480000,147.889999
+355,"Rosella Creek, two miles above Havilah Paddock",collection_name_exact,1,1,-20.875000,147.880005
+356,Bowen River (Daintree collection),collection_name_exact,1,1,-20.770000,147.949997
+357,"UQ L1366, Havilah",collection_name_exact,1,1,-20.820000,147.839996
+358,Sonoma,collection_name_exact,1,1,-20.590000,147.929993
+359,"Over 18 inch coal seam, Bowen River coalfield",collection_name_exact,1,1,-20.700001,147.699997
+360,Gully 20 chains northwest of No. 25 bore,collection_name_exact,1,1,-20.570000,147.750000
+361,BMR Collinsville 5,collection_name_exact,2,2,-20.830000,147.699997
+362,"Bowen River, unit C (UQ coll)",collection_name_exact,1,1,-20.770000,147.949997
+363,"BMR CL132B, Clarkei Bed, Capella Block",collection_name_exact,1,1,-22.400000,147.899994
+364,"BMR CL40/2, Clarkei Bed, Capella Block",collection_name_exact,1,1,-22.400000,147.899994
+365,"BMR M85c, Collinsville",collection_name_exact,1,1,-20.833332,147.699997
+366,"BMR CL42/6, Clermont area",collection_name_exact,1,1,-22.400000,147.899994
+367,"BMR CL318/1, Clermont area",collection_name_exact,1,1,-22.400000,147.899994
+368,BMR Collinsville 1a,collection_name_exact,1,1,-20.830000,147.699997
+369,"BMR CL30/1, Clermont area",collection_name_exact,1,1,-22.400000,147.899994
+370,"BMR B594, Collinsville area",collection_name_exact,1,1,-20.830000,147.699997
+371,Cardigan,collection_name_exact,1,1,-20.216667,146.633331
+372,Colinvale,collection_name_exact,1,1,-20.013611,148.247498
+373,Ned's Gully,collection_name_exact,1,1,-21.616667,144.949997
+374,"Cratochelone type, Sylvania Station [PROXY]",collection_name_exact,1,1,-20.440001,144.380005
+375,Yambore Creek,collection_name_exact,1,1,-20.700001,142.070007
+376,Central Queensand pliosaurid locality,collection_name_exact,1,1,-20.729445,143.141663
+377,"Silver Hills, Hughenden (QM L349)",collection_name_exact,1,1,-20.850000,144.199997
+378,"Dick's Mother Lode Quarry, Bluff Downs station",collection_name_exact,2,2,-19.718611,145.601669
+379,"BMR B1633a, Collinsville",collection_name_exact,1,1,-20.816668,147.683334
+380,"BMR B1633b, Collinsville",collection_name_exact,1,1,-20.816668,147.683334
+381,"BMR B629, Collinsville",collection_name_exact,1,1,-20.924999,147.687500
+382,"BMR B261d, Nebo Synclinorium",collection_name_exact,2,2,-20.741667,147.949997
+383,"BMR B711, Bowen River",collection_name_exact,1,1,-20.941668,148.137497
+384,"BMR B1569, Collinsville",collection_name_exact,1,1,-20.804167,147.687500
+385,"CCD 88.4, Chinaman Creek Limestone, Broken River",collection_name_exact,4,4,-19.260834,144.718063
+386,"CCD 90.0, Chinaman Creek Limestone, Broken River",collection_name_exact,3,3,-19.260834,144.718063
+387,"CCD 121.3, Chinaman Creek Limestone, Broken River",collection_name_exact,6,6,-19.260834,144.718063
+388,"CCD 53.7, Chinaman Creek Limestone, Broken River",collection_name_exact,3,3,-19.260834,144.718063
+389,"CCD 155.0, Chinaman Creek Limestone, Broken River",collection_name_exact,5,5,-19.260834,144.718063
+390,"CCD 152.6, Chinaman Creek Limestone, Broken River",collection_name_exact,6,6,-19.260834,144.718063
+391,"CCD 64.5, Chinaman Creek Limestone, Broken River",collection_name_exact,3,3,-19.260834,144.718063
+392,"CCD 83.3, Chinaman Creek Limestone, Broken River",collection_name_exact,2,2,-19.260834,144.718063
+393,"CCD 127.2, Chinaman Creek Limestone, Broken River",collection_name_exact,1,1,-19.260834,144.718063
+394,"CCD 72.1, Chinaman Creek Limestone, Broken River",collection_name_exact,2,2,-19.260834,144.718063
+395,"CCD 75.0, Chinaman Creek Limestone, Broken River",collection_name_exact,1,1,-19.260834,144.718063
+396,"CCD 102.2, Chinaman Creek Limestone, Broken River",collection_name_exact,3,3,-19.260834,144.718063
+397,"CCD 111.6, Chinaman Creek Limestone, Broken River",collection_name_exact,2,2,-19.260834,144.718063
+398,"CCD 116.0, Chinaman Creek Limestone, Broken River",collection_name_exact,2,2,-19.260834,144.718063
+399,"CCD 68.4, Chinaman Creek Limestone, Broken River",collection_name_exact,1,1,-19.260834,144.718063
+400,"CCD 107.3, Chinaman Creek Limestone, Broken River",collection_name_exact,1,1,-19.260834,144.718063
+401,"CCD 150.5, Chinaman Creek Limestone, Broken River",collection_name_exact,1,1,-19.260834,144.718063
+402,"CCD 167.5, Chinaman Creek Limestone, Broken River",collection_name_exact,1,1,-19.260834,144.718063
+403,"CCD 170.3, Chinaman Creek Limestone, Broken River",collection_name_exact,2,2,-19.260834,144.718063
+404,"CCD 400.0, Chinaman Creek Limestone, Broken River",collection_name_exact,13,13,-19.260834,144.718063
+405,"CCD 383.8, Chinaman Creek Limestone, Broken River",collection_name_exact,3,3,-19.260834,144.718063
+406,"CCD 378.0, Chinaman Creek Limestone, Broken River",collection_name_exact,1,1,-19.260834,144.718063
+407,"CCD 233.5, Chinaman Creek Limestone, Broken River",collection_name_exact,1,1,-19.260834,144.718063
+408,"CCD 270.0, Chinaman Creek Limestone, Broken River",collection_name_exact,1,1,-19.260834,144.718063
+409,"CCD 348.0, Chinaman Creek Limestone, Broken River",collection_name_exact,1,1,-19.260834,144.718063
+410,"CCD 390.0, Chinaman Creek Limestone, Broken River",collection_name_exact,1,1,-19.260834,144.718063
+411,"CCD 429.0, Chinaman Creek Limestone, Broken River",collection_name_exact,3,3,-19.260834,144.718063
+412,"CCD 451.0, Chinaman Creek Limestone, Broken River",collection_name_exact,1,1,-19.260834,144.718063
+413,"CCD 420.0, Chinaman Creek Limestone, Broken River",collection_name_exact,3,3,-19.260834,144.718063
+414,"CCD 553.0, Chinaman Creek Limestone, Broken River",collection_name_exact,1,1,-19.260834,144.718063
+415,"CCD 620.0, Chinaman Creek Limestone, Broken River",collection_name_exact,1,1,-19.260834,144.718063
+416,"CCD 625.0, Chinaman Creek Limestone, Broken River",collection_name_exact,2,2,-19.260834,144.718063
+417,"CCD 425.0, Chinaman Creek Limestone, Broken River",collection_name_exact,1,1,-19.260834,144.718063
+418,"CCD 608.3, Chinaman Creek Limestone, Broken River",collection_name_exact,2,2,-19.260834,144.718063
+419,"CCD 408.3, Chinaman Creek Limestone, Broken River",collection_name_exact,2,2,-19.260834,144.718063
+420,"CCD 435.0, Chinaman Creek Limestone, Broken River",collection_name_exact,1,1,-19.260834,144.718063
+421,"CCD 781.0, Chinaman Creek Limestone, Broken River",collection_name_exact,1,1,-19.260834,144.718063
+422,"CCD 782.6, Chinaman Creek Limestone, Broken River",collection_name_exact,2,2,-19.260834,144.718063
+423,"CCD 784.5, Chinaman Creek Limestone, Broken River",collection_name_exact,2,2,-19.260834,144.718063
+424,"CCD 790.5, Chinaman Creek Limestone, Broken River",collection_name_exact,2,2,-19.260834,144.718063
+425,"CCD 791.0, Chinaman Creek Limestone, Broken River",collection_name_exact,3,3,-19.260834,144.718063
+426,"CCD 801.0, Chinaman Creek Limestone, Broken River",collection_name_exact,1,1,-19.260834,144.718063
+427,"CCD 691.0, Chinaman Creek Limestone, Broken River",collection_name_exact,1,1,-19.260834,144.718063
+428,"CCD 786.0, Chinaman Creek Limestone, Broken River",collection_name_exact,2,2,-19.260834,144.718063
+429,"CCD 793.0, Chinaman Creek Limestone, Broken River",collection_name_exact,1,1,-19.260834,144.718063
+430,"CCD 816.8, Chinaman Creek Limestone, Broken River",collection_name_exact,1,1,-19.260834,144.718063
+431,"CCD 826.2, Chinaman Creek Limestone, Broken River",collection_name_exact,1,1,-19.260834,144.718063
+432,"LW 206.0, Lockup Well limestone, Broken River",collection_name_exact,1,1,-19.296944,144.844162
+433,"LW 218.0, Lockup Well limestone, Broken River",collection_name_exact,1,1,-19.296944,144.844162
+434,"LW 225.0, Lockup Well limestone, Broken River",collection_name_exact,3,3,-19.296944,144.844162
+435,"LW 72.4, Lockup Well limestone, Broken River",collection_name_exact,2,2,-19.296944,144.844162
+436,"LW 82.0, Lockup Well limestone, Broken River",collection_name_exact,1,1,-19.296944,144.844162
+437,"LW 106.1, Lockup Well limestone, Broken River",collection_name_exact,2,2,-19.296944,144.844162
+438,"LW 186.0, Lockup Well limestone, Broken River",collection_name_exact,1,1,-19.296944,144.844162
+439,"LW 69.4, Lockup Well limestone, Broken River",collection_name_exact,2,2,-19.296944,144.844162
+440,"LW 121.0, Lockup Well limestone, Broken River",collection_name_exact,1,1,-19.296944,144.844162
+441,"LW 121.7, Lockup Well limestone, Broken River",collection_name_exact,2,2,-19.296944,144.844162
+442,"LW 136.0, Lockup Well limestone, Broken River",collection_name_exact,2,2,-19.296944,144.844162
+443,"LW 198.5, Lockup Well limestone, Broken River",collection_name_exact,1,1,-19.296944,144.844162
+444,"LW 209.0, Lockup Well limestone, Broken River",collection_name_exact,1,1,-19.296944,144.844162
+445,"LW 221.0, Lockup Well limestone, Broken River",collection_name_exact,1,1,-19.296944,144.844162
+446,"LW 223.0, Lockup Well limestone, Broken River",collection_name_exact,3,3,-19.296944,144.844162
+447,"LW 237.0, Lockup Well limestone, Broken River",collection_name_exact,1,1,-19.296944,144.844162
+448,"LW 170.5, Lockup Well limestone, Broken River",collection_name_exact,1,1,-19.296944,144.844162
+449,"LW 231.0, Lockup Well limestone, Broken River",collection_name_exact,1,1,-19.296944,144.844162
+450,"LW 270.5, Lockup Well limestone, Broken River",collection_name_exact,1,1,-19.296944,144.844162
+451,"LW 371.5, Lockup Well limestone, Broken River",collection_name_exact,1,1,-19.296944,144.844162
+452,"LW 591.0, Lockup Well limestone, Broken River",collection_name_exact,1,1,-19.296944,144.844162
+453,"LW 621.0, Lockup Well limestone, Broken River",collection_name_exact,2,2,-19.296944,144.844162
+454,"LW 357.0, Lockup Well limestone, Broken River",collection_name_exact,2,2,-19.296944,144.844162
+455,"LW 347.3, Lockup Well limestone, Broken River",collection_name_exact,1,1,-19.296944,144.844162
+456,"LW 260.0, Lockup Well limestone, Broken River",collection_name_exact,2,2,-19.296944,144.844162
+457,"LW 275.5, Lockup Well limestone, Broken River",collection_name_exact,2,2,-19.296944,144.844162
+458,"LW 280.0, Lockup Well limestone, Broken River",collection_name_exact,1,1,-19.296944,144.844162
+459,"LW 339.7, Lockup Well limestone, Broken River",collection_name_exact,1,1,-19.296944,144.844162
+460,"LW 610.0, Lockup Well limestone, Broken River",collection_name_exact,1,1,-19.296944,144.844162
+461,"LW 646.0, Lockup Well limestone, Broken River",collection_name_exact,1,1,-19.296944,144.844162
+462,"LW 322.0, Lockup Well limestone, Broken River",collection_name_exact,1,1,-19.296944,144.844162
+463,"LW 375.5, Lockup Well limestone, Broken River",collection_name_exact,1,1,-19.296944,144.844162
+464,"LW 688.0, Lockup Well limestone, Broken River",collection_name_exact,1,1,-19.296944,144.844162
+465,"Jesseys 54.0, Jessey Springs limestone, Broken River",collection_name_exact,9,9,-19.401667,144.805557
+466,"Jesseys 54.1, Jessey Springs limestone, Broken River",collection_name_exact,6,6,-19.401667,144.805557
+467,"Jesseys 54.2, Jessey Springs limestone, Broken River",collection_name_exact,13,13,-19.401667,144.805557
+468,"Jesseys 61.0, Jessey Springs limestone, Broken River",collection_name_exact,12,12,-19.401667,144.805557
+469,"Jesseys 50.0, Jessey Springs limestone, Broken River",collection_name_exact,5,5,-19.401667,144.805557
+470,"Jesseys 43.0, Jessey Springs limestone, Broken River",collection_name_exact,3,3,-19.401667,144.805557
+471,"Jesseys 44.0, Jessey Springs limestone, Broken River",collection_name_exact,1,1,-19.401667,144.805557
+472,"Jesseys 57.0, Jessey Springs limestone, Broken River",collection_name_exact,6,6,-19.401667,144.805557
+473,"Jesseys 52.0, Jessey Springs limestone, Broken River",collection_name_exact,2,2,-19.401667,144.805557
+474,"Jesseys 48.0, Jessey Springs limestone, Broken River",collection_name_exact,1,1,-19.401667,144.805557
+475,"Jesseys 51.0, Jessey Springs limestone, Broken River",collection_name_exact,1,1,-19.401667,144.805557
+476,"Jesseys 53.0, Jessey Springs limestone, Broken River",collection_name_exact,2,2,-19.401667,144.805557
+477,"Jesseys 42.0, Jessey Springs limestone, Broken River",collection_name_exact,2,2,-19.401667,144.805557
+478,"Jesseys 49.0, Jessey Springs limestone, Broken River",collection_name_exact,1,1,-19.401667,144.805557
+479,"JES 8.4, Jessey Springs Limestone, Broken River",collection_name_exact,3,3,-19.401667,144.805557
+480,"JES 2.5, Jessey Springs Limestone, Broken River",collection_name_exact,2,2,-19.401667,144.805557
+481,"JES 6.6, Jessey Springs Limestone, Broken River",collection_name_exact,1,1,-19.401667,144.805557
+482,"JES 12.2, Jessey Springs Limestone, Broken River",collection_name_exact,2,2,-19.401667,144.805557
+483,"JES 31.6, Jessey Springs Limestone, Broken River",collection_name_exact,3,3,-19.401667,144.805557
+484,"JES 24.1, Jessey Springs Limestone, Broken River",collection_name_exact,3,3,-19.401667,144.805557
+485,"JES 14.3, Jessey Springs Limestone, Broken River",collection_name_exact,1,1,-19.401667,144.805557
+486,"JES 20.6, Jessey Springs Limestone, Broken River",collection_name_exact,1,1,-19.401667,144.805557
+487,"JES 5.2, Jessey Springs Limestone, Broken River",collection_name_exact,1,1,-19.401667,144.805557
+488,"JES 43.2, Jessey Springs Limestone, Broken River",collection_name_exact,3,3,-19.401667,144.805557
+489,"JES 44.8, Jessey Springs Limestone, Broken River",collection_name_exact,3,3,-19.401667,144.805557
+490,"JES 59.8, Jessey Springs Limestone, Broken River",collection_name_exact,4,4,-19.401667,144.805557
+491,"JES 32.7, Jessey Springs Limestone, Broken River",collection_name_exact,1,1,-19.401667,144.805557
+492,"JES 33.0, Jessey Springs Limestone, Broken River",collection_name_exact,1,1,-19.401667,144.805557
+493,"JES 65.9, Jessey Springs Limestone, Broken River",collection_name_exact,1,1,-19.401667,144.805557
+494,"JES 34.8, Jessey Springs Limestone, Broken River",collection_name_exact,1,1,-19.401667,144.805557
+495,"JES 64.7, Jessey Springs Limestone, Broken River",collection_name_exact,1,1,-19.401667,144.805557
+496,"JES 36.2, Jessey Springs Limestone, Broken River",collection_name_exact,1,1,-19.401667,144.805557
+497,"JES 72.4, Jessey Springs Limestone, Broken River",collection_name_exact,2,2,-19.401667,144.805557
+498,"JES 98.2, Jessey Springs Limestone, Broken River",collection_name_exact,1,1,-19.401667,144.805557
+499,"JES 101.0, Jessey Springs Limestone, Broken River",collection_name_exact,4,4,-19.401667,144.805557
+500,"JES 101.2, Jessey Springs Limestone, Broken River",collection_name_exact,4,4,-19.401667,144.805557
+501,"JES 104.2, Jessey Springs Limestone, Broken River",collection_name_exact,8,8,-19.401667,144.805557
+502,"JES 107.0, Jessey Springs Limestone, Broken River",collection_name_exact,2,2,-19.401667,144.805557
+503,"JES 112.5, Jessey Springs Limestone, Broken River",collection_name_exact,2,2,-19.401667,144.805557
+504,"JES 113.2, Jessey Springs Limestone, Broken River",collection_name_exact,2,2,-19.401667,144.805557
+505,"JES 113.5, Jessey Springs Limestone, Broken River",collection_name_exact,3,3,-19.401667,144.805557
+506,"JES 113.6, Jessey Springs Limestone, Broken River",collection_name_exact,2,2,-19.401667,144.805557
+507,"JES 85.0, Jessey Springs Limestone, Broken River",collection_name_exact,1,1,-19.401667,144.805557
+508,"JES 100.0, Jessey Springs Limestone, Broken River",collection_name_exact,2,2,-19.401667,144.805557
+509,"JES 110.5, Jessey Springs Limestone, Broken River",collection_name_exact,2,2,-19.401667,144.805557
+510,"JES 106.7, Jessey Springs Limestone, Broken River",collection_name_exact,1,1,-19.401667,144.805557
+511,"JES 95.0, Jessey Springs Limestone, Broken River",collection_name_exact,1,1,-19.401667,144.805557
+512,"JES 117.5, Jessey Springs Limestone, Broken River",collection_name_exact,6,6,-19.401667,144.805557
+513,"JES 119.7, Jessey Springs Limestone, Broken River",collection_name_exact,5,5,-19.401667,144.805557
+514,"JES 120.6, Jessey Springs Limestone, Broken River",collection_name_exact,6,6,-19.401667,144.805557
+515,"JES 274.0D, Jessey Springs Limestone, Broken River",collection_name_exact,3,3,-19.401667,144.805557
+516,"JES 117.3, Jessey Springs Limestone, Broken River",collection_name_exact,3,3,-19.401667,144.805557
+517,"JES 274.0A, Jessey Springs Limestone, Broken River",collection_name_exact,1,1,-19.401667,144.805557
+518,"JES 274.0E, Jessey Springs Limestone, Broken River",collection_name_exact,2,2,-19.401667,144.805557
+519,"JHY site, Bluff Downs",collection_name_exact,1,1,-19.718611,145.601669
+520,"Site 2, Bluff Downs",collection_name_exact,1,1,-19.718611,145.601669
+521,Saunders Beach,collection_name_exact,1,1,-19.158449,146.610275
+522,"Currane, north of Dartmouth",collection_name_exact,4,4,-23.365000,144.702225
+523,Hughenden Decapods,collection_name_exact,1,1,-20.838888,144.201111
+524,Dartmouth Decapods,collection_name_exact,2,2,-23.528334,144.686111
+525,"Big Stockyard Creek area, south of Greenvale",collection_name_exact,1,1,-19.083332,144.987503
+526,Emerald locality,collection_name_exact,1,1,-23.000000,148.000000
+530,"Section HID, Mary Creek, Ukalunda Beds, 0m",collection_name_exact,2,2,-20.850000,147.166672
+539,"Section HID, Mary Creek, Ukalunda Beds, 108-111,5m",collection_name_exact,6,6,-20.850000,147.166672
+540,"Section HID, Mary Creek, Ukalunda Beds, 90,5m",collection_name_exact,1,1,-20.850000,147.166672
+541,"Section HID, Mary Creek, Ukalunda Beds, 111,6m",collection_name_exact,2,2,-20.850000,147.166672
+542,"Section HID, Mary Creek, Ukalunda Beds, 118,6 m",collection_name_exact,1,1,-20.850000,147.166672
+543,"Section HID, Mary Creek, Ukalunda Beds, 112 m",collection_name_exact,1,1,-20.850000,147.166672
+544,Glendarriwell,collection_name_exact,3,3,-23.633333,147.800003
+545,Greybank Volcanics,collection_name_exact,11,11,-22.516666,147.916672
+546,Dodgey's Cave,collection_name_exact,1,1,-19.232153,145.418167
+547,"Main Quarry, Allingham Formation, BluffDowns Station",collection_name_exact,2,2,-19.716667,145.600006
+548,Bluff Downs,collection_name_exact,36,36,-19.683331,145.533325
+550,"Blaggard Creek, Spring Park Station",collection_name_exact,1,1,-19.716667,145.600006
+551,Wyandotte Creek (Unit A),collection_name_exact,19,19,-18.770000,144.854996
+553,Wyandotte Creek (float specimens),collection_name_exact,5,5,-18.770000,144.854996
+554,Wyandotte Creek (Unit B),collection_name_exact,9,9,-18.770000,144.854996
+555,"Locality L486, Mount Windsor Subprovince, Assemblage C",collection_name_exact,5,5,-20.533333,146.433334
+556,"Locality L493, Mount Windsor Subprovince, Rollston Range Fm, assemblage B",collection_name_exact,2,2,-20.533333,146.433334
+557,"Locality L502, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",collection_name_exact,6,6,-20.533333,146.433334
+558,"Locality L499, Mount Windsor Subprovince, Trooper Creek Fm, assemblage A",collection_name_exact,5,5,-20.533333,146.433334
+559,"Locality L156, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",collection_name_exact,6,6,-20.533333,146.433334
+560,"Locality L165, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",collection_name_exact,8,8,-20.533333,146.433334
+561,"Locality L166, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",collection_name_exact,9,9,-20.533333,146.433334
+562,"Locality L485, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",collection_name_exact,10,10,-20.533333,146.433334
+563,"Locality L492, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",collection_name_exact,10,10,-20.533333,146.433334
+564,"Locality L521, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",collection_name_exact,7,7,-20.533333,146.433334
+565,"Locality L160, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",collection_name_exact,1,1,-20.533333,146.433334
+566,"Locality L500, Mount Windsor Subprovince, Rollston Range Fm, assemblage B",collection_name_exact,4,4,-20.533333,146.433334
+567,"Locality L498, Mount Windsor Subprovince, Rollston Range Fm, assemblage B",collection_name_exact,1,1,-20.533333,146.433334
+568,"Locality L497, Mount Windsor Subprovince, Rollston Range Fm, assemblage B",collection_name_exact,2,2,-20.533333,146.433334
+569,"Locality L525, Mount Windsor Subprovince, Rollston Range Fm, assemblage B",collection_name_exact,1,1,-20.533333,146.433334
+570,"Locality L157, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",collection_name_exact,3,3,-20.533333,146.433334
+571,"Locality L158, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",collection_name_exact,2,2,-20.533333,146.433334
+572,"Locality L161, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",collection_name_exact,5,5,-20.533333,146.433334
+573,"Locality L162, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",collection_name_exact,5,5,-20.533333,146.433334
+574,"Locality L164, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",collection_name_exact,6,6,-20.533333,146.433334
+575,"Locality L503, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",collection_name_exact,2,2,-20.533333,146.433334
+576,"Locality L504, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",collection_name_exact,1,1,-20.533333,146.433334
+577,"Locality L507, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",collection_name_exact,3,3,-20.533333,146.433334
+578,"Locality L524, Mount Windsor Subprovince, Rollston Range Fm, assemblage D",collection_name_exact,1,1,-20.533333,146.433334
+579,"Locality L159, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",collection_name_exact,2,2,-20.533333,146.433334
+580,"Locality L163, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",collection_name_exact,1,1,-20.533333,146.433334
+581,"Notochelone type, Flinder's River region [PROXY]",collection_name_exact,1,1,-20.769444,143.660278
+582,South Walker Creek (SW9),collection_name_exact,17,17,-21.708883,148.349106
+583,South Walker Creek (SW3),collection_name_exact,13,13,-21.708883,148.349106
+584,South Walker Creek (SWJ),collection_name_exact,6,6,-21.708883,148.349106
+585,South Walker Creek (SWCC),collection_name_exact,8,8,-21.708883,148.349106
+586,Richmond area (Kronosaurus Korner Museum collection),collection_name_exact,1,1,-21.000000,143.300003
+587,Richmond area (NHMUK collection),collection_name_exact,1,1,-21.000000,143.300003
+588,Section RUR. 105.4 meters,collection_name_exact,1,1,-19.083332,145.500000
+589,Section RUR. 56.6 meters,collection_name_exact,1,1,-19.083332,145.500000
+590,Section RUR. 56.8 meters,collection_name_exact,1,1,-19.083332,145.500000
+591,Section RUR. 56.9 meters,collection_name_exact,1,1,-19.083332,145.500000
+592,"NU L1064. Corner creek and Star River, near Paluma",collection_name_exact,2,2,-19.500000,145.899994
+593,"Marathon Station, Flinders River",collection_name_exact,8,8,-20.866667,143.583328
+594,S0210. SO 43E.,collection_name_exact,1,1,-19.547222,144.676392
+595,SO 216,collection_name_exact,1,1,-19.445833,144.766663
+596,Br 13B. 216 m,collection_name_exact,2,2,-19.320833,144.679169
+597,Br 13B. 214.5 m,collection_name_exact,3,3,-19.320833,144.679169
+598,SD 130. 223 m,collection_name_exact,1,1,-19.522223,144.673615
+599,SD 130. 243 m,collection_name_exact,1,1,-19.522223,144.673615
+600,"""Chookie Site"", Elderslie Station (AODL 0120)",collection_name_exact,3,3,-22.199722,142.528610
+601,"Oliver site, Elderslie Station (AODL 0122)",collection_name_exact,2,2,-22.200832,142.527222
+602,"Snake Creek Tracksite, Karoola",collection_name_exact,8,8,-22.087299,142.490997
+603,"Mitchell site, Elderslie Sheep Station (AODL 270)",collection_name_exact,11,11,-22.200832,142.527222
+604,"Ann site, Elderslie Station (AODL 0252)",collection_name_exact,1,1,-22.250000,142.500000
+605,Suttor River,collection_name_exact,1,1,-21.221571,146.912659
+606,"Cambridge Quarry, Morungle Station",collection_name_exact,1,1,-20.426111,142.933609
+607,"AODL 0128, Devil Dave, Belmont Station",collection_name_exact,1,1,-22.079721,143.510559
+608,"AODL 0215, Ian, Elderslie Station",collection_name_exact,1,1,-22.290556,142.471939
+609,"AODL 0137, Elderslie Station",collection_name_exact,1,1,-22.290556,142.471939
+610,"AODL 0080, Bob, Belmont Station",collection_name_exact,1,1,-22.079445,143.510284
+611,"AODL 0160, Patrice, Lovelle Downs Station",collection_name_exact,1,1,-22.146111,142.536118
+612,"AODL 0049, Mick, west of Winton",collection_name_exact,1,1,-22.383057,142.941391
+613,"AODL 0079, McKenzie, Elderslie Station",collection_name_exact,1,1,-22.290556,142.471939
+614,"AODL 0117, Dixie, Elderslie Station",collection_name_exact,1,1,-22.290556,142.471939
+615,"AODL 0125, Trixie, Elderslie Station",collection_name_exact,1,1,-22.290556,142.471939
+616,"AODL 0247, Leo, Belmont Station",collection_name_exact,1,1,-22.079445,143.510559
+617,"Dig Site Three, NW of Richmond",collection_name_exact,4,4,-20.643888,143.097504
+619,Free Fossil Hunting Site 1,collection_name_exact,1,1,-20.646944,143.099442
+620,Broken River,collection_name_exact,1,1,-19.049999,144.983337
+621,"10 km south east of Springvale, near the Narrien Range",collection_name_exact,1,1,-22.883333,146.824173
+622,Plain Creek Station,collection_name_exact,1,1,-21.551111,146.509720
+623,1 km upstream from Six Mile Yard (Nawagaspis type-loc),collection_name_exact,1,1,-19.481947,144.710526
+624,4.5 km upstream from Six Mile Yard (Wurungaspis type-loc),collection_name_exact,1,1,-19.467501,144.754715
+625,"Dosey Creek, near Six Mile Yard (Doseyosteus type-loc)",collection_name_exact,1,1,-19.484722,144.728882
+626,"Wyangaria Station, Hughenden area",collection_name_exact,1,1,-20.838057,143.602783
+627,~70m west of old road crossing of Digger's Creek,collection_name_exact,1,1,-19.000000,144.666672
+628,Flinders River near Maxwelton,collection_name_exact,1,1,-20.642799,142.754593
+629,Quarry along Richmond-Woolgar Road,collection_name_exact,3,3,-20.646000,143.098999
+630,"Currane, 10 miles north of Dartmouth",collection_name_exact,5,5,-23.270279,144.744995
+631,Hughenden,collection_name_exact,1,1,-20.838888,144.201111

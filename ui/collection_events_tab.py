@@ -3,13 +3,12 @@ from ui.trip_filter_tree_tab import TripFilterTreeTab
 
 
 class CollectionEventsTab(TripFilterTreeTab):
-    LIST_COLUMNS = ("location_name", "collection_name", "collection_subset", "find_count")
+    LIST_COLUMNS = ("location_name", "collection_name", "find_count")
 
     def __init__(self, parent, repo: TripRepository):
         widths = {
             "location_name": 260,
             "collection_name": 260,
-            "collection_subset": 140,
             "find_count": 80,
         }
         super().__init__(parent, repo, self.LIST_COLUMNS, widths, repo.list_collection_events)

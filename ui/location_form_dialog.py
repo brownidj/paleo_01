@@ -17,13 +17,24 @@ class LocationFormDialog(tk.Toplevel):
         "geography_comments",
     ]
 
-    def __init__(self, parent: tk.Widget, initial_data: dict[str, object] | None, on_save):
+    NONE_OPTION = "(None)"
+    NEW_GEOLOGY_OPTION = "New geology"
+
+    def __init__(
+        self,
+        parent: tk.Widget,
+        initial_data: dict[str, object] | None,
+        on_save,
+        geology_choices: list[tuple[int, str]] | None = None,
+        is_new: bool = False,
+    ):
         super().__init__(parent)
         self.title("Location")
         self.on_save = on_save
         self.resizable(False, False)
         self.entries: dict[str, ttk.Entry] = {}
-        self.collection_events: list[dict[str, str]] = []
+        self._is_new = is_new
+        self._geology_label_to_id: dict[str, int] = {}
 
         frame = ttk.Frame(self, padding=10)
         frame.pack(fill="both", expand=True)
@@ -36,38 +47,34 @@ class LocationFormDialog(tk.Toplevel):
                 entry.insert(0, str(initial_data.get(field, "")))
             self.entries[field] = entry
 
-        events_row = len(self.FIELDS)
-        ttk.Label(frame, text="collection_events").grid(row=events_row, column=0, sticky="ne", padx=4, pady=4)
-        events_container = ttk.Frame(frame)
-        events_container.grid(row=events_row, column=1, sticky="w", padx=4, pady=4)
+        geology_row = len(self.FIELDS)
+        ttk.Label(frame, text="geology").grid(row=geology_row, column=0, sticky="e", padx=4, pady=4)
+        self.geology_var = tk.StringVar(value=self.NONE_OPTION)
+        options = [self.NONE_OPTION]
+        for geology_id, geology_label in geology_choices or []:
+            label = str(geology_label).strip()
+            if not label:
+                continue
+            if label in self._geology_label_to_id:
+                label = f"{label} (#{geology_id})"
+            self._geology_label_to_id[label] = int(geology_id)
+            options.append(label)
+        if self._is_new:
+            options.append(self.NEW_GEOLOGY_OPTION)
+        self.geology_combo = ttk.Combobox(frame, textvariable=self.geology_var, values=options, state="readonly", width=40)
+        self.geology_combo.grid(row=geology_row, column=1, sticky="w", padx=4, pady=4)
 
-        self.events_list = tk.Listbox(events_container, width=48, height=5)
-        self.events_list.grid(row=0, column=0, columnspan=3, sticky="ew", pady=(0, 6))
-
-        ttk.Label(events_container, text="name").grid(row=1, column=0, sticky="w")
-        self.collection_name_entry = ttk.Entry(events_container, width=22)
-        self.collection_name_entry.grid(row=2, column=0, sticky="w", padx=(0, 6))
-
-        ttk.Label(events_container, text="subset").grid(row=1, column=1, sticky="w")
-        self.collection_subset_entry = ttk.Entry(events_container, width=22)
-        self.collection_subset_entry.grid(row=2, column=1, sticky="w", padx=(0, 6))
-
-        ttk.Button(events_container, text="Add Event", command=self._add_event).grid(row=2, column=2, sticky="w")
-        ttk.Button(events_container, text="Remove Selected", command=self._remove_selected_event).grid(
-            row=3, column=0, columnspan=3, sticky="w", pady=(6, 0)
-        )
-
-        if initial_data:
-            for event in initial_data.get("collection_events", []):
-                name = str(event.get("collection_name") or "").strip()
-                if not name:
-                    continue
-                subset = str(event.get("collection_subset") or "").strip()
-                self.collection_events.append({"collection_name": name, "collection_subset": subset})
-            self._render_events()
+        current_geology_id = int(initial_data.get("geology_id")) if initial_data and initial_data.get("geology_id") else None
+        if current_geology_id is not None:
+            for label, geology_id in self._geology_label_to_id.items():
+                if geology_id == current_geology_id:
+                    self.geology_var.set(label)
+                    break
+            else:
+                self.geology_var.set(self.NONE_OPTION)
 
         btns = ttk.Frame(frame)
-        btns.grid(row=events_row + 1, column=0, columnspan=2, sticky="ew", pady=(8, 0))
+        btns.grid(row=geology_row + 1, column=0, columnspan=2, sticky="ew", pady=(8, 0))
         ttk.Button(btns, text="Save", command=self._save).pack(side="left", padx=4)
         ttk.Button(btns, text="Cancel", command=self.destroy).pack(side="right", padx=4)
 
@@ -75,40 +82,16 @@ class LocationFormDialog(tk.Toplevel):
         self.grab_set()
 
     def _save(self) -> None:
-        payload = {field: entry.get().strip() for field, entry in self.entries.items()}
-        payload["collection_events"] = self.collection_events.copy()
+        payload: dict[str, object] = {field: entry.get().strip() for field, entry in self.entries.items()}
+        selected = self.geology_var.get().strip()
+        if selected == self.NEW_GEOLOGY_OPTION:
+            payload["new_geology"] = True
+            payload["geology_id"] = None
+        elif selected and selected != self.NONE_OPTION:
+            payload["geology_id"] = self._geology_label_to_id.get(selected)
+        else:
+            payload["geology_id"] = None
         should_close = self.on_save(payload)
         if should_close is False:
             return
         self.destroy()
-
-    def _add_event(self) -> None:
-        collection_name = self.collection_name_entry.get().strip()
-        if not collection_name:
-            return
-        collection_subset = self.collection_subset_entry.get().strip()
-        self.collection_events.append(
-            {
-                "collection_name": collection_name,
-                "collection_subset": collection_subset,
-            }
-        )
-        self.collection_name_entry.delete(0, tk.END)
-        self.collection_subset_entry.delete(0, tk.END)
-        self._render_events()
-
-    def _remove_selected_event(self) -> None:
-        selected = self.events_list.curselection()
-        if not selected:
-            return
-        index = int(selected[0])
-        del self.collection_events[index]
-        self._render_events()
-
-    def _render_events(self) -> None:
-        self.events_list.delete(0, tk.END)
-        for event in self.collection_events:
-            name = event.get("collection_name", "")
-            subset = event.get("collection_subset", "")
-            label = f"{name} | {subset}" if subset else name
-            self.events_list.insert(tk.END, label)

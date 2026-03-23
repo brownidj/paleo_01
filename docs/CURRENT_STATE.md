@@ -146,6 +146,7 @@ rg --files "$ROOT_DIR" \
     - `app/main.py` is the canonical executable entrypoint and launches `PlanningPhaseWindow`.
     - `main.py` at project root is a thin compatibility wrapper forwarding to `app.main.main`.
     - `app/planning_phase_main.py` is a thin wrapper that forwards to `app.main.main`.
+    - Shared IDE run config added: `.idea/runConfigurations/App_Main.xml` points to `$PROJECT_DIR$/app/main.py`.
   - **UI Modules**:
     - `ui/planning_phase_window.py`: composition root for tabs, dialog controller, navigation coordinator, and app palette.
     - `ui/planning_tabs_controller.py`: notebook tab construction and initial tab-data loading.
@@ -161,9 +162,12 @@ rg --files "$ROOT_DIR" \
     - `ui/location_tab.py`, `ui/location_form_dialog.py`: location CRUD + collection-events editing.
     - `ui/team_members_tab.py`, `ui/team_member_form_dialog.py`: team-members CRUD (no delete in UI flow) with optional trip-scoped filter mode.
   - **Seeding**:
-    - `scripts/seed_users.py`: team members with fixed AU phone and active split.
-    - `scripts/seed_locations.py`: fake locations; supports `--truncate`; optional one-time cardinal variants from first-pass records.
-    - `scripts/seed_trips.py`: trips seeded from existing locations, writes `TripLocations`, supports second-pass multi-location trip generation via random boolean on similar-location matches.
+    - `scripts/dev_seed/seed_users.py`: development-only synthetic team-member seeding (fixed AU phone + active split).
+    - `scripts/dev_seed/seed_locations.py`: development-only synthetic location seeding; supports `--truncate`; optional one-time cardinal variants from first-pass records.
+    - `scripts/dev_seed/seed_trips.py`: development-only synthetic trip seeding from existing locations; writes `TripLocations`; optional second-pass multi-location trip generation.
+    - `scripts/seed_users.py`, `scripts/seed_locations.py`, `scripts/seed_trips.py`: compatibility wrappers that forward to `scripts/dev_seed/*`.
+  - **Bootstrap Imports**:
+    - `scripts/db_schema_helpers.py` now uses direct package import (`from scripts.db_migration_helpers import ...`); fallback import path removed.
 - **Planning Database (`data/paleo_trips_01.db`)**:
   - `Team_members(id, name, phone_number, institution, recruitment_date, retirement_date, active)`
   - `Trips(id, trip_name, start_date, end_date, team, location, notes)` (`region` removed)

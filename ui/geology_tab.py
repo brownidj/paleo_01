@@ -1,8 +1,9 @@
 import sqlite3
+import tkinter as tk
 from tkinter import messagebox, ttk
 
 from repository.trip_repository import TripRepository
-from ui.auto_hide_scrollbars import attach_auto_hiding_scrollbars
+from ui.auto_hide_scrollbars import AutoHideScrollbar, attach_auto_hiding_scrollbars
 from ui.geology_form_dialog import GeologyFormDialog
 
 
@@ -32,22 +33,52 @@ class GeologyTab(ttk.Frame):
             self.tree.heading(col, text=col.replace("_", " "))
             self.tree.column(col, width=column_widths.get(col, 120), anchor="w")
         attach_auto_hiding_scrollbars(self, self.tree, padx=10, pady=6)
-        self.tree.bind("<<TreeviewSelect>>", lambda _: self._show_selected_details())
+        self.tree.bind("<<TreeviewSelect>>", self._on_tree_select)
         self.tree.bind("<Double-1>", lambda _: self.edit_selected())
 
-        buttons = ttk.Frame(self)
-        buttons.pack(fill="x", padx=10, pady=(0, 6))
-        ttk.Button(buttons, text="Edit Selected", command=self.edit_selected).pack(side="left", padx=4)
+        self._toast_hide_after_id: str | None = None
+        self._toast = tk.Label(
+            self,
+            text="",
+            bg="#2B6E59",
+            fg="#FFFFFF",
+            font=("Helvetica", 12, "bold"),
+            bd=2,
+            relief="solid",
+            padx=14,
+            pady=8,
+        )
+        self._toast.place_forget()
 
         details = ttk.LabelFrame(self, text="Selected Geology Details")
         details.pack(fill="x", padx=10, pady=(0, 10))
-        self.details_text = ttk.Label(
-            details,
-            text="Select a row to view details.",
-            justify="left",
-            anchor="w",
+        details_container = ttk.Frame(details)
+        details_container.pack(fill="both", expand=True, padx=10, pady=8)
+        self.details_text = tk.Text(
+            details_container,
+            height=8,
+            wrap="word",
+            bd=1,
+            relief="solid",
+            highlightthickness=0,
         )
-        self.details_text.pack(fill="x", padx=10, pady=8)
+        def _show_details_vbar() -> None:
+            self._details_scroll.place(in_=self.details_text, relx=1.0, rely=0.0, relheight=1.0, x=-14, width=14)
+
+        def _hide_details_vbar() -> None:
+            self._details_scroll.place_forget()
+
+        self._details_scroll = AutoHideScrollbar(
+            details_container,
+            orient="vertical",
+            command=self.details_text.yview,
+            show=_show_details_vbar,
+            hide=_hide_details_vbar,
+        )
+        self.details_text.configure(yscrollcommand=self._details_scroll.set)
+        self.details_text.pack(side="left", fill="both", expand=True)
+        _hide_details_vbar()
+        self._set_details_text("Select a row to view details.")
 
     def load_geology(self) -> None:
         for item in self.tree.get_children():
@@ -56,7 +87,7 @@ class GeologyTab(ttk.Frame):
         try:
             records = self.repo.list_geology_records()
         except sqlite3.Error as e:
-            messagebox.showerror("Database Error", str(e))
+            self._set_details_text(f"Database Error: {e}")
             return
         for idx, record in enumerate(records, 1):
             iid = str(idx)
@@ -68,16 +99,16 @@ class GeologyTab(ttk.Frame):
             self.tree.selection_set(first_iid)
             self._show_selected_details()
         else:
-            self.details_text.config(text="No geology records found.")
+            self._set_details_text("No geology records found.")
 
     def _show_selected_details(self) -> None:
         selected = self.tree.selection()
         if not selected:
-            self.details_text.config(text="Select a row to view details.")
+            self._set_details_text("Select a row to view details.")
             return
         record = self._records_by_iid.get(selected[0])
         if not record:
-            self.details_text.config(text="Select a row to view details.")
+            self._set_details_text("Select a row to view details.")
             return
 
         lithology_rows = record.get("lithology_rows") or []
@@ -111,7 +142,29 @@ class GeologyTab(ttk.Frame):
             f"Lithology:\n{lithology_text}\n"
             f"Reference No: {record.get('source_reference_no') or 'n/a'}"
         )
-        self.details_text.config(text=text)
+        self._set_details_text(text)
+
+    def _on_tree_select(self, _event) -> None:
+        self._show_selected_details()
+        if self.tree.selection():
+            self._show_toast("Double-click to edit.")
+
+    def _show_toast(self, message: str, duration_ms: int = 1400) -> None:
+        self._toast.configure(text=message)
+        self._toast.place(in_=self.tree, relx=0.5, rely=1.0, anchor="s", y=-18)
+        if self._toast_hide_after_id is not None:
+            self.after_cancel(self._toast_hide_after_id)
+        self._toast_hide_after_id = self.after(duration_ms, self._hide_toast)
+
+    def _hide_toast(self) -> None:
+        self._toast.place_forget()
+        self._toast_hide_after_id = None
+
+    def _set_details_text(self, text: str) -> None:
+        self.details_text.configure(state="normal")
+        self.details_text.delete("1.0", "end")
+        self.details_text.insert("1.0", text)
+        self.details_text.configure(state="disabled")
 
     def edit_selected(self) -> None:
         selected = self.tree.selection()
@@ -143,4 +196,4 @@ class GeologyTab(ttk.Frame):
             self.load_geology()
             return True
 
-        GeologyFormDialog(self, fresh, save)
+        GeologyFormDialog(self, fresh, save, title="Edit Geology")

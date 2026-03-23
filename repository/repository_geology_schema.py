@@ -195,41 +195,7 @@ class RepositoryGeologySchemaMixin:
         if "geology_id" in location_columns:
             conn.execute('CREATE INDEX IF NOT EXISTS idx_locations_geology ON "Locations"(geology_id)')
             return
-
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS "Locations_new" (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT,
-                latitude TEXT,
-                longitude TEXT,
-                altitude_value TEXT,
-                altitude_unit TEXT,
-                country_code TEXT,
-                state TEXT,
-                lga TEXT,
-                basin TEXT,
-                geogscale TEXT,
-                geography_comments TEXT,
-                geology_id INTEGER,
-                FOREIGN KEY (geology_id) REFERENCES GeologyContext(id) ON DELETE SET NULL
-            )
-            """
-        )
-        conn.execute(
-            """
-            INSERT INTO "Locations_new" (
-                id, name, latitude, longitude, altitude_value, altitude_unit,
-                country_code, state, lga, basin, geogscale, geography_comments
-            )
-            SELECT
-                id, name, latitude, longitude, altitude_value, altitude_unit,
-                country_code, state, lga, basin, geogscale, geography_comments
-            FROM "Locations"
-            """
-        )
-        conn.execute('DROP TABLE "Locations"')
-        conn.execute('ALTER TABLE "Locations_new" RENAME TO "Locations"')
+        conn.execute('ALTER TABLE "Locations" ADD COLUMN geology_id INTEGER')
         conn.execute('CREATE INDEX IF NOT EXISTS idx_locations_geology ON "Locations"(geology_id)')
 
     @staticmethod

@@ -1,27 +1,15 @@
 import sqlite3
 
-try:
-    from .db_migration_helpers import (
-        _migrate_legacy_collection_fields,
-        _migrate_legacy_county_to_lga,
-        _migrate_legacy_region_to_location,
-        _migrate_legacy_trip_locations,
-        _migrate_legacy_trips_table,
-        _rebuild_finds_table_without_trip_id,
-        _rebuild_locations_table_without_legacy_columns,
-        _rebuild_trips_table_without_region,
-    )
-except ImportError:
-    from db_migration_helpers import (
-        _migrate_legacy_collection_fields,
-        _migrate_legacy_county_to_lga,
-        _migrate_legacy_region_to_location,
-        _migrate_legacy_trip_locations,
-        _migrate_legacy_trips_table,
-        _rebuild_finds_table_without_trip_id,
-        _rebuild_locations_table_without_legacy_columns,
-        _rebuild_trips_table_without_region,
-    )
+from scripts.db_migration_helpers import (
+    _migrate_legacy_collection_fields,
+    _migrate_legacy_county_to_lga,
+    _migrate_legacy_region_to_location,
+    _migrate_legacy_trip_locations,
+    _migrate_legacy_trips_table,
+    _rebuild_finds_table_without_trip_id,
+    _rebuild_locations_table_without_legacy_columns,
+    _rebuild_trips_table_without_region,
+)
 
 
 def normalize_trip_fields(fields: list[str]) -> list[str]:

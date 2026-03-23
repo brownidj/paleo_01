@@ -3,6 +3,23 @@ from typing import cast
 from repository.domain_types import GeologyRecord, GeologyUpdatePayloadMap, LithologyRow
 
 class RepositoryGeologyDataMixin:
+    def list_locations_without_geology(self) -> list[dict[str, object]]:
+        self.ensure_locations_table()
+        self.ensure_geology_tables()
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT l.id AS location_id, l.name AS location_name
+                FROM "Locations" l
+                LEFT JOIN "GeologyContext" gc ON gc.location_id = l.id
+                WHERE gc.id IS NULL
+                  AND l.name IS NOT NULL
+                  AND TRIM(l.name) <> ''
+                ORDER BY LOWER(l.name), l.id
+                """
+            ).fetchall()
+        return [dict(row) for row in rows]
+
     def list_geology_records(self) -> list[GeologyRecord]:
         self.ensure_locations_table()
         self.ensure_geology_tables()
@@ -134,6 +151,97 @@ class RepositoryGeologyDataMixin:
         record = cast(GeologyRecord, dict(row))
         record["lithology_rows"] = [cast(LithologyRow, dict(r)) for r in lith_rows]
         return record
+
+    def create_geology_record(self, location_id: int, data: GeologyUpdatePayloadMap) -> int:
+        self.ensure_locations_table()
+        self.ensure_geology_tables()
+        allowed_fields = [
+            "source_reference_no",
+            "early_interval",
+            "late_interval",
+            "max_ma",
+            "min_ma",
+            "environment",
+            "geogscale",
+            "geology_comments",
+            "formation",
+            "stratigraphy_group",
+            "member",
+            "stratscale",
+            "stratigraphy_comments",
+            "geoplate",
+            "paleomodel",
+            "paleolat",
+            "paleolng",
+        ]
+        with self._connect() as conn:
+            location_row = conn.execute(
+                'SELECT id, name FROM "Locations" WHERE id = ?',
+                (location_id,),
+            ).fetchone()
+            if not location_row:
+                raise ValueError("Selected location does not exist.")
+            location_name = str(location_row["name"] or "").strip()
+            if not location_name:
+                raise ValueError("Selected location has no valid name.")
+
+            insert_fields = ["location_id", "location_name", "source_system"]
+            insert_values: list[object] = [location_id, location_name, "PBDB"]
+            for field in allowed_fields:
+                if field in data:
+                    insert_fields.append(field)
+                    insert_values.append(data.get(field))
+            placeholders = ", ".join(["?"] * len(insert_fields))
+            col_sql = ", ".join([f'"{name}"' for name in insert_fields])
+            cur = conn.execute(
+                f'INSERT INTO "GeologyContext" ({col_sql}) VALUES ({placeholders})',
+                insert_values,
+            )
+            geology_id = int(cur.lastrowid)
+
+            lithology_rows = data.get("lithology_rows", [])
+            inserts: list[tuple[object, ...]] = []
+            if isinstance(lithology_rows, list):
+                for raw in lithology_rows:
+                    if not isinstance(raw, dict):
+                        continue
+                    slot = raw.get("slot")
+                    if slot not in {1, 2}:
+                        continue
+                    lithology = raw.get("lithology")
+                    lithification = raw.get("lithification")
+                    minor_lithology = raw.get("minor_lithology")
+                    lithology_adjectives = raw.get("lithology_adjectives")
+                    fossils_from = raw.get("fossils_from")
+                    if not any([lithology, lithification, minor_lithology, lithology_adjectives, fossils_from]):
+                        continue
+                    inserts.append(
+                        (
+                            geology_id,
+                            slot,
+                            lithology,
+                            lithification,
+                            minor_lithology,
+                            lithology_adjectives,
+                            fossils_from,
+                        )
+                    )
+            if inserts:
+                conn.executemany(
+                    """
+                    INSERT INTO "Lithology" (
+                        geology_context_id,
+                        slot,
+                        lithology,
+                        lithification,
+                        minor_lithology,
+                        lithology_adjectives,
+                        fossils_from
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    inserts,
+                )
+            return geology_id
 
     def update_geology_record(self, geology_id: int, data: GeologyUpdatePayloadMap) -> None:
         self.ensure_locations_table()

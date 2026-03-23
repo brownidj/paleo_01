@@ -1,0 +1,9 @@
+total_locations=631
+locations_missing_geology=591
+auto_candidates_total=30
+manual_queue_total=561
+exact_coord_state_country=16
+nearest_within_10km_same_state_country=14
+confidence_high=16
+confidence_medium=9
+confidence_low=5

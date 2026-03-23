@@ -49,6 +49,7 @@ class LocationPayload(TypedDict, total=False):
     basin: str | None
     geogscale: str | None
     geography_comments: str | None
+    geology_id: int | None
     collection_events: list[CollectionEventPayload]
 
 
@@ -58,7 +59,7 @@ class LocationRecord(LocationPayload, total=False):
     collection_subset: str | None
 
 
-LocationPayloadMap = dict[str, str | None | list[CollectionEventPayload]]
+LocationPayloadMap = dict[str, str | int | None | list[CollectionEventPayload]]
 
 
 class FindRecord(TypedDict, total=False):

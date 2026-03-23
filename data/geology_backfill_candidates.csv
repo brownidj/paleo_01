@@ -1,0 +1,31 @@
+location_id,location_name,state,country_code,latitude,longitude,proposed_geology_id,proposed_from_location_id,proposed_from_location_name,method,distance_km,confidence
+527,"Douglas Creek Limestone, LIL-1, 2,5m",Queensland,AU,-22.900000,147.633331,3,3,"Douglas Creek Formation, Clermont District, Queensland, Australia",exact_coord_state_country,0.0,high
+533,"Douglas Creek Limestone, LIL-1, 22.2 m",Queensland,AU,-22.900000,147.633331,3,3,"Douglas Creek Formation, Clermont District, Queensland, Australia",exact_coord_state_country,0.0,high
+532,"Douglas Creek Limestone, LIL-1, 24,5 m",Queensland,AU,-22.900000,147.633331,3,3,"Douglas Creek Formation, Clermont District, Queensland, Australia",exact_coord_state_country,0.0,high
+535,"Douglas Creek Limestone, LIL-1, 25 m",Queensland,AU,-22.900000,147.633331,3,3,"Douglas Creek Formation, Clermont District, Queensland, Australia",exact_coord_state_country,0.0,high
+536,"Douglas Creek Limestone, LIL-1, 5.7 m",Queensland,AU,-22.900000,147.633331,3,3,"Douglas Creek Formation, Clermont District, Queensland, Australia",exact_coord_state_country,0.0,high
+531,"Douglas Creek Limestone, LIL-1, 6.7 m",Queensland,AU,-22.900000,147.633331,3,3,"Douglas Creek Formation, Clermont District, Queensland, Australia",exact_coord_state_country,0.0,high
+534,"Douglas Creek Limestone, LIL-1, 7.7 m",Queensland,AU,-22.900000,147.633331,3,3,"Douglas Creek Formation, Clermont District, Queensland, Australia",exact_coord_state_country,0.0,high
+537,"Douglas Creek Limestone, LIL-1, 8.9 m",Queensland,AU,-22.900000,147.633331,3,3,"Douglas Creek Formation, Clermont District, Queensland, Australia",exact_coord_state_country,0.0,high
+528,"Douglas Creek Limestone, LIL-2, 30 m",Queensland,AU,-22.900000,147.633331,3,3,"Douglas Creek Formation, Clermont District, Queensland, Australia",exact_coord_state_country,0.0,high
+538,"Douglas Creek Limestone, LIL-2, 31,7 m",Queensland,AU,-22.900000,147.633331,3,3,"Douglas Creek Formation, Clermont District, Queensland, Australia",exact_coord_state_country,0.0,high
+529,"Douglas Creek Limestone, PB-061",Queensland,AU,-22.900000,147.633331,3,3,"Douglas Creek Formation, Clermont District, Queensland, Australia",exact_coord_state_country,0.0,high
+244,"GSQ L421, Stockton 27",Queensland,AU,-21.000000,148.000000,32,32,N. Bowen Basin,exact_coord_state_country,0.0,high
+549,"Ho-Hum site, Belmont Station (AODL 0082)",Queensland,AU,-22.348333,143.089172,40,40,Elliot Site (QM L1333/AODL 001),exact_coord_state_country,0.0,high
+552,New Quarry dinosaur tracksite (QM),Queensland,AU,-23.076111,142.806671,29,29,Lark Quarry dinosaur tracksite (QM),exact_coord_state_country,0.0,high
+618,"Pterosaur site, Belmont Station (AODL 0245)",Queensland,AU,-22.348333,143.089172,40,40,Elliot Site (QM L1333/AODL 001),exact_coord_state_country,0.0,high
+93,Seymour Quarry tracksite (QM),Queensland,AU,-23.076111,142.806671,29,29,Lark Quarry dinosaur tracksite (QM),exact_coord_state_country,0.0,high
+138,"BMR EM209, Clarkei Bed, Capella Block",Queensland,AU,-23.049999,148.029999,10,10,Bowen Basin L5247,nearest_within_10km_same_state_country,6.351,low
+316,"BMR Em208, Capella Block",Queensland,AU,-23.049999,148.029999,10,10,Bowen Basin L5247,nearest_within_10km_same_state_country,6.351,low
+59,"CL172, Douglas Creek siltstones, N Queensland",Queensland,AU,-22.916668,147.699997,3,3,"Douglas Creek Formation, Clermont District, Queensland, Australia",nearest_within_10km_same_state_country,7.075,low
+524,Dartmouth Decapods,Queensland,AU,-23.528334,144.686111,37,37,Currane Station,nearest_within_10km_same_state_country,1.920,medium
+526,Emerald locality,Queensland,AU,-23.000000,148.000000,10,10,Bowen Basin L5247,nearest_within_10km_same_state_country,0.000,medium
+44,"JCUL153, Gray Creek Lst Mbr, Quinton Fmn, Broken River Province, NE Queensland",Queensland,AU,-20.000000,145.000000,38,38,"JCUL154, Top Hut Lst Mbr, Quinton Fmn, Broken River Province, NE Queensland",nearest_within_10km_same_state_country,0.000,medium
+105,"L806. 14 meters. “Little Rocks,” Fletcherview Station, 26 km nw Charters Towers",Queensland,AU,-20.066668,146.233337,1,1,"Lowes Basin, near old Dalrymple township, 25 miles now of Charters Towers",nearest_within_10km_same_state_country,5.623,low
+106,"L885. Small hill directly behind Burdekin Downs Homestead, NW of Charters Towers",Queensland,AU,-20.066668,146.233337,1,1,"Lowes Basin, near old Dalrymple township, 25 miles now of Charters Towers",nearest_within_10km_same_state_country,5.623,low
+41,"UQL4841, Top Hut Lst Mbr, Quinton Fmn, Broken River Province, NE Queensland",Queensland,AU,-20.000000,145.000000,38,38,"JCUL154, Top Hut Lst Mbr, Quinton Fmn, Broken River Province, NE Queensland",nearest_within_10km_same_state_country,0.000,medium
+42,"UQL4842, Top Hut Lst Mbr, Quinton Fmn, Broken River Province, NE Queensland",Queensland,AU,-20.000000,145.000000,38,38,"JCUL154, Top Hut Lst Mbr, Quinton Fmn, Broken River Province, NE Queensland",nearest_within_10km_same_state_country,0.000,medium
+43,"UQL4844, Gray Creek Lst Mbr, Quinton Fmn, Broken River Province, NE Queensland",Queensland,AU,-20.000000,145.000000,38,38,"JCUL154, Top Hut Lst Mbr, Quinton Fmn, Broken River Province, NE Queensland",nearest_within_10km_same_state_country,0.000,medium
+45,"UQL4847, Tomcat Creek Lst Mbr, Quinton Fmn, Broken River Province, NE Queensland",Queensland,AU,-20.000000,145.000000,38,38,"JCUL154, Top Hut Lst Mbr, Quinton Fmn, Broken River Province, NE Queensland",nearest_within_10km_same_state_country,0.000,medium
+46,"UQL4848, Tomcat Creek Lst Mbr, Quinton Fmn, Broken River Province, NE Queensland",Queensland,AU,-20.000000,145.000000,38,38,"JCUL154, Top Hut Lst Mbr, Quinton Fmn, Broken River Province, NE Queensland",nearest_within_10km_same_state_country,0.000,medium
+47,"UQL4849, Tomcat Creek Lst Mbr, Quinton Fmn, Broken River Province, NE Queensland",Queensland,AU,-20.000000,145.000000,38,38,"JCUL154, Top Hut Lst Mbr, Quinton Fmn, Broken River Province, NE Queensland",nearest_within_10km_same_state_country,0.000,medium
