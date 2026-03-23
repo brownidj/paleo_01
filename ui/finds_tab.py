@@ -4,18 +4,16 @@ from ui.trip_filter_tree_tab import TripFilterTreeTab
 
 class FindsTab(TripFilterTreeTab):
     LIST_COLUMNS = (
-        "location_name",
-        "collection_subset",
         "trip_name",
+        "collection_name",
         "source_occurrence_no",
         "accepted_name",
     )
 
     def __init__(self, parent, repo: TripRepository):
         widths = {
-            "location_name": 220,
-            "collection_subset": 130,
             "trip_name": 220,
+            "collection_name": 240,
             "source_occurrence_no": 120,
             "accepted_name": 220,
         }

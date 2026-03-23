@@ -39,11 +39,20 @@ class _FakeTree:
     def selection_set(self, iid):
         self.selected = str(iid)
 
+    def selection(self):
+        return (self.selected,) if self.selected is not None else ()
+
     def focus(self, iid):
         self.focused = str(iid)
 
     def see(self, iid):
         self.seen = str(iid)
+
+    def item(self, iid, option=None):
+        values = self.items.get(str(iid), ())
+        if option == "values":
+            return values
+        return {"values": values}
 
 
 class _FakeNotebook:
@@ -163,6 +172,8 @@ class TestUiHandoffSmoke(unittest.TestCase):
         with mock.patch.object(ppw.tk.Tk, "__init__", lambda self: None), \
             mock.patch.object(ppw.tk.Tk, "title", lambda self, *_: None), \
             mock.patch.object(ppw.tk.Tk, "geometry", lambda self, *_: None), \
+            mock.patch.object(ppw.tk.Tk, "protocol", lambda self, *_: None), \
+            mock.patch.object(ppw.tk.Tk, "after_idle", lambda self, _cb: None), \
             mock.patch.object(ppw.PlanningPhaseWindow, "_apply_palette", lambda self: None), \
             mock.patch.object(ppw.PlanningPhaseWindow, "_build_trips_tab", _fake_build_trips_tab), \
             mock.patch("ui.planning_phase_window.TripRepository", return_value=fake_repo), \

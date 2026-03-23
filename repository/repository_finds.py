@@ -61,7 +61,7 @@ class RepositoryFindsMixin:
                         f.reference_no,
                         f.collection_year_latest_estimate,
                         t.trip_name,
-                        l.name AS location_name,
+                        ce.collection_name,
                         ce.collection_subset
                     FROM "Finds" f
                     LEFT JOIN "CollectionEvents" ce ON ce.id = f.collection_event_id
@@ -81,7 +81,7 @@ class RepositoryFindsMixin:
                         f.reference_no,
                         f.collection_year_latest_estimate,
                         t.trip_name,
-                        l.name AS location_name,
+                        ce.collection_name,
                         ce.collection_subset
                     FROM "Finds" f
                     LEFT JOIN "CollectionEvents" ce ON ce.id = f.collection_event_id

@@ -24,11 +24,11 @@ class PlanningTabsController:
 
         self.tabs.add(self.trips_tab, text="Trips")
         self.tabs.add(self.location_tab, text="Location")
-        self.tabs.add(self.geology_tab, text="Geology")
         self.tabs.add(self.collection_plan_tab, text="Collection Plan")
         self.tabs.add(self.collection_events_tab, text="Collection Events")
         self.tabs.add(self.finds_tab, text="Finds")
         self.tabs.add(self.team_members_tab, text="Team Members")
+        self.tabs.add(self.geology_tab, text="Geology")
         self.tabs.bind("<<NotebookTabChanged>>", on_tab_changed)
 
     def build_collection_plan_placeholder(self) -> None:

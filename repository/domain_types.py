@@ -70,6 +70,7 @@ class FindRecord(TypedDict, total=False):
     reference_no: str | None
     collection_year_latest_estimate: int | None
     trip_name: str | None
+    collection_name: str | None
     location_name: str | None
     collection_subset: str | None
 

@@ -81,6 +81,8 @@ class TestPlanningPhaseWindowWiring(unittest.TestCase):
         with mock.patch.object(ppw.tk.Tk, "__init__", lambda self: None), \
             mock.patch.object(ppw.tk.Tk, "title", lambda self, *_: None), \
             mock.patch.object(ppw.tk.Tk, "geometry", lambda self, *_: None), \
+            mock.patch.object(ppw.tk.Tk, "protocol", lambda self, *_: None), \
+            mock.patch.object(ppw.tk.Tk, "after_idle", lambda self, _cb: None), \
             mock.patch.object(ppw.PlanningPhaseWindow, "_apply_palette", lambda self: None), \
             mock.patch.object(ppw.PlanningPhaseWindow, "_build_trips_tab", _fake_build_trips_tab), \
             mock.patch("ui.planning_phase_window.TripRepository", return_value=fake_repo), \
