@@ -123,7 +123,7 @@ rg --files "$ROOT_DIR" \
 - **Architecture**: Planning-phase desktop app only (Tkinter + SQLite), with `Trips`, `Location`, `Geology`, `Collection Events`, `Finds`, `Collection Plan`, and `Team Members` tabs.
   - **Infrastructure/Init**:
     - `scripts/db_bootstrap.py`: thin bootstrap/orchestration + API re-export layer for seed/init scripts.
-      - Uses explicit stepwise schema migrations via `PRAGMA user_version` (`SCHEMA_VERSION = 2`).
+      - Uses explicit stepwise schema migrations via `PRAGMA user_version` (`SCHEMA_VERSION = 3`).
     - `scripts/db_schema_helpers.py`: schema creation helpers (`Team_members`, `Trips`, `Locations`, `Finds`) and field normalization.
     - `scripts/db_migration_helpers.py`: legacy migration/rebuild helpers for trips/locations/trip-locations.
     - `scripts/ci_checks.sh`: strict local/CI quality gate (import-boundary check + `PYTHONWARNINGS=error::ResourceWarning` tests + file-size check).
@@ -172,7 +172,7 @@ rg --files "$ROOT_DIR" \
   - `TripLocations(id, location_id)` (many-to-many between trips and locations)
   - `GeologyContext(id, location_id, location_name, source_system, source_reference_no, early_interval, late_interval, max_ma, min_ma, environment, geogscale, geology_comments, formation, stratigraphy_group, member, stratscale, stratigraphy_comments, geoplate, paleomodel, paleolat, paleolng, created_at, updated_at)`
   - `Lithology(id, geology_context_id, slot, lithology, lithification, minor_lithology, lithology_adjectives, fossils_from, created_at, updated_at)`
-  - `Finds(id, trip_id, location_id, collection_event_id, source_system, source_occurrence_no, identified_name, accepted_name, identified_rank, accepted_rank, difference, identified_no, accepted_no, phylum, class_name, taxon_order, family, genus, abund_value, abund_unit, reference_no, taxonomy_comments, occurrence_comments, research_group, notes, collection_year_latest_estimate, created_at, updated_at)`
+  - `Finds(id, location_id, collection_event_id, source_system, source_occurrence_no, identified_name, accepted_name, identified_rank, accepted_rank, difference, identified_no, accepted_no, phylum, class_name, taxon_order, family, genus, abund_value, abund_unit, reference_no, taxonomy_comments, occurrence_comments, research_group, notes, collection_year_latest_estimate, created_at, updated_at)`
 - **Behavioral Notes**:
   - Trips use integer `id` auto-increment; no `trip_code`.
   - `team` and `location` list values are semicolon-separated.
@@ -181,13 +181,15 @@ rg --files "$ROOT_DIR" \
   - Trip Record editability is gated by `Edit` (off by default): with `Edit` off, fields are read-only and team/location editor chips are disabled.
   - Closing Trip Record auto-saves changed fields; turning `Edit` from on to off also auto-saves changed fields.
   - From Trip Record, `Collection Events`/`Finds` chips switch tabs, turn trip filter on, and apply trip-specific filtering; returning to `Trips` restores the hidden Trip Record and reselects that trip.
-  - Trip filtering in `Collection Events` is now strict to finds explicitly assigned to that trip (via `Finds.trip_id`), not broad location-level membership.
+  - Trip filtering in `Collection Events`/`Finds` is now event-owned: trip context is derived via `CollectionEvents.trip_id` (legacy `Finds.trip_id` removed).
   - Full PBDB re-import is currently loaded in the working DB (`Finds = 2068`) with all finds linked to `Locations` and `CollectionEvents`.
   - `collection_year_latest_estimate` is populated from inferred publication year minus a random 2..6 year offset.
   - Team-member bulk population from `data/team_members_from_pbdb_data-2_publication_enriched.csv` is currently loaded (`Team_members = 141`), with recruitment/retirement date rules applied.
   - Generated initial trip candidates from grouped collection-event CSV and inserted ~50 historical trips with date-derived naming conventions.
   - Reassigned a subset of finds to generated trips using strict location + year-window matching (`trip start_year` in `[estimated_year-6, estimated_year-1]`).
-  - Collection events now carry `trip_id` and `event_year`; trip->collection-events listing/count is wired primarily via `CollectionEvents.trip_id`.
+  - Collection events carry `trip_id` and `event_year`; trip->collection-events and trip->finds listing/count are wired via `CollectionEvents.trip_id`.
+  - Applied location+date-proximity event ownership reassignment (`same location`, `event_year within ±5 years of trip year`): 33 event-owner changes; orphan trips reduced from 36 to 16.
+  - Added auto-hiding list scrollbars for all tab list panels; scrollbars appear only when rows/columns overflow.
   - **Prompt Compliance Snapshot**:
   - `app/main.py` remains thin: **compliant**.
   - root `main.py` remains thin compatibility-only: **compliant**.
@@ -214,65 +216,33 @@ rg --files "$ROOT_DIR" \
 
 ## Recommendations
 
-Best approach is a deterministic 3-pass reconciliation job, then enforce constraints.
-1. Validate current gaps
-•
-Find rows with collection_event_id IS NULL
-•
-Collection events with trip_id IS NULL
-•
-Mismatches where Finds.trip_id != CollectionEvents.trip_id
-•
-Mixed-trip events (same event linked to finds from multiple trips)
-2. Repair in order
-•
-Pass A: ensure every find has an event
-◦
-If a find has (trip_id, location_id, estimated_year), attach to existing matching event.
-◦
-Else create one event (single event_year) using your temporal rule (Yf-6..Yf-1, choose closest prior feasible year).
-•
-Pass B: ensure every event has a trip
-◦
-Set CollectionEvents.trip_id from dominant/only linked find trip.
-◦
-If event has no finds, infer from (location_id, event_year) against trip location+date window; else flag for manual review.
-•
-Pass C: normalize consistency
-◦
-For each find, set Finds.trip_id = CollectionEvents.trip_id.
-◦
-Split any mixed-trip event into one event per trip and re-point finds.
-3. Add guardrails
-•
-Add a periodic integrity check script (and CI test) asserting:
-◦
-no find without event
-◦
-no event without trip
-◦
-no trip mismatch between find and event
-•
-Keep DB FK constraints enabled (PRAGMA foreign_keys=ON).
-•
-Optional next step: eventually derive trip via event only and remove Finds.trip_id after UI/query refactor.
+1. Complete orphan-trip reconciliation.
+- Target the remaining trips with `0` collection events but linked locations.
+- Prefer deterministic reassignment by `location_id + event_year proximity`; only split events when needed for year separation.
+- Keep ambiguous ownership cases in a manual-review list rather than forcing assignment.
+2. Keep integrity checks aligned with event-owned model.
+- Continue running `scripts/check_trip_event_integrity.py` in CI (`finds_without_event`, `events_without_trip`, `finds_with_event_missing_trip`, location mismatch).
+- Keep `PRAGMA foreign_keys=ON` in all repository/script connections.
+3. Add one migration/backfill helper for repeatable ownership normalization.
+- Encapsulate the currently applied `±5 year` ownership pass in a reusable script with `--dry-run` and `--apply`.
+- Emit a CSV diff report of `event_id, old_trip_id, new_trip_id`.
+4. Continue incremental type tightening.
+- Replace remaining untyped `dict` signatures in UI controllers/tabs with explicit typed payload aliases.
+- Expand mypy scope only when modules are green to avoid noisy regressions.
 
 ## ToDo
 
-1. Remove fallback to find-based linkage for legacy/null cases.
+1. Resolve remaining trip records with `0` collection events (currently 16) through deterministic reassignment or explicit archival.
+2. Add a reusable `--dry-run/--apply` script for event-ownership normalization with CSV diff output.
 
 ## Test run report
 
-- **2026-03-23 (current reassessment)**:
-  - `python3 -m unittest -v`: **PASSED**
-    - Total: **33 passed**
+- **2026-03-23 (latest)**:
   - `bash scripts/ci_checks.sh`: **PASSED**
-    - Includes: import-boundary check + mypy (`scripts/check_types.sh`) + warnings-as-errors unittest + file-size check
-  - `./scripts/check_file_sizes.sh .`: **PASSED**
-- **2026-03-23 (latest updates)**:
-  - `python3 -m unittest tests.test_trip_repository_location_finds -v`: **PASSED**
-    - Total: **6 passed**
-  - `python3 -m unittest tests.test_db_bootstrap tests.test_trip_repository_trip_user -v`: **PASSED**
-    - Total: **6 passed**
-  - `python3 -m unittest tests.test_tab_filter_regression -v`: **PASSED**
-    - Total: **2 passed**
+    - Includes: import-boundary check + canonical DB path check + trip/event integrity check + mypy + unittest suite + file-size check.
+  - `python3 -m unittest` (via `ci_checks.sh`): **PASSED**
+    - Total: **40 passed**
+  - Notable coverage in latest run includes:
+    - event-owned trip linkage (`Finds` without `trip_id`)
+    - legacy migration permutations (including `Finds.trip_id` removal)
+    - UI handoff/filter regression paths
