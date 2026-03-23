@@ -36,7 +36,7 @@ class TestUiUserFlowIntegration(unittest.TestCase):
             cur = conn.cursor()
             cur.execute(
                 """
-                CREATE TABLE IF NOT EXISTS Users (
+                CREATE TABLE IF NOT EXISTS Team_members (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT NOT NULL,
                     phone_number TEXT NOT NULL,
@@ -45,7 +45,7 @@ class TestUiUserFlowIntegration(unittest.TestCase):
                 """
             )
             cur.execute(
-                "INSERT INTO Users (name, phone_number, active) VALUES (?, ?, ?)",
+                "INSERT INTO Team_members (name, phone_number, active) VALUES (?, ?, ?)",
                 ("Alice Example", "+61 400 000 001", 1),
             )
             event_rows = cur.execute(

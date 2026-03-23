@@ -27,7 +27,7 @@ class _FakeTabsController:
         self.collection_events_tab = object()
         self.finds_tab = object()
         self.collection_plan_tab = object()
-        self.users_tab = object()
+        self.team_members_tab = object()
         self.placeholder_built = False
         self.initial_loaded = False
 

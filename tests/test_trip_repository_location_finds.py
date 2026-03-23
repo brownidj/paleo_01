@@ -186,6 +186,11 @@ class TestTripRepositoryLocationFinds(RepoTestCase):
         self.assertEqual(trip_a_occurrences, {"F-A"})
         self.assertEqual(trip_b_occurrences, {"F-B"})
 
+    def test_finds_schema_includes_collection_year_latest_estimate(self):
+        with closing(sqlite3.connect(self.db_path)) as conn:
+            columns = [row[1] for row in conn.execute("PRAGMA table_info(Finds)").fetchall()]
+        self.assertIn("collection_year_latest_estimate", columns)
+
 
 if __name__ == "__main__":
     unittest.main()

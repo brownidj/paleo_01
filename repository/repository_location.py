@@ -77,6 +77,7 @@ class RepositoryLocationMixin:
                     occurrence_comments TEXT,
                     research_group TEXT,
                     notes TEXT,
+                    collection_year_latest_estimate INTEGER,
                     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (trip_id) REFERENCES Trips(id) ON DELETE SET NULL,
@@ -85,6 +86,9 @@ class RepositoryLocationMixin:
                 )
                 """
             )
+            find_columns = {row["name"] for row in conn.execute('PRAGMA table_info("Finds")').fetchall()}
+            if "collection_year_latest_estimate" not in find_columns:
+                conn.execute('ALTER TABLE "Finds" ADD COLUMN collection_year_latest_estimate INTEGER')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_finds_trip ON "Finds"(trip_id)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_finds_location ON "Finds"(location_id)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_finds_collection_event ON "Finds"(collection_event_id)')

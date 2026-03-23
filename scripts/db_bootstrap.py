@@ -6,16 +6,16 @@ from pathlib import Path
 
 try:
     from .db_schema_helpers import (
+        create_team_members_table,
         create_locations_table,
         create_trips_table,
-        create_users_table,
         normalize_trip_fields,
     )
 except ImportError:
     from db_schema_helpers import (
+        create_team_members_table,
         create_locations_table,
         create_trips_table,
-        create_users_table,
         normalize_trip_fields,
     )
 
@@ -86,7 +86,7 @@ def migrate_database(conn: sqlite3.Connection, trip_fields: list[str], target_ve
 
 def _apply_migration_step(conn: sqlite3.Connection, step_version: int, trip_fields: list[str]) -> None:
     if step_version == 1:
-        create_users_table(conn)
+        create_team_members_table(conn)
         create_trips_table(conn, trip_fields)
         return
     if step_version == 2:
@@ -114,7 +114,7 @@ __all__ = [
     "get_trip_fields",
     "initialize_database",
     "migrate_database",
-    "create_users_table",
+    "create_team_members_table",
     "create_trips_table",
     "create_locations_table",
     "normalize_trip_fields",

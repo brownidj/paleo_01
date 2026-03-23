@@ -59,6 +59,7 @@ class RepositoryFindsMixin:
                         f.accepted_name,
                         f.identified_name,
                         f.reference_no,
+                        f.collection_year_latest_estimate,
                         t.trip_name,
                         l.name AS location_name,
                         ce.collection_subset
@@ -78,6 +79,7 @@ class RepositoryFindsMixin:
                         f.accepted_name,
                         f.identified_name,
                         f.reference_no,
+                        f.collection_year_latest_estimate,
                         t.trip_name,
                         l.name AS location_name,
                         ce.collection_subset

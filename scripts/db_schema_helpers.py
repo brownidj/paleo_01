@@ -35,21 +35,38 @@ def normalize_trip_fields(fields: list[str]) -> list[str]:
     return result
 
 
-def create_users_table(conn: sqlite3.Connection) -> None:
+def create_team_members_table(conn: sqlite3.Connection) -> None:
     conn.execute(
         """
-        CREATE TABLE IF NOT EXISTS Users (
+        CREATE TABLE IF NOT EXISTS Team_members (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             phone_number TEXT NOT NULL,
+            institution TEXT,
             active INTEGER NOT NULL DEFAULT 0 CHECK(active IN (0, 1))
         )
         """
     )
-    columns = [row[1] for row in conn.execute("PRAGMA table_info(Users)").fetchall()]
+    legacy_users_exists = conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='Users' LIMIT 1"
+    ).fetchone()
+    if legacy_users_exists:
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO Team_members (id, name, phone_number, active)
+            SELECT id, name, phone_number, COALESCE(active, 0)
+            FROM Users
+            """
+        )
+        conn.execute("DROP TABLE Users")
+
+    columns = [row[1] for row in conn.execute("PRAGMA table_info(Team_members)").fetchall()]
+    if "institution" not in columns:
+        conn.execute("ALTER TABLE Team_members ADD COLUMN institution TEXT")
+        columns = [row[1] for row in conn.execute("PRAGMA table_info(Team_members)").fetchall()]
     if "active" not in columns:
         conn.execute(
-            "ALTER TABLE Users ADD COLUMN active INTEGER NOT NULL DEFAULT 0 CHECK(active IN (0, 1))"
+            "ALTER TABLE Team_members ADD COLUMN active INTEGER NOT NULL DEFAULT 0 CHECK(active IN (0, 1))"
         )
 
 
@@ -157,6 +174,7 @@ def create_locations_table(conn: sqlite3.Connection) -> None:
             occurrence_comments TEXT,
             research_group TEXT,
             notes TEXT,
+            collection_year_latest_estimate INTEGER,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (trip_id) REFERENCES Trips(id) ON DELETE SET NULL,
@@ -165,6 +183,9 @@ def create_locations_table(conn: sqlite3.Connection) -> None:
         )
         """
     )
+    find_columns = [row[1] for row in conn.execute("PRAGMA table_info(Finds)").fetchall()]
+    if "collection_year_latest_estimate" not in find_columns:
+        conn.execute("ALTER TABLE Finds ADD COLUMN collection_year_latest_estimate INTEGER")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_finds_trip ON Finds(trip_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_finds_location ON Finds(location_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_finds_collection_event ON Finds(collection_event_id)")

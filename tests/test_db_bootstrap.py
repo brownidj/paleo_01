@@ -6,7 +6,7 @@ import unittest
 from contextlib import closing
 from pathlib import Path
 
-from scripts.db_bootstrap import SCHEMA_VERSION, create_trips_table, create_users_table, initialize_database
+from scripts.db_bootstrap import SCHEMA_VERSION, create_team_members_table, create_trips_table, initialize_database
 
 
 class TestDbBootstrap(unittest.TestCase):
@@ -45,7 +45,7 @@ class TestDbBootstrap(unittest.TestCase):
                     "SELECT name FROM sqlite_master WHERE type = 'table'"
                 ).fetchall()
             }
-            self.assertTrue({"Users", "Trips", "Locations", "TripLocations", "CollectionEvents", "Finds"}.issubset(table_names))
+            self.assertTrue({"Team_members", "Trips", "Locations", "TripLocations", "CollectionEvents", "Finds"}.issubset(table_names))
 
             trip_columns = {row[1] for row in conn.execute("PRAGMA table_info(Trips)").fetchall()}
             self.assertIn("trip_name", trip_columns)
@@ -53,7 +53,7 @@ class TestDbBootstrap(unittest.TestCase):
             self.assertNotIn("region", trip_columns)
             self.assertNotIn("trip_code", trip_columns)
 
-            user_columns = {row[1] for row in conn.execute("PRAGMA table_info(Users)").fetchall()}
+            user_columns = {row[1] for row in conn.execute("PRAGMA table_info(Team_members)").fetchall()}
             self.assertIn("active", user_columns)
 
     def test_initialize_database_is_idempotent_and_preserves_data(self):
@@ -77,7 +77,7 @@ class TestDbBootstrap(unittest.TestCase):
     def test_initialize_database_upgrades_from_partial_schema_version(self):
         trip_fields = ["id", "trip_name", "location", "start_date", "end_date"]
         with closing(sqlite3.connect(self.db_path)) as conn:
-            create_users_table(conn)
+            create_team_members_table(conn)
             create_trips_table(conn, trip_fields)
             conn.execute(
                 "INSERT INTO Trips (trip_name, location, start_date, end_date) VALUES (?, ?, ?, ?)",

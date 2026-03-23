@@ -1,11 +1,46 @@
 from typing import cast
 
-from repository.domain_types import TripPayloadMap, TripRecord, UserRecord
+from repository.domain_types import TeamMemberRecord, TripPayloadMap, TripRecord
 from repository.repository_base import DEFAULT_TRIP_FIELDS
 
 
 class RepositoryTripUserMixin:
+    def _ensure_team_members_table(self) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS "Team_members" (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    phone_number TEXT NOT NULL,
+                    institution TEXT,
+                    active INTEGER NOT NULL DEFAULT 0 CHECK(active IN (0, 1))
+                )
+                """
+            )
+            legacy_users_exists = conn.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='Users' LIMIT 1"
+            ).fetchone()
+            if legacy_users_exists:
+                conn.execute(
+                    """
+                    INSERT OR IGNORE INTO Team_members (id, name, phone_number, active)
+                    SELECT id, name, phone_number, COALESCE(active, 0)
+                    FROM Users
+                    """
+                )
+                conn.execute('DROP TABLE "Users"')
+            columns = [row["name"] for row in conn.execute('PRAGMA table_info("Team_members")').fetchall()]
+            if "institution" not in columns:
+                conn.execute('ALTER TABLE "Team_members" ADD COLUMN institution TEXT')
+                columns = [row["name"] for row in conn.execute('PRAGMA table_info("Team_members")').fetchall()]
+            if "active" not in columns:
+                conn.execute(
+                    'ALTER TABLE "Team_members" ADD COLUMN active INTEGER NOT NULL DEFAULT 0 CHECK(active IN (0, 1))'
+                )
+
     def ensure_trips_table(self, fields: list[str] | None = None) -> None:
+        self._ensure_team_members_table()
         trip_fields = self._normalize_trip_fields(fields or DEFAULT_TRIP_FIELDS)
         cols = ", ".join([f'"{name}" TEXT' for name in trip_fields if name != "id"])
         with self._connect() as conn:
@@ -89,51 +124,64 @@ class RepositoryTripUserMixin:
                 values,
             )
 
-    def list_active_users(self) -> list[str]:
+    def list_active_team_members(self) -> list[str]:
+        self._ensure_team_members_table()
         with self._connect() as conn:
             rows = conn.execute(
-                'SELECT name FROM "Users" WHERE active = 1 ORDER BY name'
+                'SELECT name FROM "Team_members" WHERE active = 1 ORDER BY name'
             ).fetchall()
         return [row["name"] for row in rows]
 
-    def list_users(self) -> list[UserRecord]:
+    def list_team_members(self) -> list[TeamMemberRecord]:
+        self._ensure_team_members_table()
         with self._connect() as conn:
             rows = conn.execute(
-                'SELECT id, name, phone_number, active FROM "Users"'
+                'SELECT id, name, phone_number, institution, active FROM "Team_members"'
             ).fetchall()
-        users = [cast(UserRecord, dict(row)) for row in rows]
-        users.sort(
-            key=lambda u: (
-                0 if int(u.get("active", 0)) == 1 else 1,
-                self._last_name(str(u.get("name", ""))),
-                str(u.get("name", "")).lower(),
+        team_members = [cast(TeamMemberRecord, dict(row)) for row in rows]
+        team_members.sort(
+            key=lambda tm: (
+                0 if int(tm.get("active", 0)) == 1 else 1,
+                self._last_name(str(tm.get("name", ""))),
+                str(tm.get("name", "")).lower(),
             )
         )
-        return users
+        return team_members
 
-    def get_user(self, user_id: int) -> UserRecord | None:
+    def get_team_member(self, team_member_id: int) -> TeamMemberRecord | None:
+        self._ensure_team_members_table()
         with self._connect() as conn:
             row = conn.execute(
-                'SELECT id, name, phone_number, active FROM "Users" WHERE id = ?',
-                (user_id,),
+                'SELECT id, name, phone_number, institution, active FROM "Team_members" WHERE id = ?',
+                (team_member_id,),
             ).fetchone()
-        return cast(UserRecord, dict(row)) if row else None
+        return cast(TeamMemberRecord, dict(row)) if row else None
 
-    def create_user(self, name: str, phone_number: str, active: bool) -> int:
+    def create_team_member(self, name: str, phone_number: str, active: bool, institution: str | None = None) -> int:
+        self._ensure_team_members_table()
         with self._connect() as conn:
             cur = conn.execute(
-                'INSERT INTO "Users" (name, phone_number, active) VALUES (?, ?, ?)',
-                (name, phone_number, 1 if active else 0),
+                'INSERT INTO "Team_members" (name, phone_number, institution, active) VALUES (?, ?, ?, ?)',
+                (name, phone_number, institution, 1 if active else 0),
             )
             return int(cur.lastrowid)
 
-    def update_user(self, user_id: int, name: str, phone_number: str, active: bool) -> None:
+    def update_team_member(
+        self,
+        team_member_id: int,
+        name: str,
+        phone_number: str,
+        active: bool,
+        institution: str | None = None,
+    ) -> None:
+        self._ensure_team_members_table()
         with self._connect() as conn:
             conn.execute(
-                'UPDATE "Users" SET name = ?, phone_number = ?, active = ? WHERE id = ?',
-                (name, phone_number, 1 if active else 0, user_id),
+                'UPDATE "Team_members" SET name = ?, phone_number = ?, institution = ?, active = ? WHERE id = ?',
+                (name, phone_number, institution, 1 if active else 0, team_member_id),
             )
 
-    def delete_user(self, user_id: int) -> None:
+    def delete_team_member(self, team_member_id: int) -> None:
+        self._ensure_team_members_table()
         with self._connect() as conn:
-            conn.execute('DELETE FROM "Users" WHERE id = ?', (user_id,))
+            conn.execute('DELETE FROM "Team_members" WHERE id = ?', (team_member_id,))

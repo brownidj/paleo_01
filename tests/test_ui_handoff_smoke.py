@@ -96,7 +96,7 @@ class _FakeLoadTab(_Token):
     def load_geology(self):
         self.load_calls += 1
 
-    def load_users(self):
+    def load_team_members(self):
         self.load_calls += 1
 
 
@@ -109,7 +109,7 @@ class _FakeTabsController:
         self.collection_events_tab = _FakeFilterTab("collection_events")
         self.finds_tab = _FakeFilterTab("finds")
         self.collection_plan_tab = _Token("collection_plan")
-        self.users_tab = _FakeLoadTab("users")
+        self.team_members_tab = _FakeLoadTab("team_members")
 
     def build_collection_plan_placeholder(self):
         return None
@@ -120,7 +120,7 @@ class _FakeTabsController:
         self.geology_tab.load_geology()
         self.collection_events_tab.load_collection_events()
         self.finds_tab.load_finds()
-        self.users_tab.load_users()
+        self.team_members_tab.load_team_members()
 
 
 class _FakeDialogController:

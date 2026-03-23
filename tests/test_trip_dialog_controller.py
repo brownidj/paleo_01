@@ -10,7 +10,7 @@ class _FakeRepo:
         self.updated_payloads: list[tuple[int, dict]] = []
         self._next_id = 2
 
-    def list_active_users(self):
+    def list_active_team_members(self):
         return ["Alice"]
 
     def list_location_names(self):

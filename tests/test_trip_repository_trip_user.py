@@ -18,29 +18,29 @@ class TestTripRepositoryTripUser(RepoTestCase):
         self.assertEqual(trip["trip_name"], "Test Trip")
         self.assertEqual(trip["id"], row_id)
 
-    def test_list_active_users(self):
-        active = self.repo.list_active_users()
+    def test_list_active_team_members(self):
+        active = self.repo.list_active_team_members()
         self.assertEqual(active, ["Alice", "Carol"])
 
     def test_list_users_active_group_and_last_name_order(self):
         with closing(sqlite3.connect(self.db_path)) as conn:
             conn.execute(
-                "INSERT INTO Users (name, phone_number, active) VALUES (?, ?, ?)",
+                "INSERT INTO Team_members (name, phone_number, active) VALUES (?, ?, ?)",
                 ("Zoe Adams", "0061-412-345-678", 1),
             )
             conn.execute(
-                "INSERT INTO Users (name, phone_number, active) VALUES (?, ?, ?)",
+                "INSERT INTO Team_members (name, phone_number, active) VALUES (?, ?, ?)",
                 ("Aaron Brown", "0061-412-345-678", 1),
             )
             conn.execute(
-                "INSERT INTO Users (name, phone_number, active) VALUES (?, ?, ?)",
+                "INSERT INTO Team_members (name, phone_number, active) VALUES (?, ?, ?)",
                 ("Ivy Aaron", "0061-412-345-678", 0),
             )
             conn.commit()
 
-        users = self.repo.list_users()
-        names = [u["name"] for u in users]
-        actives = [u["active"] for u in users]
+        team_members = self.repo.list_team_members()
+        names = [tm["name"] for tm in team_members]
+        actives = [tm["active"] for tm in team_members]
 
         first_inactive_idx = next((i for i, v in enumerate(actives) if v == 0), len(actives))
         self.assertTrue(all(v == 1 for v in actives[:first_inactive_idx]))

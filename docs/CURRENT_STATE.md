@@ -5,6 +5,8 @@
 ## Code prompt
 
 ### Architecture & Separation of Concerns
+- Establish an architecture that sets explicit boundaries between UI, domain, and infrastructure layers. This should be reflected in the directory structure.
+- Avoid dumping new files in the project root; just keep main.py there.
 - `main.py` or `main.dart` must not contain any wiring, domain logic, or infrastructure.
 - Keep UI wiring, domain logic, and infrastructure separated. Domain must not import infra or UI.
 - Prefer thin orchestrators and small, focused services. Use explicit service helpers for UI side effects.
@@ -122,7 +124,7 @@ rg --files "$ROOT_DIR" \
   - **Infrastructure/Init**:
     - `scripts/db_bootstrap.py`: thin bootstrap/orchestration + API re-export layer for seed/init scripts.
       - Uses explicit stepwise schema migrations via `PRAGMA user_version` (`SCHEMA_VERSION = 2`).
-    - `scripts/db_schema_helpers.py`: schema creation helpers (`Users`, `Trips`, `Locations`, `Finds`) and field normalization.
+    - `scripts/db_schema_helpers.py`: schema creation helpers (`Team_members`, `Trips`, `Locations`, `Finds`) and field normalization.
     - `scripts/db_migration_helpers.py`: legacy migration/rebuild helpers for trips/locations/trip-locations.
     - `scripts/ci_checks.sh`: strict local/CI quality gate (import-boundary check + `PYTHONWARNINGS=error::ResourceWarning` tests + file-size check).
     - `scripts/check_import_boundaries.py`: lightweight AST-based import-boundary enforcement.
@@ -156,13 +158,13 @@ rg --files "$ROOT_DIR" \
     - `ui/team_editor_dialog.py`: active-user selector for team assignment.
     - `ui/location_picker_dialog.py`: location selector for trip location list.
     - `ui/location_tab.py`, `ui/location_form_dialog.py`: location CRUD + collection-events editing.
-    - `ui/users_tab.py`, `ui/user_form_dialog.py`: users CRUD (no delete in UI flow).
+    - `ui/team_members_tab.py`, `ui/team_member_form_dialog.py`: team-members CRUD (no delete in UI flow).
   - **Seeding**:
-    - `scripts/seed_users.py`: users with fixed AU phone and active split.
+    - `scripts/seed_users.py`: team members with fixed AU phone and active split.
     - `scripts/seed_locations.py`: fake locations; supports `--truncate`; optional one-time cardinal variants from first-pass records.
     - `scripts/seed_trips.py`: trips seeded from existing locations, writes `TripLocations`, supports second-pass multi-location trip generation via random boolean on similar-location matches.
 - **Planning Database (`data/paleo_trips_01.db`)**:
-  - `Users(id, name, phone_number, active)`
+  - `Team_members(id, name, phone_number, active)`
   - `Trips(id, trip_name, start_date, end_date, team, location, notes)` (`region` removed)
   - `Locations(id, name, latitude, longitude, altitude_value, altitude_unit, country_code, state, lga, basin, geogscale, geography_comments, geology_id)`
   - `CollectionEvents(id, location_id, collection_name, collection_subset)` (0..many per location)

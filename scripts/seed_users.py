@@ -7,7 +7,7 @@ from pathlib import Path
 from faker import Faker
 
 from repository import DEFAULT_DB_PATH
-from db_bootstrap import create_users_table, resolve_db_path
+from db_bootstrap import create_team_members_table, resolve_db_path
 
 
 def seed_users(db_path: Path, count: int) -> int:
@@ -16,11 +16,11 @@ def seed_users(db_path: Path, count: int) -> int:
     active_quota = 8
     inserted = 0
     with closing(sqlite3.connect(db_path)) as conn:
-        create_users_table(conn)
+        create_team_members_table(conn)
         for i in range(count):
             is_active = 1 if i < min(active_quota, count) else 0
             conn.execute(
-                "INSERT INTO Users (name, phone_number, active) VALUES (?, ?, ?)",
+                "INSERT INTO Team_members (name, phone_number, active) VALUES (?, ?, ?)",
                 (fake.name(), fixed_phone, is_active),
             )
             inserted += 1
