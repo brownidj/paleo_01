@@ -102,6 +102,8 @@ def create_locations_table(conn: sqlite3.Connection) -> None:
         "state",
         "lga",
         "basin",
+        "proterozoic_province",
+        "orogen",
         "geogscale",
         "geography_comments",
     ]

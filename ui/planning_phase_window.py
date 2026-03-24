@@ -57,11 +57,12 @@ class PlanningPhaseWindow(tk.Tk):
         self._suspend_trip_selection_persist = True
         self._trip_toast_shown_count = 0
         self._trip_toast_hide_after_id: str | None = None
+        self._trip_toast_last_iid: str | None = None
 
         self.repo = TripRepository(str(self._db_path))
         self.repo.ensure_trips_table()
         self.fields = self.repo.get_fields()
-        self.list_fields = ["trip_name", "start_date", "collection_events_count", "finds_count", "location"]
+        self.list_fields = ["trip_name", "start_date", "collection_events_count", "finds_count", "team", "location"]
         self.edit_fields = ["trip_name", "start_date", "end_date", "location", "team", "notes"]
         static_list_fields = ["collection_events_count", "finds_count"]
         self.list_fields = [f for f in self.list_fields if f in self.fields or f in static_list_fields]
@@ -76,6 +77,9 @@ class PlanningPhaseWindow(tk.Tk):
         self.finds_tab = self.tabs_controller.finds_tab
         self.collection_plan_tab = self.tabs_controller.collection_plan_tab
         self.team_members_tab = self.tabs_controller.team_members_tab
+        set_provider = getattr(self.finds_tab, "set_current_trip_provider", None)
+        if callable(set_provider):
+            set_provider(self._get_selected_trip_id)
         self.navigation = TripNavigationCoordinator(
             tabs=self.tabs,
             trips_tab=self.trips_tab,
@@ -109,8 +113,9 @@ class PlanningPhaseWindow(tk.Tk):
         heading_labels = {
             "trip_name": "Name",
             "start_date": "Start",
-            "collection_events_count": "Collection Events",
+            "collection_events_count": "CEs",
             "finds_count": "Finds",
+            "team": "Team",
             "location": "Location",
         }
         self.trips_tree = ttk.Treeview(
@@ -121,7 +126,17 @@ class PlanningPhaseWindow(tk.Tk):
         )
         for field in self.list_fields:
             self.trips_tree.heading(field, text=heading_labels.get(field, field))
-            self.trips_tree.column(field, width=160, anchor="w")
+            anchor = "center" if field in {"collection_events_count", "finds_count"} else "w"
+            width = 160
+            stretch = field in {"trip_name", "team", "location"}
+            if field == "start_date":
+                width = 74
+            elif field == "collection_events_count":
+                width = 48
+            elif field == "finds_count":
+                width = 52
+            minwidth = 140 if field in {"trip_name", "team", "location"} else width
+            self.trips_tree.column(field, width=width, minwidth=minwidth, stretch=stretch, anchor=anchor)
         attach_auto_hiding_scrollbars(self.trips_tab, self.trips_tree, padx=10, pady=6)
         buttons = ttk.Frame(self.trips_tab)
         buttons.pack(fill="x", padx=10, pady=8)
@@ -216,6 +231,15 @@ class PlanningPhaseWindow(tk.Tk):
             return []
         return [name.strip() for name in team_value.split(";") if name.strip()]
 
+    def _get_selected_trip_id(self) -> int | None:
+        selected = self.trips_tree.selection()
+        if selected:
+            try:
+                return int(selected[0])
+            except (TypeError, ValueError):
+                return None
+        return self._last_selected_trip_id
+
     def _restore_trip_selection(self) -> None:
         children = tuple(self.trips_tree.get_children())
         if not children:
@@ -298,7 +322,12 @@ class PlanningPhaseWindow(tk.Tk):
         trips_tree = self.__dict__.get("trips_tree")
         if trips_tree is None:
             return
-        if not trips_tree.selection():
+        selected = trips_tree.selection()
+        if not selected:
+            return
+        selected_iid = str(selected[0])
+        last_iid = self.__dict__.get("_trip_toast_last_iid")
+        if isinstance(last_iid, str) and last_iid == selected_iid:
             return
         shown_count = int(self.__dict__.get("_trip_toast_shown_count", 0))
         if shown_count >= 2:
@@ -307,6 +336,7 @@ class PlanningPhaseWindow(tk.Tk):
         if toast is None:
             return
         self._trip_toast_shown_count = shown_count + 1
+        self._trip_toast_last_iid = selected_iid
         toast.configure(text="Double-click to edit.")
         toast.place(in_=trips_tree, relx=0.5, rely=1.0, anchor="s", y=-18)
         hide_after_id = self.__dict__.get("_trip_toast_hide_after_id")

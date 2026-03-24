@@ -24,6 +24,8 @@ LOCATION_FIELDS = [
     "state",
     "lga",
     "basin",
+    "proterozoic_province",
+    "orogen",
     "geogscale",
     "geography_comments",
 ]

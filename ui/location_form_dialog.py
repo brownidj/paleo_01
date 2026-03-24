@@ -13,6 +13,8 @@ class LocationFormDialog(tk.Toplevel):
         "state",
         "lga",
         "basin",
+        "proterozoic_province",
+        "orogen",
         "geogscale",
         "geography_comments",
     ]
