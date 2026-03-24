@@ -9,7 +9,7 @@ from ui.location_form_dialog import LocationFormDialog
 
 
 class LocationTab(ttk.Frame):
-    LIST_COLUMNS = ("name", "lga", "state", "country_code", "latitude", "longitude")
+    LIST_COLUMNS = ("name", "basin", "proterozoic_province", "orogen", "state", "country_code", "latitude", "longitude")
 
     def __init__(self, parent, repo: TripRepository):
         super().__init__(parent)
@@ -21,19 +21,34 @@ class LocationTab(ttk.Frame):
             self,
             columns=self.LIST_COLUMNS,
             show="headings",
+            style="Location.Treeview",
         )
+        style = ttk.Style(self)
+        style.configure("Location.Treeview.Heading", font=("Helvetica", 10, "bold"))
         column_widths = {
             "name": 220,
-            "lga": 170,
-            "state": 55,
-            "country_code": 45,
-            "latitude": 95,
-            "longitude": 95,
+            "basin": 86,
+            "proterozoic_province": 170,
+            "orogen": 150,
+            "state": 44,
+            "country_code": 56,
+            "latitude": 82,
+            "longitude": 86,
+        }
+        heading_labels = {
+            "name": "Name",
+            "basin": "Basin",
+            "proterozoic_province": "Province",
+            "orogen": "Orogen",
+            "state": "State",
+            "country_code": "Country",
+            "latitude": "Latitude",
+            "longitude": "Longitude",
         }
         for col in self.LIST_COLUMNS:
-            heading = "LGA" if col == "lga" else col.replace("_", " ")
-            self.tree.heading(col, text=heading)
-            self.tree.column(col, width=column_widths.get(col, 120), anchor="w")
+            self.tree.heading(col, text=heading_labels.get(col, col))
+            width = column_widths.get(col, 120)
+            self.tree.column(col, width=width, minwidth=width, stretch=False, anchor="w")
         attach_auto_hiding_scrollbars(self, self.tree, padx=10, pady=6)
 
         buttons = ttk.Frame(self)

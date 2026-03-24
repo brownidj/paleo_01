@@ -47,6 +47,8 @@ class LocationPayload(TypedDict, total=False):
     state: str | None
     lga: str | None
     basin: str | None
+    proterozoic_province: str | None
+    orogen: str | None
     geogscale: str | None
     geography_comments: str | None
     geology_id: int | None
@@ -64,11 +66,32 @@ LocationPayloadMap = dict[str, str | int | None | list[CollectionEventPayload]]
 
 class FindRecord(TypedDict, total=False):
     id: int
+    location_id: int | None
+    collection_event_id: int | None
+    source_system: str | None
     source_occurrence_no: str | None
     accepted_name: str | None
     identified_name: str | None
+    identified_rank: str | None
+    accepted_rank: str | None
+    difference: str | None
+    identified_no: str | None
+    accepted_no: str | None
+    phylum: str | None
+    class_name: str | None
+    taxon_order: str | None
+    family: str | None
+    genus: str | None
+    abund_value: str | None
+    abund_unit: str | None
     reference_no: str | None
+    taxonomy_comments: str | None
+    occurrence_comments: str | None
+    research_group: str | None
+    notes: str | None
     collection_year_latest_estimate: int | None
+    created_at: str | None
+    updated_at: str | None
     trip_name: str | None
     collection_name: str | None
     location_name: str | None

@@ -1,0 +1,632 @@
+location_id,name,latitude,longitude,derived_basin,derived_proterozoic_province,derived_orogen,updated_basin,updated_proterozoic_province,updated_orogen
+1,"Lowes Basin, near old Dalrymple township, 25 miles now of Charters Towers",-20.106388,146.266663,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+2,"Ukalunda Beds, Mount Coolon, Central Queensland, Australia",-22.000000,143.000000,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+3,"Douglas Creek Formation, Clermont District, Queensland, Australia",-22.900000,147.633331,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+4,"B76F Mary Creek, Ukalunda Beds, Ukalunda District, North Queensland",-20.000000,147.000000,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+5,"B84F Hidden Valley, Ukalunda Beds, Ukalunda District, North Queensland",-20.000000,147.000000,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+6,"B220F Pyramid homestead, Ukalunda Beds, Ukalunda District, North Queensland",-20.000000,147.000000,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+7,"West of Pyramid homestead, Ukalunda Beds, Ukalunda District, North Queensland",-20.000000,147.000000,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+8,Diamantina River,-22.600000,143.000000,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+9,Bowen Basin L2689,-22.000000,148.000000,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+10,Bowen Basin L5247,-23.000000,148.000000,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+11,Bowen Basin L5245,-23.000000,148.000000,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+12,Bowen Basin L5420,-23.000000,148.000000,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+13,Bowen Basin L5495,-23.000000,148.000000,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+14,Bowen Basin L3782,-23.000000,148.000000,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+15,Bowen Basin L5246,-22.000000,148.000000,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+16,Bowen Basin L5249,-22.000000,148.000000,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+17,Bowen Basin L5244,-23.000000,148.000000,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+18,Bowen Basin L5242,-22.000000,148.000000,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+19,Bowen Basin L5533,-23.000000,148.000000,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+20,Bowen Basin L5537,-23.000000,148.000000,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+21,Bowen Basin L5535,-23.000000,148.000000,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+22,Bowen Basin L5248,-23.000000,148.000000,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+23,Eromanga Basin L165,-23.033333,142.383331,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+24,Eromanga Basin L224,-23.016666,142.399994,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+25,Eromanga Basin L406,-22.716667,142.350006,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+26,Eromanga Basin L552,-22.000000,143.000000,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+27,Eromanga Basin L717,-23.516666,143.183334,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+28,Eromanga Basin QMF17458,-22.000000,143.000000,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+29,Lark Quarry dinosaur tracksite (QM),-23.076111,142.806671,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+30,Blair Athol,-22.700001,147.500000,Bowen Basin,,Thomson Orogen,Bowen Basin,,Thomson Orogen
+31,Agate Creek,-18.799999,143.600006,,Etheridge Province,North Australian Craton,,Etheridge Province,North Australian Craton
+32,N. Bowen Basin,-21.000000,148.000000,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+33,Blair Athol,-22.700001,147.500000,Bowen Basin,,Thomson Orogen,Bowen Basin,,Thomson Orogen
+34,Bowen Basin L1730,-23.000000,148.000000,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+35,"Whitewood Paddock, Clutha Station",-20.369400,142.230499,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+36,"Bowen Basin, Curragh Coal Mine",-23.000000,148.000000,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+37,Currane Station,-23.516666,144.699997,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+38,"JCUL154, Top Hut Lst Mbr, Quinton Fmn, Broken River Province, NE Queensland",-20.000000,145.000000,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+39,"UQL4840, Top Hut Lst Mbr, Quinton Fmn, Broken River Province, NE Queensland",-20.000000,145.000000,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+40,Elliot Site (QM L1333/AODL 001),-22.348333,143.089172,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+41,"UQL4841, Top Hut Lst Mbr, Quinton Fmn, Broken River Province, NE Queensland",-20.000000,145.000000,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+42,"UQL4842, Top Hut Lst Mbr, Quinton Fmn, Broken River Province, NE Queensland",-20.000000,145.000000,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+43,"UQL4844, Gray Creek Lst Mbr, Quinton Fmn, Broken River Province, NE Queensland",-20.000000,145.000000,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+44,"JCUL153, Gray Creek Lst Mbr, Quinton Fmn, Broken River Province, NE Queensland",-20.000000,145.000000,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+45,"UQL4847, Tomcat Creek Lst Mbr, Quinton Fmn, Broken River Province, NE Queensland",-20.000000,145.000000,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+46,"UQL4848, Tomcat Creek Lst Mbr, Quinton Fmn, Broken River Province, NE Queensland",-20.000000,145.000000,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+47,"UQL4849, Tomcat Creek Lst Mbr, Quinton Fmn, Broken River Province, NE Queensland",-20.000000,145.000000,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+48,"QML 1094, near Little Rocks, 27km NW of Charters Towers",-20.000000,146.000000,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+49,"QML 1019, ridge of silicrete 100 meters north of road 500m East of Storm Dam 190",-19.533333,144.666672,,,Mossman Orogen,,,Mossman Orogen
+50,"QML 1083 - Nuggety Gully, East Gorge along PharLap Rd.",-19.466389,144.747772,,,Mossman Orogen,,,Mossman Orogen
+51,"QML 1092, 500 m northwest of type section creek for Dosey Limestone",-19.499722,144.731110,,,Mossman Orogen,,,Mossman Orogen
+52,"Gastropods of the Ukalunda Beds and related Douglas Creek Lst, N Queensland",-21.000000,147.000000,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+53,"B84F, Mary Creek, Ukalunda Beds",-20.850000,147.166672,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+54,"B76F, Mary Creek, Ukalunda Beds",-20.850000,147.166672,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+55,"B220, W of Pyramid, Ukalunda Beds",-20.850000,147.166672,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+56,"B610F, W of Pyramid, Ukalunda Beds",-20.850000,147.166672,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+57,"Section HID, Mary Creek, Ukalunda Beds",-20.850000,147.166672,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+58,"Section SHID, Mary Creek, Ukalunda Beds",-20.850000,147.166672,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+59,"CL172, Douglas Creek siltstones, N Queensland",-22.916668,147.699997,Bowen Basin,,Thomson Orogen,Bowen Basin,,Thomson Orogen
+60,"UQ L3725, Exmoor Homestead",-20.976000,148.167007,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+61,"Locality UQL2953, Shield Creek Fmn, N Queensland",-19.000000,145.000000,,,Mossman Orogen,,,Mossman Orogen
+62,"Locality UQL2954, Shield Creek Fmn, N Queensland",-19.000000,145.000000,,,Mossman Orogen,,,Mossman Orogen
+63,"Locality UQL2715, Shield Creek Fmn, N Queensland",-19.000000,145.000000,,,Mossman Orogen,,,Mossman Orogen
+64,"Locality UQL3574, Shield Creek Fmn, N Queensland",-19.000000,145.000000,,,Mossman Orogen,,,Mossman Orogen
+65,"Chinaman Creek Lst Lower Fauna, Broken River Province, N Queensland",-19.500000,145.000000,Clarke River Basin,,Mossman Orogen,Clarke River Basin,,Mossman Orogen
+66,"Chinaman Creek Lst Middle Fauna, Broken River Province, N Queensland",-19.500000,145.000000,Clarke River Basin,,Mossman Orogen,Clarke River Basin,,Mossman Orogen
+67,"Chinaman Creek Lst Upper Fauna, Broken River Province, N Queensland",-19.500000,145.000000,Clarke River Basin,,Mossman Orogen,Clarke River Basin,,Mossman Orogen
+68,"Martins Well Lst, Broken River Province, N Queensland",-19.500000,145.000000,Clarke River Basin,,Mossman Orogen,Clarke River Basin,,Mossman Orogen
+69,"Quinton Fmn trilobite faunule, Gray Creek, NE Queensland",-19.283333,144.883331,,,Mossman Orogen,,,Mossman Orogen
+70,"Locality PL1906, Poley Cow Fmn, Broken River Province, N Queensland",-19.000000,145.000000,,,Mossman Orogen,,,Mossman Orogen
+71,"Upper Martins Well Lst crinoids, Shield Creek Fmn, Martins Wells, N Queensland",-19.000000,145.000000,,,Mossman Orogen,,,Mossman Orogen
+72,"UQL5209, Burges Fmn crinoids, Broken River Group, N Queensland",-19.000000,145.000000,,,Mossman Orogen,,,Mossman Orogen
+73,"UQL5372, Burges Fmn crinoids, Broken River Group, N Queensland",-19.000000,145.000000,,,Mossman Orogen,,,Mossman Orogen
+74,"UQL5234, Dosey Lst crinoids, Broken River Group, N Queensland",-19.000000,145.000000,,,Mossman Orogen,,,Mossman Orogen
+75,"Papilio Fmn crinoids, Broken River Group, N Queensland",-19.000000,145.000000,,,Mossman Orogen,,,Mossman Orogen
+76,"Burdekin River near Big Bend, N of Charters Towers",-20.000000,146.000000,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+77,"Marathon Station, Flinders River (QM)",-20.866667,143.583328,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+78,Dunluce Station (QM),-20.883329,143.800003,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+79,"Bluff Downs station, Main Quarry",-19.716667,145.600006,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+80,"QML 1006 - Unnamed tributary of Mary Creek, 200 meters northeast of QML1005",-20.795000,147.338333,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+81,QML 1008. Small unnamed creek 1.5 kilometers south of Sugarloaf Dam.,-20.923332,147.063339,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+82,"""Rock Hole"", Rosebery Downs, Muttaburra",-22.667500,144.600555,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+83,"Iona Station, Hughenden",-20.850000,144.199997,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+84,"Pelican Bore, Stewart Creek",-20.850000,144.199997,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+85,Selwyn Park Sheep Station,-22.683332,143.566666,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+86,Alni Station,-22.183332,142.466660,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+87,Lovelle Downs Station (3 km east-southeast),-22.150000,142.566666,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+88,Lovelle Downs Station (2 km east),-22.150000,142.550003,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+89,"Triangle Paddock, Elderslie Station (QM L313)",-22.250000,142.483337,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+90,"Triangle Paddock, Elderslie Station (QM F7880)",-22.216667,142.483337,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+91,Iona Station,-20.966667,144.383331,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+92,"M8M windmill, Bladensburg Station",-22.516945,143.038895,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+93,Seymour Quarry tracksite (QM),-23.076111,142.806671,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+94,Dunraven Station,-23.633333,145.133331,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+95,Jones Valley Station,-20.600000,143.850006,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+96,Rosebery Station (Toolebuc),-22.666668,144.600006,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+97,"QM L735, Brutus Creek, ""Currane"", near Longreach",-23.250000,144.399994,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+98,"QM L657, Collier Dam, ""Willoughby"" near Barealedine",-23.133333,145.133331,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+99,"QM L905, ""Auteuil"" near Barealdine",-23.150000,145.199997,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+100,"QM L791, Boree Park near Richmond",-20.629999,143.035004,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+101,"QML 1090 - Above ‘PharLap’ crossing on Broken River, N side on washed out track",-19.478611,144.734161,,,Mossman Orogen,,,Mossman Orogen
+102,"QML 1018 - Low rise, 1 kilometer south of Storm Dam, 200 meters west of road",-19.548611,144.675278,,,Mossman Orogen,,,Mossman Orogen
+103,"QML 1016 - Hill above crossing, south side of river near PharLap prospect",-19.466667,144.716660,,,Mossman Orogen,,,Mossman Orogen
+104,"QML 1017 -west south west of Storm Dam, 200 meters west of road",-19.547222,144.676392,,,Mossman Orogen,,,Mossman Orogen
+105,"L806. 14 meters. “Little Rocks,” Fletcherview Station, 26 km nw Charters Towers",-20.066668,146.233337,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+106,"L885. Small hill directly behind Burdekin Downs Homestead, NW of Charters Towers",-20.066668,146.233337,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+107,"L798. Paynes Lagoon Station, 200m south of Boundary Creek.",-19.266666,146.333328,Burdekin Basin,Charters Towers Province,Thomson Orogen,Burdekin Basin,Charters Towers Province,Thomson Orogen
+108,"Silver Hills, Richmond (QM)",-20.611340,143.073303,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+109,Richmond area sauropod site (QM),-20.611340,143.073303,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+110,"Fanning River area, Grypophyllum-Chostophyllum association",-19.733334,146.433334,Burdekin Basin,Charters Towers Province,Thomson Orogen,Burdekin Basin,Charters Towers Province,Thomson Orogen
+111,"Fanning River area, Dendrostella trigemme association",-19.733334,146.433334,Burdekin Basin,Charters Towers Province,Thomson Orogen,Burdekin Basin,Charters Towers Province,Thomson Orogen
+112,"Fanning River-Burdekin Downs, Aphyllum-Stringophyllum association",-19.900000,146.233337,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+113,"Fanning River, Endophyllum-Stringophyllum association",-19.733334,146.433334,Burdekin Basin,Charters Towers Province,Thomson Orogen,Burdekin Basin,Charters Towers Province,Thomson Orogen
+114,"Lime Creek Area, Spongophyllum association",-19.500000,146.333328,Burdekin Basin,Charters Towers Province,Thomson Orogen,Burdekin Basin,Charters Towers Province,Thomson Orogen
+115,"Boundary Creek Area, Blysmatophyllum-Iowaphyllum association",-19.466667,146.083328,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+116,"-519 feet, Borehole 2, Cleeve, near Longreach",-23.433332,144.399994,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+117,"-447 feet, Borehole 2, Cleeve, near Longreach",-23.433332,144.399994,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+118,Birralee Hill,-20.666668,147.666672,,,New England Orogen,,,New England Orogen
+119,"BMR B1570, Parrot Creek, Mulgrave Yards",-20.788000,147.746002,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+120,"BMR B1634, Collinsville",-20.833332,147.699997,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+121,"BMR B261e, Nebo Synclinorium",-20.741667,147.949997,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+122,"BMR B270a, Exmoor Homestead",-20.950001,148.133331,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+123,"BMR B628, Collinsville Shelf",-20.820833,147.716660,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+124,"BMR B634, Bowen Basin",-20.941999,147.688004,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+125,"BMR B635, Collinsville Shelf",-20.941668,147.699997,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+126,"BMR B683, Exmoor Homestead",-20.945000,148.132996,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+127,"BMR B686, Nebo Synclinorium",-20.929167,148.141663,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+128,"BMR B712, Nebo Synclinorium",-20.941668,148.133331,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+129,"BMR CL12/1, Pelecypod Bed, Capella Block",-22.110001,148.179993,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+130,"BMR CL12/2, Clarkei Bed, Capella Block",-22.110001,148.179993,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+131,"BMR CL132, Clarkei Bed, Capella Block",-22.400000,147.899994,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+132,"BMR CL14, Capella Block",-22.379999,148.000000,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+133,"BMR CL142, Mount Lebanon/Logan Downs Homesteads, Clermont Area",-22.400000,148.000000,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+134,"BMR CL225/1, Clarkei Bed, Capella Block",-22.730000,148.229996,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+135,"BMR CL25/1, Pelecypod Bed, Capella Block",-22.700001,148.250000,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+136,"BMR CL50/1, Capella Block",-22.750000,148.300003,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+137,"BMR Du519, Myrtle Park Homestead",-23.600000,148.500000,Bowen Basin,,Thomson Orogen,Bowen Basin,,Thomson Orogen
+138,"BMR EM209, Clarkei Bed, Capella Block",-23.049999,148.029999,Bowen Basin,,Thomson Orogen,Bowen Basin,,Thomson Orogen
+139,Warriana bore [Allaru Fm],-21.166668,143.916672,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+140,Currane Homestead [Allaru Fm],-23.333332,144.666672,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+141,Torrento Park Homestead [Allaru Fm],-20.833332,143.083328,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+142,Barcaldine [Allaru Fm],-23.566668,145.283340,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+143,Rodney Downs [Allaru Fm],-22.966667,145.250000,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+144,"Hughenden, Flinders River [Roma Series]",-20.850000,144.199997,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+145,Lind River [Roma Series],-20.750000,143.516663,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+146,"Hughenden Station, Flinders River [Tambo Series]",-20.850000,144.199997,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+147,Yandamah Creek [Tambo Series],-20.850000,144.199997,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+148,Marathon [Tambo Series],-20.816668,143.566666,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+149,"Tower Hill, Mutabara [Tambo Series]",-22.049999,144.600006,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+150,Landsborough Creek [Tambo Series],-22.500000,144.550003,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+151,Longreach [Tambo Series],-23.450001,144.250000,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+152,Kensington [Tambo Series],-22.500000,144.183334,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+153,Aramac [Tambo Series],-22.966667,145.250000,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+154,Wellshot [Tambo Series],-23.900000,144.449997,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+155,Beaconsfield [Tambo Series],-23.333332,144.600006,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+156,"BMR M12F, Nebo Synclinorium",-21.500000,148.500000,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+157,"BMR MC1065, Blenheim Homestead",-21.059999,148.210007,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+158,"BMR MC311, Lenton Downs Homestead",-21.514999,147.929993,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+159,"BMR MC414, Nebo Synclinorium",-21.500000,148.000000,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+160,"BMR MC420, Bowen River",-20.764999,147.845001,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+161,"BMR MC479, Hazelwood Creek",-21.195000,148.315002,,,New England Orogen,,,New England Orogen
+162,"BMR MC485, Hazelwood Creek",-21.195000,148.315002,,,New England Orogen,,,New England Orogen
+163,"BMR MC485 Diel, Hazelwood Creek",-21.195000,148.315002,,,New England Orogen,,,New England Orogen
+164,"BMR MC485 AF, Hazelwood Creek",-21.195000,148.315002,,,New England Orogen,,,New England Orogen
+165,"BMR MC485 BF, Hazelwood Creek",-21.195000,148.315002,,,New England Orogen,,,New England Orogen
+166,4 miles SW of Eungella Station,-21.155001,148.164993,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+167,"BMR MC485 CF, Hazelwood Creek",-21.195000,148.315002,,,New England Orogen,,,New England Orogen
+168,"BMR MC553, Homevale-Elphinstone Road",-21.549999,148.399994,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+169,"BMR MC657, Blenheim Homestead",-21.100000,148.250000,,,New England Orogen,,,New England Orogen
+170,"BMR MC957, Mount Cona Creek",-21.365000,148.449997,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+171,"BMR MC803, Blenheim Homestead",-21.055000,148.210007,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+172,"BMR B1572, Parrot Creek, Mulgrave Road Crossing",-20.788000,147.746002,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+173,"BMR CL21/5, Tay Glen Crossing, Phillips Creek",-22.350000,148.500000,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+174,"Telemon lease, Dunluce Station",-20.883329,143.800003,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+175,"Coral Creek Mouth, Bowen River Coalfield",-20.605000,147.811996,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+176,"Matilda Site, Elderslie Station (AODL 0085)",-22.199722,142.528610,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+177,"BMR MC293, Blenheim",-21.073000,148.218994,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+178,Alderly station,-20.841667,143.895828,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+179,Belmont Station,-22.083330,143.516693,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+180,"CPA 20, Bowen River Coalfield",-20.600000,147.800003,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+181,Rattlesnake Island,-19.033333,146.616669,,,,,,
+182,Orpheus Island,-18.600000,146.483337,,,,,,
+183,"Yambore Creek, near Maxwelton",-20.716667,142.666672,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+184,"Army Downs, 35 miles north of Richmond",-20.221111,143.133331,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+185,East of Hughenden,-20.833332,145.000000,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+186,Vellum Downs,-21.666668,143.666672,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+187,Dunluce Station (upper),-20.883329,143.800003,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+188,"GSQ D28, east bank Bowen River near Exmoor",-20.795000,148.074997,,,New England Orogen,,,New England Orogen
+189,"UQ L3134, Parrot Creek, Mulgrave Yards",-20.788000,147.746002,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+190,"GSQ D235, Mulgrave Yards, Havilah Homestead",-20.850000,147.759995,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+191,"GSQ D236, Mount Lebanon Road",-22.280001,147.970001,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+192,"UQ L3135, Little Charwell Creek",-22.110001,148.179993,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+193,"UQ L1363, Rosella Creek, Havilah",-20.820000,147.858002,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+194,"GSQ L1981, St. Joseph Phelps Dodge P4/14, 248.5-251.5 m",-21.816999,147.867004,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+195,"GSQ D227, Elphinstone-Homevale Road",-21.450001,148.494995,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+196,"GSQ D231, Corduroy Creek",-20.549999,147.625000,,,New England Orogen,,,New England Orogen
+197,"GSQ D233, Scottville Mine",-20.570000,147.830002,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+198,"GSQ D234, Corduroy Creek",-20.549999,147.625000,,,New England Orogen,,,New England Orogen
+199,"GSQ D237, Little Cherwell Creek, Mount Lebanon Homestead",-22.257999,147.970001,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+200,"GSQ D238, Isabella Creek, Woollamba Station",-22.952999,148.278000,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+201,"GSQ D26, Homevale-Elphinstone Road",-21.549999,148.399994,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+202,"GSQ D27, Blenheim Homestead",-21.055000,148.210007,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+203,"GSQ D31, Gebbie Creek",-20.737000,147.947998,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+204,"GSQ D76, Crystal Creek, Crystal Plains Homestead",-23.299999,147.899994,Bowen Basin,,Thomson Orogen,Bowen Basin,,Thomson Orogen
+205,"GSQ L1158, Blenheim Homestead",-21.065001,148.220001,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+206,"GSQ L1308, Blackwater NS 190 well, 117.6 m",-23.020000,148.399994,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+207,"GSQ L1348, Blackwater NS 190 well, 117 m",-23.020000,148.399994,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+208,"GSQ L1353, Eaglefield Homestead",-21.485001,147.794998,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+209,"GSQ L1385, Quarry Hill Shaft",-22.799999,147.600006,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+210,"GSQ L1641, Nebo Synclinorium",-21.500000,147.300003,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+211,"GSQ L1642, Black Gate, Wall Homestead",-21.500000,147.300003,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+212,"GSQ L1657, Emerald Area, Springsure Anticline",-23.500000,148.000000,Bowen Basin,,Thomson Orogen,Bowen Basin,,Thomson Orogen
+213,"GSQ L1713, Gebbie Creek",-20.705000,147.940002,,,New England Orogen,,,New England Orogen
+214,"GSQ L1714, Gebbie Creek",-20.705000,147.940002,,,New England Orogen,,,New England Orogen
+215,"GSQ L1715, Gebbie Creek",-20.705000,147.940002,,,New England Orogen,,,New England Orogen
+216,"GSQ L1716, Gebbie Creek",-20.705000,147.940002,,,New England Orogen,,,New England Orogen
+217,"GSQ L1719, Gebbie Creek",-20.705000,147.940002,,,New England Orogen,,,New England Orogen
+218,"GSQ L1720, Gebbie Creek",-20.705000,147.940002,,,New England Orogen,,,New England Orogen
+219,"GSQ L1726, Gebbie Creek, Bowen River Pumping Station",-20.737000,147.947998,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+220,"GSQ L1728, Gebbie Creek, Bowen River Pumping Station",-20.737000,147.947998,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+221,"GSQ L1729, Gebbie Creek, Bowen River Pumping Station",-20.737000,147.947998,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+222,"GSQ L1731, Gebbie Creek, Bowen River Pumping Station",-20.737000,147.947998,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+223,"GSQ L1732, Gebbie Creek, Bowen River Pumping Station",-20.737000,147.947998,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+224,"GSQ L1733, Gebbie Creek, Bowen River Pumping Station",-20.737000,147.947998,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+225,"GSQ L1734, Gebbie Creek, Bowen River Pumping Station",-20.737000,147.947998,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+226,"GSQ L1735, Gebbie Creek, Bowen River Pumping Station",-20.737000,147.947998,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+227,"GSQ L1736, Gebbie Creek, Bowen River Pumping Station",-20.737000,147.947998,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+228,"GSQ L1737, Gebbie Creek, Bowen River Pumping Station",-20.737000,147.947998,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+229,"GSQ L1738, Gebbie Creek, Bowen River Pumping Station",-20.737000,147.947998,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+230,"GSQ L1739, Gebbie Creek, Bowen River Pumping Station",-20.737000,147.947998,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+231,"GSQ L1742, Bowen River Pumping Station Road",-20.737000,147.945999,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+232,"GSQ L1895, Basin Creek, Pumping Station Road Crossing",-20.712999,147.912994,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+233,"GSQ L2578, Emerald NS 9R, 410.43-410.49 m",-23.500000,148.000000,Bowen Basin,,Thomson Orogen,Bowen Basin,,Thomson Orogen
+234,"GSQ L2579, Emerald NS 9R, 410.49-410.58 m",-23.500000,148.000000,Bowen Basin,,Thomson Orogen,Bowen Basin,,Thomson Orogen
+235,"GSQ L2580, Emerald NS 9R, 410.58-410.74 m",-23.500000,148.000000,Bowen Basin,,Thomson Orogen,Bowen Basin,,Thomson Orogen
+236,"GSQ L2581, Emerald NS 9R, 410.84-410.89 m",-23.500000,148.000000,Bowen Basin,,Thomson Orogen,Bowen Basin,,Thomson Orogen
+237,"GSQ L2582, Emerald NS 9R, 410.89-411.02 m",-23.500000,148.000000,Bowen Basin,,Thomson Orogen,Bowen Basin,,Thomson Orogen
+238,"GSQ L2583, Emerald NS 9R, 411.02-411.12 m",-23.500000,148.000000,Bowen Basin,,Thomson Orogen,Bowen Basin,,Thomson Orogen
+239,"GSQ L2584, Emerald NS 9R, 411.12-411.25 m",-23.500000,148.000000,Bowen Basin,,Thomson Orogen,Bowen Basin,,Thomson Orogen
+240,"GSQ L2585, Emerald NS 9R, 411.25-411.45 m",-23.500000,148.000000,Bowen Basin,,Thomson Orogen,Bowen Basin,,Thomson Orogen
+241,"GSQ L2586, Emerald NS 9R, 411.45-411.65 m",-23.500000,148.000000,Bowen Basin,,Thomson Orogen,Bowen Basin,,Thomson Orogen
+242,"GSQ L395, Blenheim Homestead",-21.100000,148.250000,,,New England Orogen,,,New England Orogen
+243,"GSQ L396, Blenheim Homestead",-21.059999,148.210007,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+244,"GSQ L421, Stockton 27",-21.000000,148.000000,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+245,"GSQ L427, Hazelwood Creek",-21.195000,148.315002,,,New England Orogen,,,New England Orogen
+246,"GSQ L795, No. 3 Camp, Corduroy Creek, off Pelican Creek",-20.549999,147.625000,,,New England Orogen,,,New England Orogen
+247,"GSQ L887, NW Corner of CPA18",-20.590000,147.929993,,,New England Orogen,,,New England Orogen
+248,"GSQ L888, Sonoma - Camp Road Junction",-20.590000,147.929993,,,New England Orogen,,,New England Orogen
+249,"UQ L1367, Parrot Creek",-20.790001,147.750000,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+250,"UQ L1368, Mulgrave Cattle Yards",-20.850000,147.759995,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+251,"UQ L1377, Pelican Creek",-20.820000,147.845001,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+252,"UQ L1384, Bull Creek, Nebo",-20.830000,147.699997,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+253,"UQ L3133, Corduroy Creek",-20.549999,147.625000,,,New England Orogen,,,New England Orogen
+254,"UQ L3136, Wollombi Station",-22.950001,148.283005,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+255,"UQ L3543, Parrot Creek, Mulgrave Yards",-20.788000,147.746002,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+256,"UQ L3727, Exmoor Homestead",-20.788000,147.746002,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+257,"UQ L4639, Bowen River, Exmoor Homestead",-20.934099,148.122696,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+258,"UQ L4640, Bowen River, Exmoor Homestead",-20.934500,148.123199,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+259,"UQ L4641, Bowen River, Exmoor Homestead",-20.935200,148.123596,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+260,"UQ L4643, Bowen River, Exmoor Homestead",-20.943001,148.130997,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+261,"UQ L4645, Bowen River, Exmoor Homestead",-20.937300,148.125305,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+262,"UQ L4646, Bowen River, Exmoor Homestead",-20.937700,148.125793,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+263,"UQ L4647, Gebbie Creek",-20.735001,147.949997,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+264,"UQ L4648, Bowen River, Exmoor Homestead",-20.937599,148.124405,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+265,"UQ L4650, Bowen River, Exmoor Homestead",-20.938101,148.123901,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+266,"UQ L4651, Bowen River, Exmoor Homestead",-20.938101,148.123901,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+267,"UQ L4652, Bowen River, Exmoor Homestead",-20.938101,148.123901,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+268,"UQ L4653, Bowen River, Exmoor Homestead",-20.938101,148.123901,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+269,"UQ L4654, Bowen River, Exmoor Homestead",-20.937700,148.126495,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+270,"UQ L949, Parrot Creek, Havilah Homestead",-20.788000,147.746002,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+271,"CPA 14, Marine Gully - Birralee Road",-20.600000,147.750000,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+272,Marine Gully M137,-20.620001,147.750000,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+273,"Parrot Creek, Musgrave Road crossing",-20.788000,147.744995,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+274,"Minerva Homestead, Springsure",-21.450001,148.050003,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+275,"Parish North Britton, Homevale",-21.450001,148.500000,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+276,"Upper Cooper Creek, Mt. Robert, Homevale",-21.450001,148.500000,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+277,Ridge 1 mile W of Homevale,-21.450001,148.500000,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+278,Gate 1.5 miles W of Homevale,-21.450001,148.500000,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+279,"UQ L4633, Exmoor Homestead",-20.928499,148.125504,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+280,"UQ L4634, Exmoor Homestead",-20.927999,148.126495,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+281,"UQ L4635, Exmoor Homestead",-20.928301,148.125702,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+282,"UQ L4637, Bowen River, Exmoor Homestead",-20.950001,148.134995,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+283,"UQ L4642, Bowen River, Exmoor Homestead",-20.934500,148.123001,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+284,"UQ L4644, Exmoor Homestead",-20.948000,148.134506,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+285,"UQ L4647, Bowen River, Exmoor Homestead",-20.937201,148.125198,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+286,"UQ L4649, Bowen River, Exmoor Homestead",-20.940001,148.126999,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+287,"UQ L3702, Gebbie Creek",-20.737000,147.947998,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+288,"UQ L3706, Gebbie Creek pipeline",-20.719999,147.929993,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+289,"UQ L3714, Bowen River, Exmoor Homestead",-20.945000,148.132507,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+290,"UQ L3719, Exmoor Homestead",-20.927000,148.125000,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+291,"UQ L3723, Exmoor Homestead",-20.930000,148.126999,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+292,"UQ L3722, Exmoor Homestead",-20.930000,148.126999,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+293,"Hazelwood Creek, Eungella Station",-21.155001,148.164993,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+294,"Corduroy Creek, Collinsville",-20.549999,147.625000,,,New England Orogen,,,New England Orogen
+295,"Pelican Creek, CPA21, Bowen River Coalfield",-20.549999,147.649994,,,New England Orogen,,,New England Orogen
+296,"Derbyia Gully, CPA21, Bowen River Coalfield",-20.600000,147.800003,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+297,Flinders River,-20.760000,143.679993,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+298,Flinders River (UQ collection),-20.760000,143.679993,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+299,Pelican Bore,-20.535000,143.983994,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+300,"Horse Shoe Bend, Lekanophyllum association",-19.783333,146.449997,Burdekin Basin,Charters Towers Province,Thomson Orogen,Burdekin Basin,Charters Towers Province,Thomson Orogen
+301,"Kirkland Downs, Australophyllum-Sanidophyllum association",-19.466667,145.983337,Burdekin Basin,Charters Towers Province,Thomson Orogen,Burdekin Basin,Charters Towers Province,Thomson Orogen
+302,Mount Podge,-19.299999,145.966660,Burdekin Basin,Charters Towers Province,Thomson Orogen,Burdekin Basin,Charters Towers Province,Thomson Orogen
+303,"Mount Podge, Laroona Formation",-19.299999,145.966660,Burdekin Basin,Charters Towers Province,Thomson Orogen,Burdekin Basin,Charters Towers Province,Thomson Orogen
+304,"BMR MC292, Collinsville Road, Blenheim Creek",-20.983000,148.136002,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+305,"UDC1, Lyra Park",-23.250000,148.500000,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+306,Horseshoe Bay,-19.118055,146.860275,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+307,Townsville,-19.257500,146.817780,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+308,"Dunraven Station, Hughenden area",-20.841667,144.199997,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+309,"Glendower Station, near Prairie",-20.669443,144.536118,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+310,"UQ L3132, Rosella Creek, Havilah Homestead",-20.834999,147.850006,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+311,BMR Collinsville 1,-20.830000,147.699997,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+312,"BMR B1633, Collinsville",-20.816668,147.683334,,,New England Orogen,,,New England Orogen
+313,"BMR M418, Mackay Area",-21.459999,148.500000,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+314,"BMR C113, Capella Block",-22.379999,148.000000,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+315,"BMR C144/3, Capella Block",-22.379999,148.000000,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+316,"BMR Em208, Capella Block",-23.049999,148.029999,Bowen Basin,,Thomson Orogen,Bowen Basin,,Thomson Orogen
+317,"BMR C1318/1, Clermont area",-22.110001,148.179993,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+318,"BMR MC423a, Blenheim Homestead",-21.049999,148.210007,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+319,"BMR MC423b, Blenheim Homestead",-21.049999,148.210007,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+320,BMR Collinsville 4a,-20.830000,147.699997,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+321,Richmond 'pliosaur' locality,-20.729445,143.141663,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+322,"Galah Creek, Hughenden",-20.841667,144.199997,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+323,"Y1, CPA21, Bowen River Coalfield",-20.549999,147.649994,,,New England Orogen,,,New England Orogen
+324,"Y2, Pelican Creek, Bowen River Coalfield",-20.549999,147.649994,,,New England Orogen,,,New England Orogen
+325,"Homevale Station, 25 km NW of Nebo",-21.469999,148.500000,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+326,Ashgrove Station,-20.883329,143.800003,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+327,"Lydia Downs Station, Nelia",-20.883329,143.800003,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+328,"Stewart Park, near Flinders River",-20.866667,143.583328,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+329,Branch of Flinders River between Flinders and Borree Park Homestead,-20.866667,143.583328,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+330,Boremba Station,-20.866667,143.583328,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+331,"Canary Station, Hughenden area",-20.841667,144.199997,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+332,Accord,-23.466667,144.866669,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+333,"GSQ L1161, Pelican Creek",-20.549999,147.649994,,,New England Orogen,,,New England Orogen
+334,"GSQ D232, Pelican Creek",-20.549999,147.625000,,,New England Orogen,,,New England Orogen
+335,"Havilah-Byerwin Road, 1 mile south of Rosella Creek crossing",-20.860001,147.860001,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+336,"Pelican creek, three-quarters of a mile above Sonoma road-crossing",-20.549999,147.854996,,,New England Orogen,,,New England Orogen
+337,"UQ L2167, Corduroy Creek",-20.549999,147.625000,,,New England Orogen,,,New England Orogen
+338,"UQ L1379, Gattonvale Homestead",-20.770000,147.949997,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+339,"UQ L1399, Gattonvale Homestead",-20.770000,147.949997,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+340,"GSQ L794, No. 3 Camp, Corduroy Creek, off Pelican Creek",-20.549999,147.625000,,,New England Orogen,,,New England Orogen
+341,"GSQ L861, Bowen River",-20.549999,147.625000,,,New England Orogen,,,New England Orogen
+342,"Coral Creek, below Sonoma road-crossing",-20.605000,147.850006,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+343,"Stonelumpy Creek, Bowen River coalfield",-20.600000,147.800003,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+344,"Parrot Creek, four and a quarter miles up",-20.830000,147.740005,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+345,"Pelican Creek, two and a half miles above Sonoma road-crossing",-20.549999,147.850006,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+346,"Parrot Creek, four and a half miles up",-20.840000,147.740005,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+347,"Pelican Creek, five miles north of Sonoma Station",-20.600000,147.759995,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+348,"GSQ L852, Pelican Creek, opposite Palmer's Old Station",-20.600000,147.759995,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+349,"Parrot Creek, eight miles up",-20.879999,147.699997,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+350,"Bowen River, between traverse stations 25 and 26",-20.700001,147.699997,,,New England Orogen,,,New England Orogen
+351,"Bowen River, at No. 25 traverse station",-20.700001,147.699997,,,New England Orogen,,,New England Orogen
+352,"Pelican creek, half a mile above Sonoma road-crossing",-20.549999,147.854996,,,New England Orogen,,,New England Orogen
+353,"Pelican Creek, above Garrick coal seam",-20.600000,147.759995,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+354,"Head of Pelican creek, near Mount Diolin",-20.480000,147.889999,,,New England Orogen,,,New England Orogen
+355,"Rosella Creek, two miles above Havilah Paddock",-20.875000,147.880005,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+356,Bowen River (Daintree collection),-20.770000,147.949997,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+357,"UQ L1366, Havilah",-20.820000,147.839996,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+358,Sonoma,-20.590000,147.929993,,,New England Orogen,,,New England Orogen
+359,"Over 18 inch coal seam, Bowen River coalfield",-20.700001,147.699997,,,New England Orogen,,,New England Orogen
+360,Gully 20 chains northwest of No. 25 bore,-20.570000,147.750000,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+361,BMR Collinsville 5,-20.830000,147.699997,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+362,"Bowen River, unit C (UQ coll)",-20.770000,147.949997,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+363,"BMR CL132B, Clarkei Bed, Capella Block",-22.400000,147.899994,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+364,"BMR CL40/2, Clarkei Bed, Capella Block",-22.400000,147.899994,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+365,"BMR M85c, Collinsville",-20.833332,147.699997,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+366,"BMR CL42/6, Clermont area",-22.400000,147.899994,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+367,"BMR CL318/1, Clermont area",-22.400000,147.899994,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+368,BMR Collinsville 1a,-20.830000,147.699997,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+369,"BMR CL30/1, Clermont area",-22.400000,147.899994,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+370,"BMR B594, Collinsville area",-20.830000,147.699997,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+371,Cardigan,-20.216667,146.633331,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+372,Colinvale,-20.013611,148.247498,,,New England Orogen,,,New England Orogen
+373,Ned's Gully,-21.616667,144.949997,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+374,"Cratochelone type, Sylvania Station [PROXY]",-20.440001,144.380005,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+375,Yambore Creek,-20.700001,142.070007,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+376,Central Queensand pliosaurid locality,-20.729445,143.141663,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+377,"Silver Hills, Hughenden (QM L349)",-20.850000,144.199997,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+378,"Dick's Mother Lode Quarry, Bluff Downs station",-19.718611,145.601669,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+379,"BMR B1633a, Collinsville",-20.816668,147.683334,,,New England Orogen,,,New England Orogen
+380,"BMR B1633b, Collinsville",-20.816668,147.683334,,,New England Orogen,,,New England Orogen
+381,"BMR B629, Collinsville",-20.924999,147.687500,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+382,"BMR B261d, Nebo Synclinorium",-20.741667,147.949997,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+383,"BMR B711, Bowen River",-20.941668,148.137497,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+384,"BMR B1569, Collinsville",-20.804167,147.687500,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+385,"CCD 88.4, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+386,"CCD 90.0, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+387,"CCD 121.3, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+388,"CCD 53.7, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+389,"CCD 155.0, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+390,"CCD 152.6, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+391,"CCD 64.5, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+392,"CCD 83.3, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+393,"CCD 127.2, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+394,"CCD 72.1, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+395,"CCD 75.0, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+396,"CCD 102.2, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+397,"CCD 111.6, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+398,"CCD 116.0, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+399,"CCD 68.4, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+400,"CCD 107.3, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+401,"CCD 150.5, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+402,"CCD 167.5, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+403,"CCD 170.3, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+404,"CCD 400.0, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+405,"CCD 383.8, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+406,"CCD 378.0, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+407,"CCD 233.5, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+408,"CCD 270.0, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+409,"CCD 348.0, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+410,"CCD 390.0, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+411,"CCD 429.0, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+412,"CCD 451.0, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+413,"CCD 420.0, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+414,"CCD 553.0, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+415,"CCD 620.0, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+416,"CCD 625.0, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+417,"CCD 425.0, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+418,"CCD 608.3, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+419,"CCD 408.3, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+420,"CCD 435.0, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+421,"CCD 781.0, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+422,"CCD 782.6, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+423,"CCD 784.5, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+424,"CCD 790.5, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+425,"CCD 791.0, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+426,"CCD 801.0, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+427,"CCD 691.0, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+428,"CCD 786.0, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+429,"CCD 793.0, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+430,"CCD 816.8, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+431,"CCD 826.2, Chinaman Creek Limestone, Broken River",-19.260834,144.718063,,,Mossman Orogen,,,Mossman Orogen
+432,"LW 206.0, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+433,"LW 218.0, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+434,"LW 225.0, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+435,"LW 72.4, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+436,"LW 82.0, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+437,"LW 106.1, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+438,"LW 186.0, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+439,"LW 69.4, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+440,"LW 121.0, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+441,"LW 121.7, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+442,"LW 136.0, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+443,"LW 198.5, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+444,"LW 209.0, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+445,"LW 221.0, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+446,"LW 223.0, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+447,"LW 237.0, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+448,"LW 170.5, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+449,"LW 231.0, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+450,"LW 270.5, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+451,"LW 371.5, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+452,"LW 591.0, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+453,"LW 621.0, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+454,"LW 357.0, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+455,"LW 347.3, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+456,"LW 260.0, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+457,"LW 275.5, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+458,"LW 280.0, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+459,"LW 339.7, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+460,"LW 610.0, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+461,"LW 646.0, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+462,"LW 322.0, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+463,"LW 375.5, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+464,"LW 688.0, Lockup Well limestone, Broken River",-19.296944,144.844162,,,Mossman Orogen,,,Mossman Orogen
+465,"Jesseys 54.0, Jessey Springs limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+466,"Jesseys 54.1, Jessey Springs limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+467,"Jesseys 54.2, Jessey Springs limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+468,"Jesseys 61.0, Jessey Springs limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+469,"Jesseys 50.0, Jessey Springs limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+470,"Jesseys 43.0, Jessey Springs limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+471,"Jesseys 44.0, Jessey Springs limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+472,"Jesseys 57.0, Jessey Springs limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+473,"Jesseys 52.0, Jessey Springs limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+474,"Jesseys 48.0, Jessey Springs limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+475,"Jesseys 51.0, Jessey Springs limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+476,"Jesseys 53.0, Jessey Springs limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+477,"Jesseys 42.0, Jessey Springs limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+478,"Jesseys 49.0, Jessey Springs limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+479,"JES 8.4, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+480,"JES 2.5, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+481,"JES 6.6, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+482,"JES 12.2, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+483,"JES 31.6, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+484,"JES 24.1, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+485,"JES 14.3, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+486,"JES 20.6, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+487,"JES 5.2, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+488,"JES 43.2, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+489,"JES 44.8, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+490,"JES 59.8, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+491,"JES 32.7, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+492,"JES 33.0, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+493,"JES 65.9, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+494,"JES 34.8, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+495,"JES 64.7, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+496,"JES 36.2, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+497,"JES 72.4, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+498,"JES 98.2, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+499,"JES 101.0, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+500,"JES 101.2, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+501,"JES 104.2, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+502,"JES 107.0, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+503,"JES 112.5, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+504,"JES 113.2, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+505,"JES 113.5, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+506,"JES 113.6, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+507,"JES 85.0, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+508,"JES 100.0, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+509,"JES 110.5, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+510,"JES 106.7, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+511,"JES 95.0, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+512,"JES 117.5, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+513,"JES 119.7, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+514,"JES 120.6, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+515,"JES 274.0D, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+516,"JES 117.3, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+517,"JES 274.0A, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+518,"JES 274.0E, Jessey Springs Limestone, Broken River",-19.401667,144.805557,,,Mossman Orogen,,,Mossman Orogen
+519,"JHY site, Bluff Downs",-19.718611,145.601669,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+520,"Site 2, Bluff Downs",-19.718611,145.601669,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+521,Saunders Beach,-19.158449,146.610275,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+522,"Currane, north of Dartmouth",-23.365000,144.702225,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+523,Hughenden Decapods,-20.838888,144.201111,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+524,Dartmouth Decapods,-23.528334,144.686111,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+525,"Big Stockyard Creek area, south of Greenvale",-19.083332,144.987503,,,Mossman Orogen,,,Mossman Orogen
+526,Emerald locality,-23.000000,148.000000,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+527,"Douglas Creek Limestone, LIL-1, 2,5m",-22.900000,147.633331,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+528,"Douglas Creek Limestone, LIL-2, 30 m",-22.900000,147.633331,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+529,"Douglas Creek Limestone, PB-061",-22.900000,147.633331,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+530,"Section HID, Mary Creek, Ukalunda Beds, 0m",-20.850000,147.166672,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+531,"Douglas Creek Limestone, LIL-1, 6.7 m",-22.900000,147.633331,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+532,"Douglas Creek Limestone, LIL-1, 24,5 m",-22.900000,147.633331,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+533,"Douglas Creek Limestone, LIL-1, 22.2 m",-22.900000,147.633331,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+534,"Douglas Creek Limestone, LIL-1, 7.7 m",-22.900000,147.633331,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+535,"Douglas Creek Limestone, LIL-1, 25 m",-22.900000,147.633331,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+536,"Douglas Creek Limestone, LIL-1, 5.7 m",-22.900000,147.633331,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+537,"Douglas Creek Limestone, LIL-1, 8.9 m",-22.900000,147.633331,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+538,"Douglas Creek Limestone, LIL-2, 31,7 m",-22.900000,147.633331,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+539,"Section HID, Mary Creek, Ukalunda Beds, 108-111,5m",-20.850000,147.166672,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+540,"Section HID, Mary Creek, Ukalunda Beds, 90,5m",-20.850000,147.166672,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+541,"Section HID, Mary Creek, Ukalunda Beds, 111,6m",-20.850000,147.166672,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+542,"Section HID, Mary Creek, Ukalunda Beds, 118,6 m",-20.850000,147.166672,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+543,"Section HID, Mary Creek, Ukalunda Beds, 112 m",-20.850000,147.166672,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+544,Glendarriwell,-23.633333,147.800003,Bowen Basin,,Thomson Orogen,Bowen Basin,,Thomson Orogen
+545,Greybank Volcanics,-22.516666,147.916672,,Anakie Province,Thomson Orogen,,Anakie Province,Thomson Orogen
+546,Dodgey's Cave,-19.232153,145.418167,,,Mossman Orogen,,,Mossman Orogen
+547,"Main Quarry, Allingham Formation, BluffDowns Station",-19.716667,145.600006,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+548,Bluff Downs,-19.683331,145.533325,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+549,"Ho-Hum site, Belmont Station (AODL 0082)",-22.348333,143.089172,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+550,"Blaggard Creek, Spring Park Station",-19.716667,145.600006,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+551,Wyandotte Creek (Unit A),-18.770000,144.854996,,Greenvale Province,Thomson Orogen,,Greenvale Province,Thomson Orogen
+552,New Quarry dinosaur tracksite (QM),-23.076111,142.806671,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+553,Wyandotte Creek (float specimens),-18.770000,144.854996,,Greenvale Province,Thomson Orogen,,Greenvale Province,Thomson Orogen
+554,Wyandotte Creek (Unit B),-18.770000,144.854996,,Greenvale Province,Thomson Orogen,,Greenvale Province,Thomson Orogen
+555,"Locality L486, Mount Windsor Subprovince, Assemblage C",-20.533333,146.433334,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+556,"Locality L493, Mount Windsor Subprovince, Rollston Range Fm, assemblage B",-20.533333,146.433334,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+557,"Locality L502, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",-20.533333,146.433334,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+558,"Locality L499, Mount Windsor Subprovince, Trooper Creek Fm, assemblage A",-20.533333,146.433334,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+559,"Locality L156, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",-20.533333,146.433334,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+560,"Locality L165, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",-20.533333,146.433334,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+561,"Locality L166, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",-20.533333,146.433334,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+562,"Locality L485, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",-20.533333,146.433334,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+563,"Locality L492, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",-20.533333,146.433334,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+564,"Locality L521, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",-20.533333,146.433334,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+565,"Locality L160, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",-20.533333,146.433334,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+566,"Locality L500, Mount Windsor Subprovince, Rollston Range Fm, assemblage B",-20.533333,146.433334,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+567,"Locality L498, Mount Windsor Subprovince, Rollston Range Fm, assemblage B",-20.533333,146.433334,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+568,"Locality L497, Mount Windsor Subprovince, Rollston Range Fm, assemblage B",-20.533333,146.433334,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+569,"Locality L525, Mount Windsor Subprovince, Rollston Range Fm, assemblage B",-20.533333,146.433334,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+570,"Locality L157, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",-20.533333,146.433334,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+571,"Locality L158, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",-20.533333,146.433334,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+572,"Locality L161, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",-20.533333,146.433334,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+573,"Locality L162, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",-20.533333,146.433334,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+574,"Locality L164, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",-20.533333,146.433334,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+575,"Locality L503, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",-20.533333,146.433334,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+576,"Locality L504, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",-20.533333,146.433334,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+577,"Locality L507, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",-20.533333,146.433334,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+578,"Locality L524, Mount Windsor Subprovince, Rollston Range Fm, assemblage D",-20.533333,146.433334,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+579,"Locality L159, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",-20.533333,146.433334,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+580,"Locality L163, Mount Windsor Subprovince, Rollston Range Fm, assemblage C",-20.533333,146.433334,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+581,"Notochelone type, Flinder's River region [PROXY]",-20.769444,143.660278,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+582,South Walker Creek (SW9),-21.708883,148.349106,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+583,South Walker Creek (SW3),-21.708883,148.349106,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+584,South Walker Creek (SWJ),-21.708883,148.349106,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+585,South Walker Creek (SWCC),-21.708883,148.349106,Bowen Basin,,New England Orogen,Bowen Basin,,New England Orogen
+586,Richmond area (Kronosaurus Korner Museum collection),-21.000000,143.300003,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+587,Richmond area (NHMUK collection),-21.000000,143.300003,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+588,Section RUR. 105.4 meters,-19.083332,145.500000,,,Mossman Orogen,,,Mossman Orogen
+589,Section RUR. 56.6 meters,-19.083332,145.500000,,,Mossman Orogen,,,Mossman Orogen
+590,Section RUR. 56.8 meters,-19.083332,145.500000,,,Mossman Orogen,,,Mossman Orogen
+591,Section RUR. 56.9 meters,-19.083332,145.500000,,,Mossman Orogen,,,Mossman Orogen
+592,"NU L1064. Corner creek and Star River, near Paluma",-19.500000,145.899994,,Charters Towers Province,Thomson Orogen,,Charters Towers Province,Thomson Orogen
+593,"Marathon Station, Flinders River",-20.866667,143.583328,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+594,S0210. SO 43E.,-19.547222,144.676392,,,Mossman Orogen,,,Mossman Orogen
+595,SO 216,-19.445833,144.766663,,,Mossman Orogen,,,Mossman Orogen
+596,Br 13B. 216 m,-19.320833,144.679169,Bundock Basin,,Mossman Orogen,Bundock Basin,,Mossman Orogen
+597,Br 13B. 214.5 m,-19.320833,144.679169,Bundock Basin,,Mossman Orogen,Bundock Basin,,Mossman Orogen
+598,SD 130. 223 m,-19.522223,144.673615,,,Mossman Orogen,,,Mossman Orogen
+599,SD 130. 243 m,-19.522223,144.673615,,,Mossman Orogen,,,Mossman Orogen
+600,"""Chookie Site"", Elderslie Station (AODL 0120)",-22.199722,142.528610,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+601,"Oliver site, Elderslie Station (AODL 0122)",-22.200832,142.527222,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+602,"Snake Creek Tracksite, Karoola",-22.087299,142.490997,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+603,"Mitchell site, Elderslie Sheep Station (AODL 270)",-22.200832,142.527222,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+604,"Ann site, Elderslie Station (AODL 0252)",-22.250000,142.500000,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+605,Suttor River,-21.221571,146.912659,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+606,"Cambridge Quarry, Morungle Station",-20.426111,142.933609,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+607,"AODL 0128, Devil Dave, Belmont Station",-22.079721,143.510559,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+608,"AODL 0215, Ian, Elderslie Station",-22.290556,142.471939,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+609,"AODL 0137, Elderslie Station",-22.290556,142.471939,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+610,"AODL 0080, Bob, Belmont Station",-22.079445,143.510284,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+611,"AODL 0160, Patrice, Lovelle Downs Station",-22.146111,142.536118,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+612,"AODL 0049, Mick, west of Winton",-22.383057,142.941391,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+613,"AODL 0079, McKenzie, Elderslie Station",-22.290556,142.471939,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+614,"AODL 0117, Dixie, Elderslie Station",-22.290556,142.471939,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+615,"AODL 0125, Trixie, Elderslie Station",-22.290556,142.471939,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+616,"AODL 0247, Leo, Belmont Station",-22.079445,143.510559,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+617,"Dig Site Three, NW of Richmond",-20.643888,143.097504,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+618,"Pterosaur site, Belmont Station (AODL 0245)",-22.348333,143.089172,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+619,Free Fossil Hunting Site 1,-20.646944,143.099442,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+620,Broken River,-19.049999,144.983337,,,Mossman Orogen,,,Mossman Orogen
+621,"10 km south east of Springvale, near the Narrien Range",-22.883333,146.824173,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+622,Plain Creek Station,-21.551111,146.509720,Drummond Basin,,Thomson Orogen,Drummond Basin,,Thomson Orogen
+623,1 km upstream from Six Mile Yard (Nawagaspis type-loc),-19.481947,144.710526,,,Mossman Orogen,,,Mossman Orogen
+624,4.5 km upstream from Six Mile Yard (Wurungaspis type-loc),-19.467501,144.754715,,,Mossman Orogen,,,Mossman Orogen
+625,"Dosey Creek, near Six Mile Yard (Doseyosteus type-loc)",-19.484722,144.728882,,,Mossman Orogen,,,Mossman Orogen
+626,"Wyangaria Station, Hughenden area",-20.838057,143.602783,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+627,~70m west of old road crossing of Digger's Creek,-19.000000,144.666672,,Greenvale Province,Thomson Orogen,,Greenvale Province,Thomson Orogen
+628,Flinders River near Maxwelton,-20.642799,142.754593,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+629,Quarry along Richmond-Woolgar Road,-20.646000,143.098999,Eromanga Basin,North Australian Craton undivided,North Australian Craton,Eromanga Basin,North Australian Craton undivided,North Australian Craton
+630,"Currane, 10 miles north of Dartmouth",-23.270279,144.744995,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen
+631,Hughenden,-20.838888,144.201111,Eromanga Basin,,Thomson Orogen,Eromanga Basin,,Thomson Orogen

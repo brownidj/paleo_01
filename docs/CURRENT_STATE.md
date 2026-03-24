@@ -171,7 +171,7 @@ rg --files "$ROOT_DIR" \
 - **Planning Database (`data/paleo_trips_01.db`)**:
   - `Team_members(id, name, phone_number, institution, recruitment_date, retirement_date, active)`
   - `Trips(id, trip_name, start_date, end_date, team, location, notes)` (`region` removed)
-  - `Locations(id, name, latitude, longitude, altitude_value, altitude_unit, country_code, state, lga, basin, geogscale, geography_comments, geology_id)`
+  - `Locations(id, name, latitude, longitude, altitude_value, altitude_unit, country_code, state, lga, basin, proterozoic_province, orogen, geogscale, geography_comments, geology_id)`
   - `CollectionEvents(id, trip_id, location_id, collection_name, collection_subset, event_year)` (0..many per location, trip-linked, single-year events)
   - `TripLocations(id, location_id)` (many-to-many between trips and locations)
   - `GeologyContext(id, location_id, location_name, source_system, source_reference_no, early_interval, late_interval, max_ma, min_ma, environment, geogscale, geology_comments, formation, stratigraphy_group, member, stratscale, stratigraphy_comments, geoplate, paleomodel, paleolat, paleolng, created_at, updated_at)`
@@ -192,6 +192,17 @@ rg --files "$ROOT_DIR" \
   - Team-member bulk population from `data/team_members_from_pbdb_data-2_publication_enriched.csv` is currently loaded (`Team_members = 142`), with recruitment/retirement date rules applied and later date-window widening for mandatory trip assignments.
   - Team-member assignment to trips has been generated from publication authors plus random eligible additions; no trips are currently left without `team` members.
   - Publication-mandatory team assignments are now date-consistent after widening affected team-member recruitment/retirement windows (`mandatory_assignments_outside_date_window = 0`).
+  - QLD structural framework backfill has been applied for location context fields using point-in-polygon attribution from the official Queensland structural framework layer.
+    - `Locations.basin`, `Locations.proterozoic_province`, `Locations.orogen` now populated where coverage intersects framework polygons.
+  - Finds UI now supports both `New Find` and `Edit Find` flows:
+    - New find requires an existing Collection Event.
+    - New/Edit dialogs are trip-scoped for Collection Event choices based on currently selected trip.
+    - Double-click on a find opens edit dialog.
+    - Find dialog edit semantics now align with Trip dialog semantics:
+      - `Edit` defaults off.
+      - turning `Edit` off performs save-if-changed.
+      - closing performs save-if-changed.
+      - system fields remain read-only.
   - Generated initial trip candidates from grouped collection-event CSV and inserted ~50 historical trips with date-derived naming conventions.
   - Reassigned a subset of finds to generated trips using strict location + year-window matching (`trip start_year` in `[estimated_year-6, estimated_year-1]`).
   - Collection events carry `trip_id` and `event_year`; trip->collection-events and trip->finds listing/count are wired via `CollectionEvents.trip_id`.
@@ -207,7 +218,7 @@ rg --files "$ROOT_DIR" \
 
 ## Codebase Goodness Assessment (vs prompt)
 
-- **Overall rating**: **Strong (about 9.0/10)** for behavior stability, DB safety, and architecture clarity after package-layout normalization (`app/`, `repository/`, `config/`, `requirements/`) and boundary-rule updates.
+- **Overall rating**: **Strong (about 9.0/10)** for behavior stability, DB safety, and architecture clarity; Find dialog behavior and New/Edit path confidence are now materially stronger.
 - **Strong areas**:
   - Thin entrypoints and clear app bootstrap flow are intact (`app/main.py` canonical, wrapper retained only for compatibility).
   - Core DB work is pragmatic and robust (parameterized SQL, explicit transaction/close handling, schema/migration separation).
@@ -217,35 +228,29 @@ rg --files "$ROOT_DIR" \
   - Internal repository/controller interfaces now use typed payload structures, reducing `dict[str, Any]` usage.
   - Import-boundary checks and mypy checks now align with package paths and are enforced by the shared CI entrypoint.
 - **Weak areas / debt**:
-  - Legacy migration coverage is now exhaustive across currently known trip/location/trip-location historical schema permutations; risk now shifts to truly unknown future-discovered legacy variants.
-  - UI flow coverage now includes smoke plus a higher-level handoff/filter-toggle/restore path; additional edge-case UI journeys can still be expanded over time.
+  - UI flow coverage is now improved with Find dialog behavior tests and Find tab integration tests; additional full-app end-to-end UI journeys can still be expanded.
   - Mypy is enforced for a scoped module set; broader project-wide typing coverage is still incremental.
   - Team-member publication-name matching is currently heuristic/string-based; canonical author identity mapping is not yet modeled.
 
 ## Recommendations
 
-1. Complete orphan-trip reconciliation.
-- Target the remaining trips with `0` collection events but linked locations.
-- Prefer deterministic reassignment by `location_id + event_year proximity`; only split events when needed for year separation.
-- Keep ambiguous ownership cases in a manual-review list rather than forcing assignment.
-2. Keep integrity checks aligned with event-owned model.
+1. Add one full-app UI integration path that includes Trips tab selection -> Finds tab -> New Find -> Edit Find -> list refresh.
+2. Keep event-owned integrity checks mandatory.
 - Continue running `scripts/check_trip_event_integrity.py` in CI (`finds_without_event`, `events_without_trip`, `finds_with_event_missing_trip`, location mismatch).
 - Keep `PRAGMA foreign_keys=ON` in all repository/script connections.
-3. Add one migration/backfill helper for repeatable ownership normalization.
-- Encapsulate the currently applied `±5 year` ownership pass in a reusable script with `--dry-run` and `--apply`.
-- Emit a CSV diff report of `event_id, old_trip_id, new_trip_id`.
-4. Continue incremental type tightening.
+3. Continue incremental type tightening.
 - Replace remaining untyped `dict` signatures in UI controllers/tabs with explicit typed payload aliases.
 - Expand mypy scope only when modules are green to avoid noisy regressions.
-5. Improve team-assignment identity quality.
+4. Improve team-assignment identity quality.
 - Introduce canonical author/team-member identity mapping (aliases/initial variants) to reduce ambiguity in publication-derived assignments.
 - Persist assignment provenance (`mandatory_publication` vs `random_eligible`) for auditability and future recalculation.
 
 ## ToDo
 
-1. Resolve remaining trip records with `0` collection events (currently 16) through deterministic reassignment or explicit archival.
-2. Add a reusable `--dry-run/--apply` script for event-ownership normalization with CSV diff output.
-3. Add an explicit team-assignment rebuild script (`--dry-run/--apply`) that can regenerate `Trips.team` deterministically from publication + date-window rules.
+1. Add one broader full-app New/Edit Find integration journey test (beyond tab-scoped integration).
+2. Resolve remaining trip records with `0` collection events through deterministic reassignment or explicit archival.
+3. Add a reusable `--dry-run/--apply` script for event-ownership normalization with CSV diff output.
+4. Add an explicit team-assignment rebuild script (`--dry-run/--apply`) that can regenerate `Trips.team` deterministically from publication + date-window rules.
 
 ## Test run report
 
@@ -258,3 +263,7 @@ rg --files "$ROOT_DIR" \
     - event-owned trip linkage (`Finds` without `trip_id`)
     - legacy migration permutations (including `Finds.trip_id` removal)
     - UI handoff/filter regression paths (including Team Members handoff/filter activation)
+- **2026-03-24 (targeted local runs)**:
+  - `pytest -q tests/test_finds_tab_new_find.py tests/test_trip_repository_location_finds.py tests/test_ui_user_flow_integration.py tests/test_tab_filter_regression.py`: **PASSED** (`14 passed`)
+- **2026-03-24 (expanded Find coverage runs)**:
+  - `pytest -q tests/test_find_form_dialog_behavior.py tests/test_finds_tab_integration.py tests/test_finds_tab_new_find.py tests/test_trip_repository_location_finds.py tests/test_ui_user_flow_integration.py tests/test_tab_filter_regression.py`: **PASSED** (`19 passed`)
