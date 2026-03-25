@@ -13,9 +13,9 @@ class Settings(BaseSettings):
     jwt_refresh_secret: str = "replace-with-another-very-long-random-secret"
     jwt_access_minutes: int = 30
     jwt_refresh_days: int = 30
-    auth_users_json: str = (
-        '[{"username":"admin","password":"admin-change-me","role":"admin","display_name":"Local Admin"}]'
-    )
+    bootstrap_admin_username: str = "admin"
+    bootstrap_admin_password: str = "qwer1234"
+    bootstrap_admin_display_name: str = "Local Admin"
 
 
 @lru_cache(maxsize=1)

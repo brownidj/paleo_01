@@ -2,11 +2,17 @@ from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from app.auth import Principal, get_current_principal, require_roles, router as auth_router
+from app.bootstrap import bootstrap_postgres_auth
 from app.config import get_settings
 from app.db import check_database
 
 app = FastAPI(title="Paleo API", version="0.1.0")
 app.include_router(auth_router)
+
+
+@app.on_event("startup")
+def startup_bootstrap() -> None:
+    bootstrap_postgres_auth()
 
 
 class TripSummary(BaseModel):
@@ -50,7 +56,7 @@ def root() -> dict[str, str]:
     response_model=list[TripSummary],
 )
 def list_trips(
-    _: Principal = Depends(require_roles("admin", "planner", "reviewer", "field_member")),
+    _: Principal = Depends(require_roles("admin", "team", "planner", "reviewer", "field_member")),
 ) -> list[TripSummary]:
     return []
 
@@ -60,7 +66,7 @@ def list_trips(
     response_model=list[CollectionEventSummary],
 )
 def list_collection_events(
-    _: Principal = Depends(require_roles("admin", "planner", "reviewer", "field_member")),
+    _: Principal = Depends(require_roles("admin", "team", "planner", "reviewer", "field_member")),
 ) -> list[CollectionEventSummary]:
     return []
 
@@ -71,7 +77,7 @@ def list_collection_events(
 )
 def create_find(
     payload: FindCreateRequest,
-    principal: Principal = Depends(require_roles("admin", "planner", "field_member")),
+    principal: Principal = Depends(require_roles("admin", "team", "planner", "field_member")),
 ) -> FindCreateResponse:
     _ = payload
     return FindCreateResponse(

@@ -25,6 +25,8 @@ htmlcov/
 !.env.example
 !.env.staging.example
 !.env.prod.example
+secrets/*.txt
+!secrets/*.txt.example
 
 # OS/editor noise
 .DS_Store
