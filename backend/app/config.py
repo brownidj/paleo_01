@@ -9,6 +9,13 @@ class Settings(BaseSettings):
     app_env: str = "local"
     log_level: str = "INFO"
     database_url: str = "postgresql://paleo:change-me@postgres:5432/paleo"
+    jwt_secret: str = "replace-with-very-long-random-secret"
+    jwt_refresh_secret: str = "replace-with-another-very-long-random-secret"
+    jwt_access_minutes: int = 30
+    jwt_refresh_days: int = 30
+    auth_users_json: str = (
+        '[{"username":"admin","password":"admin-change-me","role":"admin","display_name":"Local Admin"}]'
+    )
 
 
 @lru_cache(maxsize=1)

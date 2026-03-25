@@ -1,0 +1,12 @@
+{
+    admin off
+    email {$ACME_EMAIL}
+}
+
+http://{$SERVER_HOST} {
+    redir https://{$SERVER_HOST}{uri}
+}
+
+{$SERVER_HOST} {
+    reverse_proxy api:8000
+}

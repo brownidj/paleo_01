@@ -80,10 +80,14 @@ Set it up as a small, stable Linux-style service host on macOS with Docker, reve
 ### Local runtime quick start (implemented in this repo)
 - Stack files:
   - `docker-compose.yml`
+  - `docker-compose.internet.yml` (internet override profile)
   - `Caddyfile`
+  - `Caddyfile.internet` (public DNS + Let's Encrypt)
   - `.env.example`
+  - `.env.prod.example`
   - `backend/` (FastAPI app with `/v1/health`)
   - `scripts/bootstrap_local_backend.sh`
+  - `scripts/bootstrap_internet_backend.sh`
 - First run:
   - `cp .env.example .env` (if not already present)
   - Update `.env` secrets and, if needed, set `SERVER_HOST`
@@ -112,13 +116,17 @@ Set it up as a small, stable Linux-style service host on macOS with Docker, reve
 1. Create local env file:
    - `cp .env.staging.example .env.staging`
    - set strong `POSTGRES_PASSWORD`, `JWT_SECRET`, `JWT_REFRESH_SECRET`
+   - set `SERVER_HOST=paleo-server.local`
 2. Start stack with explicit env:
    - `ENV_FILE=.env.staging scripts/bootstrap_local_backend.sh`
 3. Verify DB is not host-exposed:
    - `docker compose --env-file .env.staging ps`
    - confirm no `0.0.0.0:5432` or `127.0.0.1:5432` mapping for `postgres`
 4. Verify API via reverse proxy:
-   - `curl -k https://localhost/v1/health`
+   - add host mapping on each client machine:
+     - `echo "192.168.50.30 paleo-server.local" | sudo tee -a /etc/hosts`
+   - then verify:
+     - `curl -k https://paleo-server.local/v1/health`
 5. Optional local firewall tightening:
    - macOS `System Settings` -> `Network` -> `Firewall` = On
    - router: permit only your LAN subnet to this host for `443`/`80`
@@ -129,6 +137,29 @@ Set it up as a small, stable Linux-style service host on macOS with Docker, reve
   - self-signed cert distributed to client trust stores.
 - If internet-accessed, use proper public DNS + Let’s Encrypt.
 - Add API auth from day one (JWT + refresh).
+
+### Internet-accessed runbook (implemented profile)
+1. DNS and WAN prerequisites
+   - Choose a public hostname (for example `api.yourdomain.com`).
+   - Create an `A` record to your router WAN IP (or DDNS hostname via CNAME).
+   - On ASUS router, configure port forwarding:
+     - WAN `80` -> this machine `80`
+     - WAN `443` -> this machine `443`
+2. Prepare production env
+   - `cp .env.prod.example .env.prod`
+   - set:
+     - `SERVER_HOST` to your public hostname
+     - `ACME_EMAIL` to your ops email
+     - strong `POSTGRES_PASSWORD`, `JWT_SECRET`, `JWT_REFRESH_SECRET`
+3. Start internet profile
+   - `ENV_FILE=.env.prod scripts/bootstrap_internet_backend.sh`
+4. Verify from outside LAN (mobile data or external host)
+   - `curl https://<your-public-host>/v1/health`
+   - expected: `{"status":"ok","database":"up","env":"prod"}`
+5. Security notes
+   - Keep DB private (no host mapping for Postgres).
+   - Never expose Postgres port on router.
+   - Keep API auth/RBAC enabled before broader access.
 
 ## 5. Data and backups
 - Use Postgres volume on local SSD.
