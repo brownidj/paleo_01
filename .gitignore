@@ -20,6 +20,7 @@ htmlcov/
 
 # Local databases and runtime data
 *.db
+.env
 
 # OS/editor noise
 .DS_Store

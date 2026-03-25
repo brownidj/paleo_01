@@ -1,0 +1,4 @@
+# Root dependency bundle for local development/runtime.
+# Includes desktop app base deps and backend API deps.
+-r requirements/base.txt
+-r backend/requirements.txt

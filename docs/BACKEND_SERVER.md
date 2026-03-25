@@ -1,0 +1,156 @@
+# BACKEND_SERVER
+
+Set it up as a small, stable Linux-style service host on macOS with Docker, reverse proxy, TLS, and backups.
+
+## Current execution mode
+- Build and run the full backend stack on **this current machine first**.
+- Treat this machine as `local-staging` for architecture, API, auth/RBAC, and data/sync testing.
+- Move to the MacBook host later by migrating config/secrets/backups and redeploying the same Docker stack.
+
+## 1. Base machine setup (this machine first)
+- **Apply all of these to this current machine now.**
+- Create a dedicated macOS user (for server processes only).
+- Give this machine a static DHCP reservation on your router.
+- Set a local DNS name (for example `paleo-server.local`) or fixed IP for this machine.
+- Disable sleep while plugged in; keep lid open or use clamshell + power/external display.
+- Enable auto-restart after power failure.
+- **MacBook note**: do not do this on the MacBook yet; repeat this same section there only during migration/cutover.
+
+### ASUS router: step-by-step (this machine first)
+
+#### A) Create static DHCP reservation
+1. Open router admin:
+   - `http://router.asus.com` (or `192.168.50.1` on your network)
+2. Go to:
+   - `LAN` -> `DHCP Server`
+3. Turn on:
+   - `Enable Manual Assignment` = `Yes`
+4. Add this Mac entry:
+   - `Client Name (MAC Address)`: use the MAC this Mac is actually using on that SSID
+     - if Private Wi-Fi Address is enabled, use that private MAC
+   - `IP Address`: fixed IP, for example `192.168.50.30`
+   - `DNS Server`: blank
+   - click `+`
+5. Click `Apply`.
+6. Renew lease on this Mac:
+   - `sudo ipconfig set en1 DHCP`
+   - `ipconfig getifaddr en1`
+   - expected: `192.168.50.30`
+
+#### B) Set local DNS name (optional but recommended)
+1. In ASUS UI, go to:
+   - `LAN` -> `DHCP Server`
+2. In `RT-AC59U V2's Domain Name`, enter a local suffix, for example:
+   - `lan`
+3. Click `Apply`.
+4. Ensure static DHCP entry has hostname set (for example `paleo-server`).
+5. Access server as:
+   - `paleo-server.lan`
+   - or continue with fixed IP only.
+
+#### C) If reservation does not apply
+1. Check Wi-Fi address in macOS network details.
+   - if `Private Wi-Fi Address` is enabled, reservation must match that private MAC.
+2. Reconnect Wi-Fi:
+   - `networksetup -setairportpower en1 off`
+   - `networksetup -setairportpower en1 on`
+3. Re-check IP:
+   - `ipconfig getifaddr en1`
+
+#### D) Router login blocked ("logout another user first")
+1. Try private/incognito browser window.
+2. Wait 3-5 minutes for session timeout.
+3. If still blocked, power-cycle router (10 seconds off/on), then log in first.
+
+#### E) Quick verification checklist
+- Manual assignment enabled: `Yes`
+- MAC in reservation matches MAC currently used by this machine
+- Reserved IP is not already in use
+- This machine receives reserved IP after reconnect
+- Router/admin reachable and hostname resolves (if local DNS configured)
+
+## 2. Install runtime stack
+- Install Docker Desktop (or Colima + Docker CLI).
+- Install `git`, `make`, `uv`/`python`, and `sqlite3`/`psql` client tools.
+- Use Docker Compose for:
+  - API service
+  - PostgreSQL (+ PostGIS optional)
+  - Reverse proxy (Caddy recommended)
+
+### Local runtime quick start (implemented in this repo)
+- Stack files:
+  - `docker-compose.yml`
+  - `Caddyfile`
+  - `.env.example`
+  - `backend/` (FastAPI app with `/v1/health`)
+  - `scripts/bootstrap_local_backend.sh`
+- First run:
+  - `cp .env.example .env` (if not already present)
+  - Update `.env` secrets and, if needed, set `SERVER_HOST`
+  - `scripts/bootstrap_local_backend.sh`
+- Verify:
+  - `docker compose ps`
+  - `curl -k https://localhost/v1/health`
+
+## 3. Network and security
+- Expose only `443` (and optionally `80` for redirect) on LAN.
+- Keep DB port private (not exposed outside Docker network).
+- Use long random secrets in `.env` (JWT secret, DB password).
+- Create separate staging and prod env files even on one machine.
+- Restrict inbound access to your LAN subnet via macOS firewall/router rules.
+
+## 4. TLS and identity
+- If LAN-only, use:
+  - Caddy with internal CA, or
+  - self-signed cert distributed to client trust stores.
+- If internet-accessed, use proper public DNS + Let’s Encrypt.
+- Add API auth from day one (JWT + refresh).
+
+## 5. Data and backups
+- Use Postgres volume on local SSD.
+- Nightly `pg_dump` backups to:
+  - local backup dir, and
+  - second destination (external drive or cloud bucket).
+- Keep at least 14 daily + 8 weekly backups.
+- Test restore monthly.
+
+## 6. Service operations
+- Run API with systemd-like behavior via Docker restart policies.
+- Add health checks and simple uptime monitoring.
+- Centralize logs (at least JSON logs + rotation).
+- Add a one-command deploy (`git pull && docker compose up -d --build`).
+
+## 7. Desktop/mobile client config
+- Desktop app points to API base URL in config (`https://paleo-server.local/v1`).
+- Flutter app uses same API URL, with environment switch for dev/staging/prod.
+- Never allow clients to connect directly to DB.
+
+## 8. First deployment checklist
+- Bring up DB + API + proxy.
+- Run migrations.
+- Create initial admin user.
+- Verify:
+  - auth
+  - role enforcement (mobile cannot create trips)
+  - find create/update
+  - backup job success
+  - restore dry-run.
+
+If you want, I can generate a concrete `docker-compose.yml`, `.env.example`, and a step-by-step bootstrap script tailored to this repo next.
+
+## Migration later (this machine -> MacBook)
+1. Freeze writes briefly (maintenance window).
+2. Take final Postgres backup (`pg_dump` + optional volume snapshot).
+3. Copy deployment bundle:
+   - `docker-compose.yml`
+   - `Caddyfile` / reverse-proxy config
+   - migration scripts
+   - `.env` values (regenerate secrets where appropriate)
+4. Restore DB on MacBook and run migrations.
+5. Smoke test:
+   - auth/login
+   - role enforcement
+   - trip/event/find read flows
+   - find create/update
+6. Point clients to new API host URL.
+7. Keep old host read-only for rollback window, then decommission.

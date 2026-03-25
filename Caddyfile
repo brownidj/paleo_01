@@ -1,0 +1,12 @@
+{
+    admin off
+}
+
+http://{$SERVER_HOST:localhost} {
+    redir https://{$SERVER_HOST:localhost}{uri}
+}
+
+{$SERVER_HOST:localhost} {
+    tls internal
+    reverse_proxy api:8000
+}
