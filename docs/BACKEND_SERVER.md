@@ -99,6 +99,30 @@ Set it up as a small, stable Linux-style service host on macOS with Docker, reve
 - Create separate staging and prod env files even on one machine.
 - Restrict inbound access to your LAN subnet via macOS firewall/router rules.
 
+### Section 3 implementation status in this repo
+- `postgres` is now internal-only in `docker-compose.yml` (no host `ports:` mapping).
+- `Caddyfile` now blocks non-private source IPs in local-staging mode.
+- Env templates now exist for separation:
+  - `.env.example` (local)
+  - `.env.staging.example`
+  - `.env.prod.example`
+- `scripts/bootstrap_local_backend.sh` supports `ENV_FILE=...` and warns on placeholder secrets.
+
+### Section 3 runbook (this machine)
+1. Create local env file:
+   - `cp .env.staging.example .env.staging`
+   - set strong `POSTGRES_PASSWORD`, `JWT_SECRET`, `JWT_REFRESH_SECRET`
+2. Start stack with explicit env:
+   - `ENV_FILE=.env.staging scripts/bootstrap_local_backend.sh`
+3. Verify DB is not host-exposed:
+   - `docker compose --env-file .env.staging ps`
+   - confirm no `0.0.0.0:5432` or `127.0.0.1:5432` mapping for `postgres`
+4. Verify API via reverse proxy:
+   - `curl -k https://localhost/v1/health`
+5. Optional local firewall tightening:
+   - macOS `System Settings` -> `Network` -> `Firewall` = On
+   - router: permit only your LAN subnet to this host for `443`/`80`
+
 ## 4. TLS and identity
 - If LAN-only, use:
   - Caddy with internal CA, or

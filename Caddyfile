@@ -8,5 +8,8 @@ http://{$SERVER_HOST:localhost} {
 
 {$SERVER_HOST:localhost} {
     tls internal
+    # LAN-only access for local-staging mode.
+    @not_lan not remote_ip private_ranges
+    respond @not_lan 403
     reverse_proxy api:8000
 }
