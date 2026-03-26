@@ -53,7 +53,7 @@ class PlanningTabsController:
         self.collection_plan_tree.column("collection_event_name", width=240, anchor="w", stretch=True)
         self.collection_plan_tree.bind("<<TreeviewSelect>>", self._on_collection_plan_selected)
         self.collection_plan_tree.bind("<Double-1>", self._on_collection_plan_double_click)
-        attach_auto_hiding_scrollbars(self.collection_plan_tab, self.collection_plan_tree, padx=10, pady=(10, 6))
+        attach_auto_hiding_scrollbars(self.collection_plan_tab, self.collection_plan_tree, padx=10, pady=10)
         buttons = ttk.Frame(self.collection_plan_tab)
         buttons.pack(fill="x", padx=10, pady=8)
         self.collection_plan_new_button = ttk.Button(

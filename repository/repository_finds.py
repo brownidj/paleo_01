@@ -258,7 +258,7 @@ class RepositoryFindsMixin:
                 *self._FIND_MUTABLE_TEXT_FIELDS,
                 "collection_year_latest_estimate",
             )
-            values = [location_id, collection_event_id]
+            values: list[object] = [location_id, collection_event_id]
             values.extend(text_values[field] for field in self._FIND_MUTABLE_TEXT_FIELDS)
             values.append(year_value)
             col_sql = ", ".join([f'"{c}"' for c in columns])
@@ -322,7 +322,7 @@ class RepositoryFindsMixin:
                 "collection_year_latest_estimate",
             )
             set_sql = ", ".join([f'"{col}" = ?' for col in set_columns])
-            values = [location_id, collection_event_id]
+            values: list[object] = [location_id, collection_event_id]
             values.extend(text_values[field] for field in self._FIND_MUTABLE_TEXT_FIELDS)
             values.append(year_value)
             values.append(find_id)
@@ -346,7 +346,7 @@ class RepositoryFindsMixin:
         if ce_raw in (None, ""):
             raise ValueError("collection_event_id is required.")
         try:
-            collection_event_id = int(ce_raw)
+            collection_event_id = int(str(ce_raw).strip())
         except (TypeError, ValueError) as exc:
             raise ValueError("collection_event_id must be an integer.") from exc
 

@@ -14,7 +14,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from repository import DEFAULT_DB_PATH
-from scripts.db_bootstrap import (
+from scripts.db.bootstrap import (
     create_locations_table,
     create_trips_table,
     get_trip_fields,
@@ -68,7 +68,10 @@ def _insert_trip(
         f"INSERT INTO Trips ({col_sql}) VALUES ({placeholders})",
         values,
     )
-    trip_id = int(cur.lastrowid)
+    lastrowid = cur.lastrowid
+    if lastrowid is None:
+        raise RuntimeError("Insert did not return a row id.")
+    trip_id = int(lastrowid)
     for location_id in location_ids:
         conn.execute(
             "INSERT OR IGNORE INTO TripLocations (id, location_id) VALUES (?, ?)",

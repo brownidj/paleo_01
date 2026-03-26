@@ -3,7 +3,11 @@ import argparse
 import json
 from pathlib import Path
 
-from pbdb_publication_enrichment_lib import enrich_references, load_occurrence_rows, write_enriched_rows
+from scripts.data_ops.pbdb_publication_enrichment_lib import (
+    enrich_references,
+    load_occurrence_rows,
+    write_enriched_rows,
+)
 
 
 def main() -> None:

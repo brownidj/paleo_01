@@ -1,6 +1,6 @@
 import sqlite3
 
-from scripts.db_migration_helpers import (
+from scripts.db.migration_helpers import (
     _migrate_legacy_collection_fields,
     _migrate_legacy_county_to_lga,
     _migrate_legacy_region_to_location,

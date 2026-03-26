@@ -86,12 +86,12 @@ Set it up as a small, stable Linux-style service host on macOS with Docker, reve
   - `config/env/local.env.example`
   - `config/env/prod.env.example`
   - `backend/` (FastAPI app with `/v1/health`)
-  - `scripts/bootstrap_local_backend.sh`
-  - `scripts/bootstrap_internet_backend.sh`
+  - `scripts/backend/bootstrap_local_backend.sh`
+  - `scripts/backend/bootstrap_internet_backend.sh`
 - First run:
   - `cp config/env/local.env.example config/env/local.env` (if not already present)
   - Update `config/env/local.env` secrets and, if needed, set `SERVER_HOST`
-  - `scripts/bootstrap_local_backend.sh`
+  - `scripts/backend/bootstrap_local_backend.sh`
 - Verify:
   - `docker compose --env-file config/env/local.env -f deploy/docker/docker-compose.yml ps`
   - `curl -k https://localhost/v1/health`
@@ -102,6 +102,10 @@ Set it up as a small, stable Linux-style service host on macOS with Docker, reve
 - Use long random secrets in env files under `config/env/` (JWT secret, DB password).
 - Create separate staging and prod env files even on one machine.
 - Restrict inbound access to your LAN subnet via macOS firewall/router rules.
+- Secret guardrails in repo:
+  - `python3 scripts/checks/check_no_tracked_secrets.py`
+  - included in `bash scripts/checks/ci_checks.sh`
+  - optional local commit gate via `pre-commit install`
 
 ### Section 3 implementation status in this repo
 - Compose stack now lives under `deploy/docker/`, and Caddy config under `deploy/caddy/`.
@@ -109,7 +113,7 @@ Set it up as a small, stable Linux-style service host on macOS with Docker, reve
   - `config/env/local.env.example` (local)
   - `config/env/staging.env.example`
   - `config/env/prod.env.example`
-- `scripts/bootstrap_local_backend.sh` supports `ENV_FILE=...` and warns on placeholder secrets.
+- `scripts/backend/bootstrap_local_backend.sh` supports `ENV_FILE=...` and warns on placeholder secrets.
 
 ### Section 3 runbook (this machine)
 1. Create local env file:
@@ -117,7 +121,7 @@ Set it up as a small, stable Linux-style service host on macOS with Docker, reve
    - set strong `POSTGRES_PASSWORD`, `JWT_SECRET`, `JWT_REFRESH_SECRET`
    - set `SERVER_HOST=paleo-server.local`
 2. Start stack with explicit env:
-   - `ENV_FILE=config/env/staging.env scripts/bootstrap_local_backend.sh`
+   - `ENV_FILE=config/env/staging.env scripts/backend/bootstrap_local_backend.sh`
 3. Verify DB is not host-exposed:
    - `docker compose --env-file config/env/staging.env -f deploy/docker/docker-compose.yml ps`
    - confirm no `0.0.0.0:5432` or `127.0.0.1:5432` mapping for `postgres`
@@ -151,7 +155,7 @@ Set it up as a small, stable Linux-style service host on macOS with Docker, reve
      - `ACME_EMAIL` to your ops email
      - strong `POSTGRES_PASSWORD`, `JWT_SECRET`, `JWT_REFRESH_SECRET`
 3. Start internet profile
-   - `ENV_FILE=config/env/prod.env scripts/bootstrap_internet_backend.sh`
+   - `ENV_FILE=config/env/prod.env scripts/backend/bootstrap_internet_backend.sh`
 4. Verify from outside LAN (mobile data or external host)
    - `curl https://<your-public-host>/v1/health`
    - expected: `{"status":"ok","database":"up","env":"prod"}`
@@ -188,6 +192,21 @@ Set it up as a small, stable Linux-style service host on macOS with Docker, reve
   - role enforcement (mobile cannot create trips)
   - find create/update
   - backup job success
+
+## 9. Secret incident response
+1. Rotate exposed credentials immediately:
+   - `POSTGRES_PASSWORD`
+   - `JWT_SECRET`
+   - `JWT_REFRESH_SECRET`
+   - `BOOTSTRAP_ADMIN_PASSWORD` (and reset affected user passwords)
+2. Update local env/secrets files (`config/env/*.env`, `secrets/postgres_password.txt`) and restart the stack.
+3. Ensure leaked local secret files are not tracked:
+   - `git ls-files config/env/*.env secrets/*.txt`
+4. Run secret policy check:
+   - `python3 scripts/checks/check_no_tracked_secrets.py`
+5. Install local commit hook once:
+   - `python3 -m pip install pre-commit`
+   - `pre-commit install`
   - restore dry-run.
 
 If you want, I can generate a concrete compose/env/bootstrap bundle tailored to this repo next.

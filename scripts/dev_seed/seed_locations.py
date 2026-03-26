@@ -14,7 +14,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from repository import DEFAULT_DB_PATH
-from scripts.db_bootstrap import create_locations_table, resolve_db_path
+from scripts.db.bootstrap import create_locations_table, resolve_db_path
 
 
 AU_STATES = ["NSW", "QLD", "VIC", "TAS", "SA", "WA", "NT", "ACT"]
@@ -24,7 +24,7 @@ CARDINAL_POINTS = ["North", "South", "East", "West"]
 def _build_location_record(fake: Faker) -> dict[str, str]:
     city = fake.city()
     if fake.pybool(truth_probability=40):
-        direction = fake.random_element(CARDINAL_POINTS)
+        direction: str = str(fake.random_element(CARDINAL_POINTS))
         location_name = f"{city} {direction} Site"
     else:
         location_name = f"{city} Site"

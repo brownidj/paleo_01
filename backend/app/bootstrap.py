@@ -6,8 +6,22 @@ from app.config import get_settings
 from app.passwords import hash_password
 
 
+def _is_placeholder_secret(value: str) -> bool:
+    lowered = value.strip().lower()
+    return (
+        not lowered
+        or "replace-with" in lowered
+        or lowered == "change-me"
+        or lowered == "qwer1234"
+    )
+
+
 def bootstrap_postgres_auth() -> None:
     settings = get_settings()
+    if _is_placeholder_secret(settings.bootstrap_admin_password):
+        raise RuntimeError(
+            "BOOTSTRAP_ADMIN_PASSWORD must be set to a non-placeholder value before bootstrapping auth."
+        )
     with connect(settings.database_url) as conn:
         with conn.cursor() as cur:
             cur.execute(

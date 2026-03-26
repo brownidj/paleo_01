@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+python3 -m mypy --config-file config/mypy.ini --explicit-package-bases \
+  app/api_auth.py \
+  app/logger.py \
+  backend/app/auth.py \
+  backend/app/auth_models.py \
+  backend/app/bootstrap.py \
+  backend/app/config.py \
+  backend/app/db.py \
+  backend/app/main.py \
+  backend/app/passwords.py \
+  repository/domain_types.py \
+  repository/postgres_trip_repository.py \
+  repository/postgres_trip_repository_domain.py \
+  repository/trip_repository.py \
+  repository/trip_crud.py \
+  repository/location_geology.py \
+  repository/finds_collection_events.py \
+  repository/migrations_schema.py \
+  repository/repository_base.py \
+  repository/repository_trip_user.py \
+  repository/repository_location.py \
+  repository/repository_finds.py \
+  repository/repository_geology_schema.py \
+  repository/repository_geology_data.py \
+  repository/repository_migrations.py \
+  scripts/accounts/seed_user_accounts_from_team_members.py \
+  scripts/checks/check_import_boundaries.py \
+  scripts/checks/check_no_tracked_secrets.py \
+  scripts/checks/check_trip_event_integrity.py \
+  scripts/data_ops/backfill_collection_year_latest_estimate.py \
+  scripts/data_ops/backfill_qld_structural_framework.py \
+  scripts/data_ops/consolidate_trips_by_nearby_locations.py \
+  scripts/data_ops/enrich_pbdb_publications.py \
+  scripts/data_ops/generate_trips_from_collection_events.py \
+  scripts/data_ops/import_pbdb_finds.py \
+  scripts/data_ops/infer_collection_events_from_finds.py \
+  scripts/data_ops/pbdb_publication_enrichment_lib.py \
+  scripts/db/bootstrap.py \
+  scripts/db/init_db.py \
+  scripts/db/migrate_sqlite_to_postgres.py \
+  scripts/db/migrate_sqlite_to_postgres_schema_helpers.py \
+  scripts/db/migrate_sqlite_to_postgres_sync_chunks.py \
+  scripts/db/migration_helpers.py \
+  scripts/db/schema_helpers.py \
+  scripts/db/sync_postgres_to_sqlite.py \
+  scripts/dev_seed/seed_locations.py \
+  scripts/dev_seed/seed_trips.py \
+  scripts/dev_seed/seed_users.py \
+  ui/planning_phase_window.py \
+  ui/planning_tabs_controller.py \
+  ui/trip_navigation_coordinator.py \
+  ui/trip_dialog_controller.py

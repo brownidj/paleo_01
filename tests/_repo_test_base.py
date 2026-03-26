@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from contextlib import closing
 
-from scripts.db_bootstrap import create_locations_table, create_team_members_table
+from scripts.db.bootstrap import create_locations_table, create_team_members_table
 from repository.trip_repository import TripRepository
 
 

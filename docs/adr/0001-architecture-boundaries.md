@@ -13,17 +13,17 @@ We enforce lightweight import boundaries:
 1. UI layer (`ui/**`) must not import migration/bootstrap internals or repository implementation modules directly.
 UI should use the façade (`repository.trip_repository`) and UI modules only.
 2. Repository layer (`repository/**`) must not import UI modules or Tkinter.
-3. Boundaries are defined in `scripts/import_boundary_rules.json` and enforced by `scripts/check_import_boundaries.py`.
-4. Boundary checks are part of `scripts/ci_checks.sh`.
+3. Boundaries are defined in `scripts/checks/import_boundary_rules.json` and enforced by `scripts/checks/check_import_boundaries.py`.
+4. Boundary checks are part of `scripts/checks/ci_checks.sh`.
 
 ## Rule Evolution Protocol
 When introducing a new module or layer:
 
 1. Decide which layer it belongs to and which imports are allowed.
-2. Update `scripts/import_boundary_rules.json`:
+2. Update `scripts/checks/import_boundary_rules.json`:
 - Add file/path match patterns to an existing rule, or add a new rule block for the new layer.
 - Add/adjust forbidden import prefixes and message text.
-3. Re-run `python3 scripts/check_import_boundaries.py`.
+3. Re-run `python3 scripts/checks/check_import_boundaries.py`.
 4. Update this ADR if the architectural boundary model itself changes (not just file lists).
 
 ## Consequences

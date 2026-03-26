@@ -2,11 +2,10 @@ import tkinter as tk
 import tkinter.font as tkfont
 from tkinter import ttk
 
-from ui.location_picker_dialog import LocationPickerDialog
-from ui.team_editor_dialog import TeamEditorDialog
+from ui.trip_form_dialog_pickers import TripFormDialogPickersMixin
 
 
-class TripFormDialog(tk.Toplevel):
+class TripFormDialog(TripFormDialogPickersMixin, tk.Toplevel):
     @staticmethod
     def _count_label(count: int, singular: str, plural: str) -> str:
         return f"{count} {singular if count == 1 else plural}"
@@ -177,52 +176,6 @@ class TripFormDialog(tk.Toplevel):
         if self.modal:
             self.grab_set()
         self.protocol("WM_DELETE_WINDOW", self._close)
-
-    def _edit_team(self) -> None:
-        if self._edit_var.get() != 1:
-            return
-        team_widget = self.inputs.get("team")
-        if not isinstance(team_widget, ttk.Entry):
-            return
-        trip_name_widget = self.inputs.get("trip_name")
-        trip_name = ""
-        if isinstance(trip_name_widget, ttk.Entry):
-            trip_name = trip_name_widget.get().strip()
-        current_value = team_widget.get().strip()
-        existing_names = [v.strip() for v in current_value.split(";") if v.strip()]
-
-        def save_team(selected_names: list[str]) -> None:
-            lines = [line.strip() for line in selected_names if line.strip()]
-            team_widget.configure(state="normal")
-            team_widget.delete(0, "end")
-            team_widget.insert(0, "; ".join(lines))
-            if "team" in self.readonly_fields:
-                team_widget.configure(state="readonly")
-
-        TeamEditorDialog(self, self.active_users, existing_names, trip_name, save_team)
-
-    def _edit_location(self) -> None:
-        if self._edit_var.get() != 1:
-            return
-        location_widget = self.inputs.get("location")
-        if not isinstance(location_widget, ttk.Entry):
-            return
-        trip_name_widget = self.inputs.get("trip_name")
-        trip_name = ""
-        if isinstance(trip_name_widget, ttk.Entry):
-            trip_name = trip_name_widget.get().strip()
-        current_value = location_widget.get().strip()
-        existing_names = [v.strip() for v in current_value.split(";") if v.strip()]
-
-        def save_locations(selected_names: list[str]) -> None:
-            lines = [line.strip() for line in selected_names if line.strip()]
-            location_widget.configure(state="normal")
-            location_widget.delete(0, "end")
-            location_widget.insert(0, "; ".join(lines))
-            if "location" in self.readonly_fields:
-                location_widget.configure(state="readonly")
-
-        LocationPickerDialog(self, self.location_names, existing_names, trip_name, save_locations)
 
     def _duplicate(self) -> None:
         if not callable(self.on_duplicate):

@@ -12,7 +12,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from repository import DEFAULT_DB_PATH
-from scripts.db_bootstrap import create_team_members_table, resolve_db_path
+from scripts.db.bootstrap import create_team_members_table, resolve_db_path
 
 
 def seed_users(db_path: Path, count: int) -> int:

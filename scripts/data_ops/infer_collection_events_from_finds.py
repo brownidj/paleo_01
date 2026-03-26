@@ -71,6 +71,13 @@ def _choose_best_year(unassigned: list[FindRow], window: int) -> tuple[int, list
     return best_year, coverage[best_year]
 
 
+def _require_lastrowid(cur: sqlite3.Cursor) -> int:
+    lastrowid = cur.lastrowid
+    if lastrowid is None:
+        raise RuntimeError("Insert did not return a row id.")
+    return int(lastrowid)
+
+
 def infer_collection_events(db_path: Path, window: int, include_empty_trips: bool) -> dict[str, int]:
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
@@ -136,7 +143,7 @@ def infer_collection_events(db_path: Path, window: int, include_empty_trips: boo
                     """,
                     (inferred_trip_id, location_id, location_name, collection_subset, event_year),
                 )
-                event_id = int(cur.lastrowid)
+                event_id = _require_lastrowid(cur)
                 event_count += 1
                 for row in covered:
                     find_to_event[row.find_id] = event_id

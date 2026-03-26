@@ -4,6 +4,7 @@ import tempfile
 import tkinter as tk
 import unittest
 from contextlib import closing
+from unittest import mock
 
 from repository.trip_repository import TripRepository
 from ui.planning_phase_window import PlanningPhaseWindow
@@ -58,6 +59,8 @@ class TestUiUserFlowIntegration(unittest.TestCase):
                 (self.location_id,),
             ).fetchall()
             events = {row["collection_subset"]: int(row["id"]) for row in event_rows}
+            self.ce_a = events["CE-1"]
+            self.ce_b = events["CE-2"]
             cur.execute("UPDATE CollectionEvents SET trip_id = ? WHERE id = ?", (self.trip_a, events["CE-1"]))
             cur.execute("UPDATE CollectionEvents SET trip_id = ? WHERE id = ?", (self.trip_b, events["CE-2"]))
             cur.execute("INSERT OR IGNORE INTO TripLocations (id, location_id) VALUES (?, ?)", (self.trip_a, self.location_id))
@@ -114,18 +117,83 @@ class TestUiUserFlowIntegration(unittest.TestCase):
         self.assertEqual(tuple(self.window.trips_tree.selection()), (str(self.trip_a),))
         self.assertEqual(int(dialog.winfo_viewable()), 1)
 
+    def test_full_journey_new_and_edit_find_via_trip_dialog_handoff(self):
+        try:
+            self.window = PlanningPhaseWindow(self.db_path)
+            self.window.withdraw()
+        except tk.TclError as exc:
+            self.skipTest(f"Tk unavailable in test environment: {exc}")
+
+        self.window.trips_tree.selection_set(str(self.trip_a))
+        self.window.edit_selected()
+        dialog = self.window.dialog_controller.open_edit_dialogs[self.trip_a]
+
         dialog._open_finds()
         self.assertEqual(self.window.tabs.select(), str(self.window.finds_tab))
         self.assertEqual(self.window.finds_tab.trip_filter_var.get(), 1)
-        self.assertEqual(len(self.window.finds_tab.tree.get_children()), 1)
+
+        class _FakeFindDialog:
+            def __init__(self, _parent, choices, on_save, initial_data=None, **_kwargs):
+                if initial_data is None:
+                    on_save(
+                        {
+                            "collection_event_id": self._trip_scoped_ce(choices),
+                            "source_occurrence_no": "A-NEW",
+                            "accepted_name": "Taxon New",
+                            "identified_name": "Taxon New",
+                        }
+                    )
+                else:
+                    on_save(
+                        {
+                            "collection_event_id": initial_data["collection_event_id"],
+                            "source_occurrence_no": "A-NEW-UPD",
+                            "accepted_name": "Taxon New Updated",
+                            "identified_name": "Taxon New Updated",
+                        }
+                    )
+
+            @staticmethod
+            def _trip_scoped_ce(choices):
+                return int(choices[0][0])
+
+        with mock.patch("ui.finds_tab.FindFormDialog", _FakeFindDialog):
+            self.window.finds_tab.new_find()
+            self.window.finds_tab.load_finds()
+            new_find_id = None
+            for iid in self.window.finds_tab.tree.get_children():
+                values = self.window.finds_tab.tree.item(iid, "values")
+                if len(values) >= 3 and values[2] == "A-NEW":
+                    new_find_id = int(iid)
+                    break
+            self.assertIsNotNone(new_find_id)
+            assert new_find_id is not None
+            self.window.finds_tab.tree.selection_set(str(new_find_id))
+            self.window.finds_tab.edit_find()
+
+        updated = self.repo.get_find(new_find_id)
+        self.assertIsNotNone(updated)
+        assert updated is not None
+        self.assertEqual(updated["source_occurrence_no"], "A-NEW-UPD")
+        self.assertEqual(updated["accepted_name"], "Taxon New Updated")
+
+        self.window.tabs.select(str(self.window.trips_tab))
+        self.window._on_tab_changed(None)
+        self.assertEqual(tuple(self.window.trips_tree.selection()), (str(self.trip_a),))
+        self.assertEqual(int(dialog.winfo_viewable()), 1)
+
+        dialog._open_finds()
+        self.assertEqual(self.window.tabs.select(), str(self.window.finds_tab))
+        self.assertEqual(self.window.finds_tab.trip_filter_var.get(), 1)
+        self.assertEqual(len(self.window.finds_tab.tree.get_children()), 2)
 
         self.window.finds_tab._on_trip_filter_click(None)
         self.assertEqual(self.window.finds_tab.trip_filter_var.get(), 0)
-        self.assertGreaterEqual(len(self.window.finds_tab.tree.get_children()), 2)
+        self.assertGreaterEqual(len(self.window.finds_tab.tree.get_children()), 3)
 
         self.window.finds_tab._on_trip_filter_click(None)
         self.assertEqual(self.window.finds_tab.trip_filter_var.get(), 1)
-        self.assertEqual(len(self.window.finds_tab.tree.get_children()), 1)
+        self.assertEqual(len(self.window.finds_tab.tree.get_children()), 2)
 
         self.window.tabs.select(str(self.window.trips_tab))
         self.window._on_tab_changed(None)

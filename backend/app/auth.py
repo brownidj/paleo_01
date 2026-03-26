@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any, Callable
 
@@ -9,8 +8,18 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from psycopg import connect
 from psycopg.rows import dict_row
-from pydantic import BaseModel, Field
 
+from app.auth_models import (
+    AdminResetPasswordRequest,
+    BasicMessageResponse,
+    ChangePasswordRequest,
+    DbAuthUser,
+    LoginRequest,
+    Principal,
+    RefreshRequest,
+    TokenPairResponse,
+    UserResponse,
+)
 from app.config import Settings, get_settings
 from app.passwords import hash_password, verify_password
 
@@ -19,64 +28,6 @@ TOKEN_TYPE_ACCESS = "access"
 TOKEN_TYPE_REFRESH = "refresh"
 
 bearer_scheme = HTTPBearer(auto_error=False)
-
-
-@dataclass(frozen=True)
-class Principal:
-    username: str
-    role: str
-    display_name: str
-    must_change_password: bool
-
-
-@dataclass(frozen=True)
-class DbAuthUser:
-    username: str
-    password_hash: str
-    role: str
-    display_name: str
-    team_active: bool
-    must_change_password: bool
-
-
-class LoginRequest(BaseModel):
-    username: str = Field(min_length=1)
-    password: str = Field(min_length=1)
-
-
-class RefreshRequest(BaseModel):
-    refresh_token: str = Field(min_length=1)
-
-
-class ChangePasswordRequest(BaseModel):
-    current_password: str = Field(min_length=1)
-    new_password: str = Field(min_length=8)
-
-
-class AdminResetPasswordRequest(BaseModel):
-    username: str = Field(min_length=1)
-    new_password: str = Field(min_length=8)
-    force_change: bool = True
-
-
-class TokenPairResponse(BaseModel):
-    access_token: str
-    refresh_token: str
-    token_type: str = "bearer"
-    expires_in_seconds: int
-    must_change_password: bool
-
-
-class UserResponse(BaseModel):
-    username: str
-    role: str
-    display_name: str
-    must_change_password: bool
-
-
-class BasicMessageResponse(BaseModel):
-    status: str
-    message: str
 
 
 def _now_utc() -> datetime:
