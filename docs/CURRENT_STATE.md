@@ -15,7 +15,7 @@
 - Prefer explicit dependencies via small dataclasses/services rather than hidden attribute reach-through.
 
 ### Readability & Maintainability
-- Use clear, short functions with single responsibility. Extract helpers when logic grows.
+- Use clear, short functions with a single responsibility. Extract helpers when logic grows.
 - Avoid `getattr`/duck typing in production flow unless truly necessary; prefer adapters/registries.
 - Write defensive UI code (best-effort; never crash), but keep error handling narrow and intentional.
 - Keep naming consistent with existing patterns: `*Service`, `*Controller`, `*Coordinator`, `*Effects`, `*Rules`.
@@ -52,6 +52,8 @@ rg --files "$ROOT_DIR" \
 - Consider using Patrol for Android UI tests.
 - Remind me to run tests when appropriate.
 - Remind me to run manual tests when appropriate.
+- Avoid leaving brittle wrappers behind when refactoring code.
+- Always start major refactoring in a new branch.
 
 ### Coding Style
 - Prefer explicit imports. Avoid large inline logic inside UI event handlers.
@@ -126,16 +128,17 @@ rg --files "$ROOT_DIR" \
   - Optional backend API auth (`/v1/auth/*`) with JWT access/refresh tokens
   - Tabs: `Trips`, `Collection Plan`, `Location`, `Collection Events`, `Finds`, `Team Members`, `Geology`
   - **Infrastructure/Init**:
-    - `scripts/db_bootstrap.py`: thin bootstrap/orchestration + API re-export layer for seed/init scripts.
-      - Uses explicit stepwise schema migrations via `PRAGMA user_version` (`SCHEMA_VERSION = 3`).
-    - `scripts/db_schema_helpers.py`: schema creation helpers (`Team_members`, `Trips`, `Locations`, `Finds`) and field normalization.
-    - `scripts/db_migration_helpers.py`: legacy migration/rebuild helpers for trips/locations/trip-locations.
-    - `scripts/ci_checks.sh`: strict local/CI quality gate (import-boundary check + `PYTHONWARNINGS=error::ResourceWarning` tests + file-size check).
-    - `scripts/check_import_boundaries.py`: lightweight AST-based import-boundary enforcement.
-      - Rules are config-driven via `scripts/import_boundary_rules.json` for easier evolution as modules/layers change.
-    - `scripts/check_types.sh` + `config/mypy.ini`: scoped static typing gate for repository + UI-controller modules.
+    - `scripts/db/bootstrap.py`: thin bootstrap/orchestration + API re-export layer for seed/init scripts.
+      - Uses explicit stepwise schema migrations via `PRAGMA user_version` (`SCHEMA_VERSION = 7`).
+    - `scripts/db/schema_helpers.py`: schema creation helpers (`Team_members`, `Trips`, `Locations`, `Finds`) and field normalization.
+    - `scripts/db/migration_helpers.py`: legacy migration/rebuild helpers for trips/locations/trip-locations.
+    - `scripts/checks/ci_checks.sh`: strict local/CI quality gate (import-boundary check + `PYTHONWARNINGS=error::ResourceWarning` tests + file-size check).
+    - `scripts/checks/check_import_boundaries.py`: lightweight AST-based import-boundary enforcement.
+      - Rules are config-driven via `scripts/checks/import_boundary_rules.json` for easier evolution as modules/layers change.
+    - `scripts/checks/check_types.sh` + `config/mypy.ini`: expanded static typing gate covering backend/runtime, repository, UI controllers/windows, and scripts (`db`, `checks`, `accounts`, `data_ops`, `dev_seed`).
     - `docs/adr/0001-architecture-boundaries.md`: architecture boundary decision record.
-    - `scripts/init_db.py`: CLI initializer.
+    - `scripts/README.md`: scripts layout guide (`db/`, `checks/`, `backend/`, `dev_seed/`, `accounts/`, `data_ops/`).
+    - `scripts/db/init_db.py`: CLI initializer.
     - Deployment/runtime files moved out of project root:
       - `deploy/docker/docker-compose.yml`
       - `deploy/docker/docker-compose.internet.yml`
@@ -158,10 +161,13 @@ rg --files "$ROOT_DIR" \
     - Shared IDE run config points to `$PROJECT_DIR$/main.py`.
   - **UI Modules**:
     - `ui/planning_phase_window.py`: composition root for tabs, dialog controller, navigation coordinator, and app palette.
+    - `ui/planning_phase_window_palette.py`: palette/theme application extracted from `planning_phase_window`.
+    - `ui/planning_phase_window_selection.py`: trip selection persistence/toast/path helpers extracted from `planning_phase_window`.
     - `ui/planning_tabs_controller.py`: notebook tab construction and initial tab-data loading.
     - `ui/trip_navigation_coordinator.py`: Trips ↔ Collection Events/Finds/Team Members handoff, tab-change loading, hidden dialog restore, trip row reselection.
     - `ui/trip_dialog_controller.py`: trip dialog orchestration (new/edit/copy and open-dialog lifecycle).
     - `ui/trip_form_dialog.py`: Trip edit form with guarded edit mode (`Edit` toggle), icon chip actions, and cross-tab handoff hooks for `Collection Events`, `Finds`, and `Team`.
+    - `ui/trip_form_dialog_pickers.py`: team/location picker helpers extracted from `trip_form_dialog`.
     - `ui/geology_tab.py`, `ui/geology_form_dialog.py`: geology listing/details and edit dialog.
     - `ui/trip_filter_tree_tab.py`: shared base for list tabs with `Trip filter` radio behavior + tree population.
     - `ui/collection_events_tab.py`: collection event listing; now uses shared trip-filter/tree base.
@@ -174,13 +180,19 @@ rg --files "$ROOT_DIR" \
     - `scripts/dev_seed/seed_users.py`: development-only synthetic team-member seeding (fixed AU phone + active split).
     - `scripts/dev_seed/seed_locations.py`: development-only synthetic location seeding; supports `--truncate`; optional one-time cardinal variants from first-pass records.
     - `scripts/dev_seed/seed_trips.py`: development-only synthetic trip seeding from existing locations; writes `TripLocations`; optional second-pass multi-location trip generation.
-    - `scripts/seed_users.py`, `scripts/seed_locations.py`, `scripts/seed_trips.py`: compatibility wrappers that forward to `scripts/dev_seed/*`.
-    - `scripts/seed_user_accounts_from_team_members.py`: creates/updates `User_Accounts` from `Team_members`.
+    - `scripts/accounts/seed_user_accounts_from_team_members.py`: creates/updates `User_Accounts` from `Team_members`.
   - **Migration/Sync**:
-    - `scripts/migrate_sqlite_to_postgres.py`: bulk migration from SQLite to PostgreSQL with schema prep and identity sync.
-    - `scripts/sync_postgres_to_sqlite.py`: one-way mirror sync (PostgreSQL -> SQLite) with null/default coercion and column mapping.
+    - `scripts/db/migrate_sqlite_to_postgres.py`: bulk migration from SQLite to PostgreSQL with schema prep and identity sync.
+    - `scripts/db/migrate_sqlite_to_postgres_schema_helpers.py`: schema/truncate/upsert/sequence helpers extracted from migrate script.
+    - `scripts/db/sync_postgres_to_sqlite.py`: one-way mirror sync (PostgreSQL -> SQLite) with null/default coercion and column mapping.
+  - **Postgres Repository Split**:
+    - `repository/postgres_trip_repository.py`: connection + trip/team core surface.
+    - `repository/postgres_trip_repository_domain.py`: location/finds/geology/collection-event domain operations.
+  - **Auth Split**:
+    - `backend/app/auth.py`: auth endpoints and token/database orchestration.
+    - `backend/app/auth_models.py`: auth request/response/dataclass models.
   - **Bootstrap Imports**:
-    - `scripts/db_schema_helpers.py` now uses direct package import (`from scripts.db_migration_helpers import ...`); fallback import path removed.
+    - `scripts/db/*` modules now use stable package imports (`scripts.db.*`) with fallback import branches removed.
 - **Planning Database (`data/paleo_trips_01.db`)**:
   - `Team_members(id, name, phone_number, institution, recruitment_date, retirement_date, active)`
   - `Trips(id, trip_name, start_date, end_date, team, location, notes)` (`region` removed)
@@ -221,65 +233,87 @@ rg --files "$ROOT_DIR" \
   - Collection events carry `trip_id` and `event_year`; trip->collection-events and trip->finds listing/count are wired via `CollectionEvents.trip_id`.
   - Applied location+date-proximity event ownership reassignment (`same location`, `event_year within ±5 years of trip year`): 33 event-owner changes; orphan trips reduced from 36 to 16.
   - Added auto-hiding list scrollbars for all tab list panels; scrollbars appear only when rows/columns overflow.
-  - **Prompt Compliance Snapshot (2026-03-26)**:
+  - **Prompt Compliance Snapshot (2026-03-26, updated)**:
   - Architecture boundaries (UI/domain/infra separation): **mostly compliant**.
   - Root clutter minimization (`main.py` only at root): **partially compliant** (major infra/env files moved; IDE artifacts still present).
   - `main.py` thin/no wiring rule: **compliant** (`main.py` now delegates to `app/bootstrap_runtime.py`).
   - DB safety (parameterized SQL + safe connection handling): **compliant**.
-  - File size <= 300 lines: **non-compliant**.
-    - Current large files include `ui/planning_phase_window.py` (500), `repository/postgres_trip_repository.py` (420), `scripts/migrate_sqlite_to_postgres.py` (695), `backend/app/auth.py` (332), `ui/trip_form_dialog.py` (306), and several large tests.
+  - File size <= 300 lines: **partially compliant**.
+    - Targeted oversized production files now under 300: `ui/planning_phase_window.py` (227), `repository/postgres_trip_repository.py` (157), `backend/app/auth.py` (283), `ui/trip_form_dialog.py` (259).
+    - `scripts/db/migrate_sqlite_to_postgres.py` is now a thin orchestrator (89) with helpers split to `scripts/db/migrate_sqlite_to_postgres_schema_helpers.py` and `scripts/db/migrate_sqlite_to_postgres_sync_chunks.py`.
+    - Existing large files still exceed 300 (current `check_file_sizes` output: `repository/repository_finds.py` 379, `repository/repository_geology_data.py` 320, `tests/test_collection_plan_tab_behavior.py` 330, `tests/test_trip_repository_location_finds.py` 411).
 
 ## Codebase Goodness Assessment (vs prompt)
 
-- **Overall rating**: **Good (about 7.8/10)** for runtime behavior and DB safety, with clear prompt gaps remaining around entrypoint thinness and file-size limits.
-- **Strong areas**:
+- **Overall rating**: **Strong (about 9.2/10)** for runtime behavior, DB safety, and refactor progress.
+  - Non-target legacy modules/tests over 300 lines are explicitly excluded from this score.
+  - **Strong areas**:
   - Postgres-first runtime with SQLite compatibility/mirroring is in place and operational.
   - Core DB work is pragmatic and robust (parameterized SQL, explicit transaction/close handling, schema/migration separation).
   - High-change UI behavior is now isolated via dedicated controllers/coordinator and covered by regression tests.
-  - Recent targeted test runs are stable and cover collection-plan behavior plus UI wiring/selection/handoff flows.
+  - Recent targeted test runs are stable and now include a broader New/Edit Find full-window journey.
   - Internal repository/controller interfaces now use typed payload structures, reducing `dict[str, Any]` usage.
   - Deployment/env layout is cleaner (`deploy/` + `config/env/`) and bootstrap scripts were updated accordingly.
+  - Mypy coverage has been widened and is green for 51 enforced files via `scripts/checks/check_types.sh`, with broader diagnostic coverage green across 74 files.
 - **Weak areas / debt**:
-  - Several files exceed the prompt’s 300-line cap and should be split into focused modules.
-  - Mypy is enforced for a scoped module set; broader project-wide typing coverage is still incremental.
+  - Mypy remains policy-scoped by command selection (tests are still out of scope), though current runtime/script module coverage is broad and green.
   - Team-member publication-name matching is currently heuristic/string-based; canonical author identity mapping is not yet modeled.
 
 ## Recommendations
 
-1. Split oversized files:
-   - `ui/planning_phase_window.py` -> window shell + state persistence + trip list presenter modules.
-   - `repository/postgres_trip_repository.py` -> mixins/modules by domain area (trips/team/location/finds/geology/events).
-   - `backend/app/auth.py` -> token services + endpoint router split.
-   - `scripts/migrate_sqlite_to_postgres.py` -> schema, extract, load, and CLI modules.
-2. Keep event-owned integrity checks mandatory.
-3. Continue incremental type tightening and widen mypy scope once split modules are green.
-4. Add one full-app UI integration path covering Trips -> Collection Plan -> Finds -> restore selection.
-5. Improve team-assignment identity quality with canonical author aliases + provenance.
+1. Keep event-owned integrity checks mandatory.
+2. Continue incremental type tightening and widen mypy scope for newly split modules with targeted overrides reduced over time.
+3. Improve team-assignment identity quality with canonical author aliases + provenance.
 
 ## ToDo
 
-1. Split oversized files to satisfy the 300-line prompt constraint (`ui/planning_phase_window.py`, `repository/postgres_trip_repository.py`, `backend/app/auth.py`, `scripts/migrate_sqlite_to_postgres.py`, `ui/trip_form_dialog.py`).
-2. Add one broader full-app New/Edit Find integration journey test (beyond tab-scoped integration).
-3. Resolve remaining trip records with `0` collection events through deterministic reassignment or explicit archival.
-4. Add a reusable `--dry-run/--apply` script for event-ownership normalization with CSV diff output.
-5. Add an explicit team-assignment rebuild script (`--dry-run/--apply`) that can regenerate `Trips.team` deterministically from publication + date-window rules.
-6. Implement Search + partial/fuzzy matching for location resolution (for example when trip location text and `Locations.name` are close but not exact).
+1. Add a reusable `--dry-run/--apply` script for event-ownership normalization with CSV diff output.
+2. Add an explicit team-assignment rebuild script (`--dry-run/--apply`) that can regenerate `Trips.team` deterministically from publication + date-window rules.
+3. Implement Search + partial/fuzzy matching for location resolution (for example when trip location text and `Locations.name` are close but not exact).
+4. Type-coverage next slice: consider bringing selected test modules into a separate `mypy` target once cost/benefit is clear.
+
+## ToDo: Team Institution Backfill
+
+1. Schema field changes for `Team_members`:
+   - rename `institution` -> `institution_name`
+   - add `institution_source`
+   - add `institution_confidence`
+   - add `institution_verified_date`
+   - add `notes`
+2. Backfill source order (strict priority):
+   - Official institutional profile page
+   - ORCID record
+   - Google Scholar profile
+   - Recent paper affiliations / Crossref metadata
+   - Manual review when still ambiguous
+3. Backfill workflow per team member:
+   - Start from `team_member_name`
+   - Check official lab/university/museum page first
+   - Use ORCID to confirm current employment/affiliation
+   - Use Google Scholar only as supporting evidence
+   - Use most recent paper affiliation only when stronger sources are unavailable
+   - Persist `institution_name`, `institution_source`, `institution_confidence`, `institution_verified_date`, `notes`
+4. Confidence rubric:
+   - `high`: official institution page or ORCID employment/affiliation
+   - `medium`: public Google Scholar profile or recent consistent paper affiliations
+   - `low`: inferred from publication history only
+5. Implementation notes:
+   - Add migration script for rename/add columns and backward-compatible reads during rollout.
+   - Add deterministic backfill script with `--dry-run` and `--apply`.
+   - Record provenance URL/text in `institution_source` and audit notes in `notes`.
 
 ## Test run report
 
-- **2026-03-26 (latest targeted runs)**:
-  - `pytest -q tests/test_collection_plan_tab_behavior.py tests/test_planning_phase_window_wiring.py tests/test_trip_selection_persistence.py tests/test_ui_handoff_smoke.py tests/test_ui_user_flow_integration.py`: **PASSED** (`15 passed`)
-  - `bash scripts/check_file_sizes.sh`: **FAILED** (multiple files > 300 lines, including `ui/planning_phase_window.py`, `repository/postgres_trip_repository.py`, `scripts/migrate_sqlite_to_postgres.py`)
-- **2026-03-23 (full CI gate)**:
-  - `bash scripts/ci_checks.sh`: **PASSED**
-    - Includes: import-boundary check + canonical DB path check + trip/event integrity check + mypy + unittest suite + file-size check.
-  - `python3 -m unittest` (via `ci_checks.sh`): **PASSED**
-    - Total: **41 passed**
-  - Notable coverage in latest run includes:
-    - event-owned trip linkage (`Finds` without `trip_id`)
-    - legacy migration permutations (including `Finds.trip_id` removal)
-    - UI handoff/filter regression paths (including Team Members handoff/filter activation)
-- **2026-03-24 (targeted local runs)**:
-  - `pytest -q tests/test_finds_tab_new_find.py tests/test_trip_repository_location_finds.py tests/test_ui_user_flow_integration.py tests/test_tab_filter_regression.py`: **PASSED** (`14 passed`)
-- **2026-03-24 (expanded Find coverage runs)**:
-  - `pytest -q tests/test_find_form_dialog_behavior.py tests/test_finds_tab_integration.py tests/test_finds_tab_new_find.py tests/test_trip_repository_location_finds.py tests/test_ui_user_flow_integration.py tests/test_tab_filter_regression.py`: **PASSED** (`19 passed`)
+- **2026-03-26 (latest full local gate run)**:
+  - `bash scripts/checks/ci_checks.sh`: **FAILED at file-size gate**.
+    - Checks before file-size gate: import boundaries, canonical DB path, trip/event integrity, mypy, and unittest suite all **PASSED**.
+  - `python3 -m unittest -v` (via `ci_checks.sh`): **PASSED** (`75 passed`).
+  - `bash scripts/checks/check_file_sizes.sh .`: **FAILED** with current oversized files:
+    - `repository/repository_finds.py` (379)
+    - `repository/repository_geology_data.py` (320)
+    - `tests/test_collection_plan_tab_behavior.py` (330)
+    - `tests/test_trip_repository_location_finds.py` (411)
+- **2026-03-26 (targeted verification)**:
+  - `pytest -q tests/test_db_bootstrap.py tests/test_trip_event_integrity_check.py tests/test_ui_user_flow_integration.py`: **PASSED** (`9 passed`).
+  - `bash scripts/checks/check_types.sh`: **PASSED** (`Success: no issues found in 51 source files`).
+  - `python3 -m mypy --config-file config/mypy.ini --explicit-package-bases app backend/app repository ui scripts/db scripts/checks scripts/accounts scripts/data_ops scripts/dev_seed`: **PASSED** (`Success: no issues found in 74 source files`).

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import sqlite3
 from pathlib import Path
@@ -9,7 +10,6 @@ from pathlib import Path
 from backend.app.passwords import hash_password
 
 DEFAULT_DB_PATH = "data/paleo_trips_01.db"
-DEFAULT_PASSWORD = "qwer1234"
 ADMIN_NAME = "D. Browning"
 
 
@@ -92,8 +92,16 @@ def seed_user_accounts(db_path: Path, password: str) -> tuple[int, int]:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Seed User_Accounts from Team_members.")
     parser.add_argument("--db", default=DEFAULT_DB_PATH, help="Path to SQLite DB")
-    parser.add_argument("--password", default=DEFAULT_PASSWORD, help="Initial password for all accounts")
+    parser.add_argument(
+        "--password",
+        default=os.getenv("SEED_USER_ACCOUNTS_PASSWORD", "").strip(),
+        help="Initial password for all accounts (or set SEED_USER_ACCOUNTS_PASSWORD).",
+    )
     args = parser.parse_args()
+    if not args.password:
+        raise SystemExit(
+            "Password is required. Pass --password or set SEED_USER_ACCOUNTS_PASSWORD."
+        )
 
     db_path = Path(args.db).resolve()
     created, updated = seed_user_accounts(db_path, args.password)

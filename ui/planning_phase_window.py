@@ -1,50 +1,21 @@
 import sqlite3
 import tkinter as tk
-import tkinter.font as tkfont
-import json
 from collections.abc import Mapping
-from pathlib import Path
 from tkinter import messagebox, ttk
+from typing import Any, Literal
 
 from app.api_auth import ApiAuthClient
 from repository import DEFAULT_DB_PATH
 from repository.trip_repository import TripRepository
 from ui.auto_hide_scrollbars import attach_auto_hiding_scrollbars
 from ui.planning_tabs_controller import PlanningTabsController
+from ui.planning_phase_window_palette import PlanningPhaseWindowPaletteMixin
+from ui.planning_phase_window_selection import PlanningPhaseWindowSelectionMixin
 from ui.trip_dialog_controller import TripDialogController
 from ui.trip_navigation_coordinator import TripNavigationCoordinator
 
 
-class PlanningPhaseWindow(tk.Tk):
-    PALETTE = {
-        "earth": {
-            "dusty_ochre": "#D9B37A",
-            "clay_blush": "#D9A8A1",
-            "soft_ironstone": "#C98F7A",
-        },
-        "vegetation": {
-            "eucalypt_sage": "#9DB8A7",
-            "spinifex_mint": "#C7D8B6",
-            "pale_wattle_green": "#AFC8A2",
-        },
-        "water_sky": {
-            "creek_blue": "#A9C7CF",
-        },
-        "fossil_bone": {
-            "fossil_sand": "#F5EEDF",
-            "bone_white": "#FBF8F2",
-            "chalk_beige": "#E9DFCF",
-            "weathered_stone": "#C8BBAA",
-        },
-        "text": {
-            "deep_gumleaf": "#4A5A52",
-            "dust_bark": "#7A746B",
-        },
-        "status": {
-            "muted_rust": "#B97A6A",
-            "pale_wattle_green": "#AFC8A2",
-        },
-    }
+class PlanningPhaseWindow(PlanningPhaseWindowSelectionMixin, PlanningPhaseWindowPaletteMixin, tk.Tk):
 
     def __init__(
         self,
@@ -59,12 +30,15 @@ class PlanningPhaseWindow(tk.Tk):
         self.protocol("WM_DELETE_WINDOW", self._on_close)
         self._db_path = self._resolve_db_path(db_path)
         self._state_path = self._db_path.with_suffix(self._db_path.suffix + ".ui_state.json")
+        self._last_selected_trip_id: int | None
+        self._last_selected_trip_name: str | None
         self._last_selected_trip_id, self._last_selected_trip_name = self._load_last_selected_trip_state()
         self._suspend_trip_selection_persist = True
         self._trip_toast_shown_count = 0
         self._trip_toast_hide_after_id: str | None = None
         self._trip_toast_last_iid: str | None = None
         self.auth_client = auth_client
+        self.repo: Any
 
         backend = db_backend.strip().lower()
         if backend == "postgres":
@@ -144,7 +118,7 @@ class PlanningPhaseWindow(tk.Tk):
         )
         for field in self.list_fields:
             self.trips_tree.heading(field, text=heading_labels.get(field, field))
-            anchor = "center" if field in {"collection_events_count", "finds_count"} else "w"
+            anchor: Literal["center", "w"] = "center" if field in {"collection_events_count", "finds_count"} else "w"
             width = 160
             stretch = field in {"trip_name", "team", "location"}
             if field == "start_date":
@@ -251,250 +225,3 @@ class PlanningPhaseWindow(tk.Tk):
         if not team_value:
             return []
         return [name.strip() for name in team_value.split(";") if name.strip()]
-
-    def _get_selected_trip_id(self) -> int | None:
-        selected = self.trips_tree.selection()
-        if selected:
-            try:
-                return int(selected[0])
-            except (TypeError, ValueError):
-                return None
-        return self._last_selected_trip_id
-
-    def _restore_trip_selection(self) -> None:
-        children = tuple(self.trips_tree.get_children())
-        if not children:
-            self._last_selected_trip_id = None
-            self._last_selected_trip_name = None
-            self._save_last_selected_trip_state(None, None)
-            return
-        target_iid = None
-        if self._last_selected_trip_id is not None:
-            candidate = str(self._last_selected_trip_id)
-            if candidate in children:
-                target_iid = candidate
-        if target_iid is None and self._last_selected_trip_name:
-            for iid in children:
-                values = self.trips_tree.item(iid, "values")
-                trip_name = str(values[0]) if values else ""
-                if trip_name == self._last_selected_trip_name:
-                    target_iid = str(iid)
-                    break
-        if target_iid is None:
-            target_iid = children[0]
-        self.trips_tree.selection_set(target_iid)
-        self.trips_tree.focus(target_iid)
-        self.trips_tree.see(target_iid)
-        self._maybe_show_trip_edit_toast()
-        self._persist_trip_selection_from_iid(target_iid, force=True)
-        self._suspend_trip_selection_persist = False
-
-    def _on_trip_selected(self, _event) -> None:
-        if self._suspend_trip_selection_persist:
-            return
-        selected = self.trips_tree.selection()
-        if not selected:
-            return
-        self._maybe_show_trip_edit_toast()
-        self._persist_trip_selection_from_iid(str(selected[0]))
-
-    def _persist_trip_selection_from_iid(self, iid: str, force: bool = False) -> None:
-        if self._suspend_trip_selection_persist and not force:
-            return
-        try:
-            trip_id = int(iid)
-        except (TypeError, ValueError):
-            return
-        values = self.trips_tree.item(iid, "values")
-        trip_name = str(values[0]) if values else None
-        self._last_selected_trip_id = trip_id
-        self._last_selected_trip_name = trip_name
-        self._save_last_selected_trip_state(trip_id, trip_name)
-
-    def _load_last_selected_trip_state(self) -> tuple[int | None, str | None]:
-        try:
-            data = json.loads(self._state_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            return None, None
-        raw = data.get("last_selected_trip_id")
-        trip_name_raw = data.get("last_selected_trip_name")
-        trip_name = str(trip_name_raw) if isinstance(trip_name_raw, str) and trip_name_raw.strip() else None
-        try:
-            trip_id = int(raw) if raw is not None else None
-        except (TypeError, ValueError):
-            trip_id = None
-        return trip_id, trip_name
-
-    def _save_last_selected_trip_state(self, trip_id: int | None, trip_name: str | None) -> None:
-        payload = {"last_selected_trip_id": trip_id, "last_selected_trip_name": trip_name}
-        try:
-            self._state_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-        except OSError:
-            # Non-fatal: selection persistence should not block UI behavior.
-            return
-
-    def _on_close(self) -> None:
-        selected = self.trips_tree.selection()
-        if selected:
-            self._persist_trip_selection_from_iid(str(selected[0]), force=True)
-        self.destroy()
-
-    def _maybe_show_trip_edit_toast(self, duration_ms: int = 1400) -> None:
-        trips_tree = self.__dict__.get("trips_tree")
-        if trips_tree is None:
-            return
-        selected = trips_tree.selection()
-        if not selected:
-            return
-        selected_iid = str(selected[0])
-        last_iid = self.__dict__.get("_trip_toast_last_iid")
-        if isinstance(last_iid, str) and last_iid == selected_iid:
-            return
-        shown_count = int(self.__dict__.get("_trip_toast_shown_count", 0))
-        if shown_count >= 2:
-            return
-        toast = self.__dict__.get("_trip_toast")
-        if toast is None:
-            return
-        self._trip_toast_shown_count = shown_count + 1
-        self._trip_toast_last_iid = selected_iid
-        toast.configure(text="Double-click to edit.")
-        toast.place(in_=trips_tree, relx=0.5, rely=1.0, anchor="s", y=-18)
-        hide_after_id = self.__dict__.get("_trip_toast_hide_after_id")
-        if hide_after_id is not None:
-            self.after_cancel(hide_after_id)
-        self._trip_toast_hide_after_id = self.after(duration_ms, self._hide_trip_toast)
-
-    def _hide_trip_toast(self) -> None:
-        toast = self.__dict__.get("_trip_toast")
-        if toast is None:
-            return
-        toast.place_forget()
-        self._trip_toast_hide_after_id = None
-
-    @staticmethod
-    def _resolve_db_path(db_path: str) -> Path:
-        path = Path(db_path)
-        if path.is_absolute():
-            return path.resolve()
-        # Anchor relative DB paths to project root, not process CWD.
-        project_root = Path(__file__).resolve().parent.parent
-        return (project_root / path).resolve()
-
-    def _apply_palette(self) -> None:
-        p = self.PALETTE
-        bg = p["fossil_bone"]["fossil_sand"]
-        surface = p["fossil_bone"]["bone_white"]
-        surface_alt = p["fossil_bone"]["chalk_beige"]
-        border = p["fossil_bone"]["weathered_stone"]
-        text_primary = p["text"]["deep_gumleaf"]
-        text_secondary = p["text"]["dust_bark"]
-        primary = p["vegetation"]["eucalypt_sage"]
-        secondary = p["earth"]["dusty_ochre"]
-        selected = p["earth"]["clay_blush"]
-
-        self.configure(bg=bg)
-        self.option_add("*Background", bg)
-        self.option_add("*Foreground", text_primary)
-        self.option_add("*Listbox.background", surface)
-        self.option_add("*Listbox.foreground", text_primary)
-        self.option_add("*Listbox.selectBackground", secondary)
-        self.option_add("*Listbox.selectForeground", text_primary)
-        self.option_add("*Text.background", surface)
-        self.option_add("*Text.foreground", text_primary)
-        self.option_add("*Text.insertBackground", text_primary)
-
-        style = ttk.Style(self)
-        self._tab_font_normal = tkfont.Font(self, family="Helvetica", size=10, weight="normal")
-        self._tab_font_selected = tkfont.Font(self, family="Helvetica", size=11, weight="bold")
-        available_themes = set(style.theme_names())
-        if "clam" in available_themes:
-            style.theme_use("clam")
-
-        style.configure(".", background=bg, foreground=text_primary)
-        style.configure("TFrame", background=bg)
-        style.configure("TLabel", background=bg, foreground=text_primary)
-
-        style.configure(
-            "TButton",
-            background=primary,
-            foreground=text_primary,
-            borderwidth=1,
-            padding=(10, 5),
-        )
-        style.map(
-            "TButton",
-            background=[("active", secondary), ("pressed", p["earth"]["clay_blush"])],
-            foreground=[("disabled", text_secondary)],
-        )
-
-        style.configure(
-            "TNotebook",
-            background=bg,
-            borderwidth=0,
-            tabmargins=(6, 6, 6, 0),
-        )
-        style.configure(
-            "TNotebook.Tab",
-            background=surface_alt,
-            foreground=text_secondary,
-            padding=(14, 6),
-            font=self._tab_font_normal,
-        )
-        style.map(
-            "TNotebook.Tab",
-            background=[("selected", primary), ("active", secondary)],
-            foreground=[("selected", text_primary), ("active", text_primary)],
-            padding=[("selected", (14, 10)), ("active", (14, 8))],
-            font=[("selected", self._tab_font_selected), ("!selected", self._tab_font_normal)],
-        )
-
-        style.configure(
-            "Treeview",
-            background=surface,
-            fieldbackground=surface,
-            foreground=text_primary,
-            rowheight=24,
-        )
-        style.map(
-            "Treeview",
-            background=[("selected", selected)],
-            foreground=[("selected", text_primary)],
-        )
-        style.configure(
-            "Treeview.Heading",
-            background=surface_alt,
-            foreground=text_primary,
-            relief="flat",
-        )
-        style.configure(
-            "Trips.Treeview",
-            background=surface,
-            fieldbackground=surface,
-            foreground=text_primary,
-            rowheight=24,
-        )
-        style.map(
-            "Trips.Treeview",
-            background=[("selected", selected)],
-            foreground=[("selected", text_primary)],
-        )
-        style.configure(
-            "Trips.Treeview.Heading",
-            background=surface_alt,
-            foreground=text_primary,
-            relief="flat",
-            font=("Helvetica", 10, "bold"),
-        )
-
-        style.configure(
-            "TEntry",
-            fieldbackground=surface,
-            foreground=text_primary,
-        )
-        style.map("TEntry", fieldbackground=[("readonly", surface_alt)])
-        style.configure(
-            "TCheckbutton",
-            background=bg,
-            foreground=text_primary,
-        )

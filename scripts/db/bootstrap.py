@@ -4,27 +4,19 @@ import sqlite3
 from contextlib import closing
 from pathlib import Path
 
-try:
-    from .db_schema_helpers import (
-        create_team_members_table,
-        create_locations_table,
-        create_trips_table,
-        normalize_trip_fields,
-    )
-except ImportError:
-    from db_schema_helpers import (
-        create_team_members_table,
-        create_locations_table,
-        create_trips_table,
-        normalize_trip_fields,
-    )
+from scripts.db.schema_helpers import (
+    create_team_members_table,
+    create_locations_table,
+    create_trips_table,
+    normalize_trip_fields,
+)
 
 
 SCHEMA_VERSION = 7
 
 
 def project_root() -> Path:
-    return Path(__file__).resolve().parent.parent
+    return Path(__file__).resolve().parent.parent.parent
 
 
 def resolve_db_path(db_arg: str) -> Path:

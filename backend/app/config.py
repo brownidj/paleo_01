@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     jwt_access_minutes: int = 30
     jwt_refresh_days: int = 30
     bootstrap_admin_username: str = "admin"
-    bootstrap_admin_password: str = "qwer1234"
+    bootstrap_admin_password: str = "replace-with-bootstrap-admin-password"
     bootstrap_admin_display_name: str = "Local Admin"
 
 

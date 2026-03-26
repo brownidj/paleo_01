@@ -3,7 +3,7 @@ import argparse
 import sys
 
 from repository import DEFAULT_DB_PATH
-from db_bootstrap import initialize_database, resolve_classification_csv, resolve_db_path
+from scripts.db.bootstrap import initialize_database, resolve_classification_csv, resolve_db_path
 
 
 def main() -> None:

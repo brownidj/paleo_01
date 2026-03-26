@@ -5,8 +5,8 @@ from fnmatch import fnmatch
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parent.parent
-RULES_PATH = ROOT / "scripts" / "import_boundary_rules.json"
+ROOT = Path(__file__).resolve().parent.parent.parent
+RULES_PATH = ROOT / "scripts" / "checks" / "import_boundary_rules.json"
 
 
 def load_rules() -> dict:

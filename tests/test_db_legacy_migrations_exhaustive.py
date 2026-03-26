@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from contextlib import closing
 from pathlib import Path
-from scripts.db_bootstrap import SCHEMA_VERSION, initialize_database
+from scripts.db.bootstrap import SCHEMA_VERSION, initialize_database
 class TestDbLegacyMigrationsExhaustive(unittest.TestCase):
     def _new_db_and_csv(self) -> tuple[Path, Path]:
         db_fd, db_path = tempfile.mkstemp(suffix=".db")

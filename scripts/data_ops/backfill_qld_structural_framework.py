@@ -52,7 +52,7 @@ def _score(attributes: dict[str, object]) -> int:
     if raw is None:
         return -1
     try:
-        return int(raw)
+        return int(str(raw).strip())
     except (TypeError, ValueError):
         return -1
 
@@ -115,17 +115,17 @@ def _derive_values(features: list[dict[str, object]]) -> tuple[str | None, str |
 
     basin = max(basin_candidates, default=None, key=lambda item: item[0])
     protero = max(protero_candidates, default=None, key=lambda item: item[0])
-    orogen = None
+    derived_orogen: str | None = None
     if protero and protero[2]:
-        orogen = protero[2]
+        derived_orogen = protero[2]
     else:
         top_orogen = max(orogen_candidates, default=None, key=lambda item: item[0])
-        orogen = top_orogen[1] if top_orogen else None
+        derived_orogen = top_orogen[1] if top_orogen else None
 
     return (
         basin[1] if basin else None,
         protero[1] if protero else None,
-        _to_str(orogen) or None,
+        _to_str(derived_orogen) or None,
     )
 
 

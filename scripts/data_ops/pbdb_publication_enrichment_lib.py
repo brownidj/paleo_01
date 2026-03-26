@@ -7,7 +7,7 @@ from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any
 
-import requests
+import requests  # type: ignore[import-untyped]
 
 PBDB_REF_URL = "https://paleobiodb.org/data1.2/refs/single.json"
 OPENALEX_WORKS_URL = "https://api.openalex.org/works"
@@ -206,9 +206,14 @@ def _fetch_semantic_scholar_candidates(session: requests.Session, title: str) ->
 
 def _best_external_match(session: requests.Session, query_title: str, query_year: str, min_score: float) -> tuple[dict[str, Any] | None, float]:
     candidates: list[dict[str, Any]] = []
-    for fetcher in (_fetch_openalex_candidates, _fetch_crossref_candidates, _fetch_semantic_scholar_candidates):
+    fetchers = (
+        lambda s, t, y: _fetch_openalex_candidates(s, t, y),
+        lambda s, t, _y: _fetch_crossref_candidates(s, t),
+        lambda s, t, _y: _fetch_semantic_scholar_candidates(s, t),
+    )
+    for fetcher in fetchers:
         try:
-            candidates.extend(fetcher(session, query_title, query_year) if fetcher is _fetch_openalex_candidates else fetcher(session, query_title))
+            candidates.extend(fetcher(session, query_title, query_year))
         except Exception:
             pass
     best: dict[str, Any] | None = None

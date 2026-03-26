@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.check_trip_event_integrity import collect_integrity_metrics, enable_foreign_keys, has_violations
+from scripts.checks.check_trip_event_integrity import collect_integrity_metrics, enable_foreign_keys, has_violations
 
 
 def _init_schema(conn: sqlite3.Connection) -> None:

@@ -33,6 +33,13 @@ def _infer_collection_year(row: dict[str, str], rng: random.Random) -> int | Non
     return max(1, pub_year - rng.randint(2, 6))
 
 
+def _require_lastrowid(cur: sqlite3.Cursor) -> int:
+    lastrowid = cur.lastrowid
+    if lastrowid is None:
+        raise RuntimeError("Insert did not return a row id.")
+    return int(lastrowid)
+
+
 def _get_or_create_pbdb_trip(conn: sqlite3.Connection, trip_name: str) -> int:
     existing = conn.execute('SELECT id FROM "Trips" WHERE trip_name = ? LIMIT 1', (trip_name,)).fetchone()
     if existing:
@@ -44,7 +51,7 @@ def _get_or_create_pbdb_trip(conn: sqlite3.Connection, trip_name: str) -> int:
         """,
         (trip_name, "PBDB import", "PBDB", "Auto-generated from PBDB occurrence CSV"),
     )
-    return int(cur.lastrowid)
+    return _require_lastrowid(cur)
 
 
 def _coalesce(existing: str | None, incoming: str | None) -> str | None:
@@ -94,7 +101,7 @@ def _get_or_create_location(conn: sqlite3.Connection, row: dict[str, str]) -> in
         """,
         (name, lat, lng, country, state, geogscale),
     )
-    return int(cur.lastrowid)
+    return _require_lastrowid(cur)
 
 
 def _get_or_create_collection_event(
@@ -137,7 +144,7 @@ def _get_or_create_collection_event(
         """,
         (trip_id, location_id, collection_name, subset),
     )
-    return int(cur.lastrowid)
+    return _require_lastrowid(cur)
 
 
 def _insert_find(

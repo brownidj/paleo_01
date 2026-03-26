@@ -6,7 +6,7 @@ import unittest
 from contextlib import closing
 from pathlib import Path
 
-from scripts.db_bootstrap import SCHEMA_VERSION, create_team_members_table, create_trips_table, initialize_database
+from scripts.db.bootstrap import SCHEMA_VERSION, create_team_members_table, create_trips_table, initialize_database
 
 
 class TestDbBootstrap(unittest.TestCase):

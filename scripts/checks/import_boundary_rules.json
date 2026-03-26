@@ -9,12 +9,7 @@
         "path_prefixes": ["ui/"]
       },
       "forbidden_import_prefixes": [
-        "db_bootstrap",
-        "db_schema_helpers",
-        "db_migration_helpers",
-        "scripts.db_bootstrap",
-        "scripts.db_schema_helpers",
-        "scripts.db_migration_helpers",
+        "scripts.db",
         "repository.repository_base",
         "repository.repository_migrations",
         "repository.repository_trip_user",

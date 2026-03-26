@@ -6,7 +6,7 @@ import unittest
 from contextlib import closing
 from pathlib import Path
 
-from scripts.db_bootstrap import SCHEMA_VERSION, initialize_database
+from scripts.db.bootstrap import SCHEMA_VERSION, initialize_database
 
 
 class TestDbLegacyMigrationsFinds(unittest.TestCase):
