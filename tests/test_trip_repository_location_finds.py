@@ -319,6 +319,93 @@ class TestTripRepositoryLocationFinds(RepoTestCase):
         self.assertEqual(row[5], "REF-2")
         self.assertEqual(row[6], 2001)
 
+    def test_create_collection_event_for_trip_uses_trip_location(self):
+        trip_id = self.repo.create_trip({"trip_name": "Trip CE", "location": "Plan Site"})
+        with closing(sqlite3.connect(self.db_path)) as conn:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                INSERT INTO Locations (
+                    name, latitude, longitude, altitude_value, altitude_unit,
+                    country_code, state, lga, basin, geogscale, geography_comments
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                ("Plan Site", "-22.1", "143.1", "", "", "AU", "QLD", "", "", "site", ""),
+            )
+            location_id = int(cur.lastrowid)
+            conn.commit()
+
+        event_id = self.repo.create_collection_event_for_trip(trip_id, "CE-Plan-1")
+        self.assertIsInstance(event_id, int)
+
+        with closing(sqlite3.connect(self.db_path)) as conn:
+            row = conn.execute(
+                "SELECT trip_id, location_id, collection_name FROM CollectionEvents WHERE id = ?",
+                (event_id,),
+            ).fetchone()
+        self.assertIsNotNone(row)
+        assert row is not None
+        self.assertEqual(row[0], trip_id)
+        self.assertEqual(row[1], location_id)
+        self.assertEqual(row[2], f"CE-Plan-1 [#{event_id}]")
+
+    def test_update_collection_event_name(self):
+        with closing(sqlite3.connect(self.db_path)) as conn:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                INSERT INTO Locations (
+                    name, latitude, longitude, altitude_value, altitude_unit,
+                    country_code, state, lga, basin, geogscale, geography_comments
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                ("Edit CE Site", "-22.0", "143.0", "", "", "AU", "QLD", "", "", "site", ""),
+            )
+            location_id = int(cur.lastrowid)
+            cur.execute(
+                "INSERT INTO CollectionEvents (trip_id, location_id, collection_name, collection_subset) VALUES (?, ?, ?, ?)",
+                (None, location_id, "Old CE", None),
+            )
+            event_id = int(cur.lastrowid)
+            conn.commit()
+
+        self.repo.update_collection_event_name(event_id, "Updated CE")
+
+        with closing(sqlite3.connect(self.db_path)) as conn:
+            row = conn.execute("SELECT collection_name FROM CollectionEvents WHERE id = ?", (event_id,)).fetchone()
+        self.assertIsNotNone(row)
+        assert row is not None
+        self.assertEqual(row[0], f"Updated CE [#{event_id}]")
+
+    def test_backfill_collection_event_codes(self):
+        with closing(sqlite3.connect(self.db_path)) as conn:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                INSERT INTO Locations (
+                    name, latitude, longitude, altitude_value, altitude_unit,
+                    country_code, state, lga, basin, geogscale, geography_comments
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                ("Backfill CE Site", "-22.0", "143.0", "", "", "AU", "QLD", "", "", "site", ""),
+            )
+            location_id = int(cur.lastrowid)
+            cur.execute(
+                "INSERT INTO CollectionEvents (trip_id, location_id, collection_name, collection_subset) VALUES (?, ?, ?, ?)",
+                (None, location_id, "Backfill Name", None),
+            )
+            event_id = int(cur.lastrowid)
+            conn.commit()
+
+        updated = self.repo.backfill_collection_event_codes()
+        self.assertGreaterEqual(updated, 1)
+
+        with closing(sqlite3.connect(self.db_path)) as conn:
+            row = conn.execute("SELECT collection_name FROM CollectionEvents WHERE id = ?", (event_id,)).fetchone()
+        self.assertIsNotNone(row)
+        assert row is not None
+        self.assertEqual(row[0], f"Backfill Name [#{event_id}]")
+
 
 if __name__ == "__main__":
     unittest.main()

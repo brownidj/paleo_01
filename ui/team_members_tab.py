@@ -22,16 +22,18 @@ class TeamMembersTab(ttk.Frame):
 
         self.team_members_tree = ttk.Treeview(
             self,
-            columns=("name", "phone_number", "institution", "active"),
+            columns=("name", "phone_number", "institution", "role", "active"),
             show="headings",
         )
         self.team_members_tree.heading("name", text="name")
         self.team_members_tree.heading("phone_number", text="phone_number")
         self.team_members_tree.heading("institution", text="institution")
+        self.team_members_tree.heading("role", text="role")
         self.team_members_tree.heading("active", text="active")
         self.team_members_tree.column("name", width=260, anchor="w")
         self.team_members_tree.column("phone_number", width=180, anchor="w")
         self.team_members_tree.column("institution", width=200, anchor="w")
+        self.team_members_tree.column("role", width=120, anchor="w")
         self.team_members_tree.column("active", width=100, anchor="center")
         attach_auto_hiding_scrollbars(self, self.team_members_tree, padx=10, pady=6)
 
@@ -76,6 +78,7 @@ class TeamMembersTab(ttk.Frame):
                     team_member.get("name", ""),
                     team_member.get("phone_number", ""),
                     team_member.get("institution", ""),
+                    team_member.get("role", "") or "",
                     "Yes" if int(team_member.get("active", 0)) == 1 else "No",
                 ),
             )

@@ -48,7 +48,9 @@ class TripFormDialog(tk.Toplevel):
         self.finds_count = finds_count
         self.inputs: dict[str, tk.Widget] = {}
         self._icon_buttons: dict[str, ttk.Button] = {}
+        self._is_new_trip = trip_id is None
         self._edit_var = tk.IntVar(value=0)
+        self._edit_radio: ttk.Radiobutton | None = None
         self._last_saved_payload: dict[str, str] = {}
         self.resizable(False, False)
 
@@ -156,16 +158,21 @@ class TripFormDialog(tk.Toplevel):
             command=self._open_team,
         ).grid(row=0, column=2, padx=2, sticky="w")
         actions.columnconfigure(3, weight=1)
-        edit_radio = ttk.Radiobutton(actions, text="Edit", variable=self._edit_var, value=1)
-        edit_radio.grid(row=0, column=4, padx=(8, 4), sticky="e")
-        edit_radio.bind("<Button-1>", self._on_edit_radio_click, add="+")
+        if not self._is_new_trip:
+            self._edit_radio = ttk.Radiobutton(actions, text="Edit", variable=self._edit_var, value=1)
+            self._edit_radio.grid(row=0, column=4, padx=(8, 4), sticky="e")
+            self._edit_radio.bind("<Button-1>", self._on_edit_radio_click, add="+")
         if callable(self.on_duplicate):
             ttk.Button(actions, text="⧉", style="IconChip.TButton", width=2, command=self._duplicate).grid(
                 row=0, column=5, padx=2, sticky="e"
             )
 
         self._last_saved_payload = self._collect_payload()
-        self._set_edit_mode(False)
+        if self._is_new_trip:
+            self._edit_var.set(1)
+            self._set_edit_mode(True)
+        else:
+            self._set_edit_mode(False)
         self.transient(parent)
         if self.modal:
             self.grab_set()
@@ -278,7 +285,7 @@ class TripFormDialog(tk.Toplevel):
             if isinstance(widget, tk.Text):
                 widget.configure(state="normal" if editable else "disabled")
                 continue
-            if field == "trip_name":
+            if field == "trip_name" and not self._is_new_trip:
                 widget.configure(state="readonly")
             else:
                 widget.configure(state="normal" if editable else "readonly")

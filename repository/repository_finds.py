@@ -1,9 +1,11 @@
+import re
 from typing import cast
 
 from repository.domain_types import CollectionEventRecord, FindRecord
 
 
 class RepositoryFindsMixin:
+    _COLLECTION_EVENT_CODE_RE = re.compile(r"\s*\[#\d+\]\s*$")
     _FIND_MUTABLE_TEXT_FIELDS = (
         "source_system",
         "source_occurrence_no",
@@ -70,6 +72,106 @@ class RepositoryFindsMixin:
                     (trip_id,),
                 ).fetchall()
         return [cast(CollectionEventRecord, dict(row)) for row in rows]
+
+    def create_collection_event_for_trip(
+        self,
+        trip_id: int,
+        collection_name: str,
+        event_year: int | None = None,
+    ) -> int:
+        self.ensure_locations_table()
+        cleaned_name = self._normalize_collection_event_base_name(collection_name)
+        if not cleaned_name:
+            raise ValueError("collection_name is required.")
+        with self._connect() as conn:
+            trip_row = conn.execute(
+                'SELECT id, location FROM "Trips" WHERE id = ?',
+                (trip_id,),
+            ).fetchone()
+            if not trip_row:
+                raise ValueError("Trip does not exist.")
+            location_value = str(trip_row["location"] or "").strip()
+            location_candidates = [part.strip() for part in location_value.split(";") if part.strip()]
+            if not location_candidates:
+                raise ValueError("Trip has no location. Set trip location before creating a Collection Event.")
+
+            location_id: int | None = None
+            for candidate in location_candidates:
+                row = conn.execute(
+                    """
+                    SELECT id
+                    FROM "Locations"
+                    WHERE LOWER(TRIM(name)) = LOWER(TRIM(?))
+                    ORDER BY id
+                    LIMIT 1
+                    """,
+                    (candidate,),
+                ).fetchone()
+                if row:
+                    location_id = int(row["id"])
+                    break
+            if location_id is None:
+                raise ValueError("Trip location was not found in Locations.")
+
+            cur = conn.execute(
+                """
+                INSERT INTO "CollectionEvents" (trip_id, location_id, collection_name, collection_subset, event_year)
+                VALUES (?, ?, ?, NULL, ?)
+                """,
+                (trip_id, location_id, cleaned_name, event_year),
+            )
+            collection_event_id = int(cur.lastrowid)
+            formatted_name = self._format_collection_event_name(cleaned_name, collection_event_id)
+            conn.execute(
+                'UPDATE "CollectionEvents" SET collection_name = ? WHERE id = ?',
+                (formatted_name, collection_event_id),
+            )
+            return collection_event_id
+
+    def update_collection_event_name(self, collection_event_id: int, collection_name: str) -> None:
+        self.ensure_locations_table()
+        cleaned_name = self._normalize_collection_event_base_name(collection_name)
+        if not cleaned_name:
+            raise ValueError("collection_name is required.")
+        formatted_name = self._format_collection_event_name(cleaned_name, collection_event_id)
+        with self._connect() as conn:
+            cur = conn.execute(
+                """
+                UPDATE "CollectionEvents"
+                SET collection_name = ?
+                WHERE id = ?
+                """,
+                (formatted_name, collection_event_id),
+            )
+            if int(cur.rowcount or 0) == 0:
+                raise ValueError("Collection Event does not exist.")
+
+    def backfill_collection_event_codes(self) -> int:
+        self.ensure_locations_table()
+        updated = 0
+        with self._connect() as conn:
+            rows = conn.execute('SELECT id, collection_name FROM "CollectionEvents"').fetchall()
+            for row in rows:
+                collection_event_id = int(row["id"])
+                base_name = self._normalize_collection_event_base_name(str(row["collection_name"] or ""))
+                if not base_name:
+                    base_name = "Collection Event"
+                formatted_name = self._format_collection_event_name(base_name, collection_event_id)
+                if formatted_name != str(row["collection_name"] or ""):
+                    conn.execute(
+                        'UPDATE "CollectionEvents" SET collection_name = ? WHERE id = ?',
+                        (formatted_name, collection_event_id),
+                    )
+                    updated += 1
+        return updated
+
+    def _normalize_collection_event_base_name(self, collection_name: str) -> str:
+        raw = str(collection_name or "").strip()
+        return self._COLLECTION_EVENT_CODE_RE.sub("", raw).strip()
+
+    @staticmethod
+    def _format_collection_event_name(base_name: str, collection_event_id: int) -> str:
+        return f"{base_name} [#{int(collection_event_id)}]"
 
     def list_finds(self, trip_id: int | None = None) -> list[FindRecord]:
         self.ensure_locations_table()

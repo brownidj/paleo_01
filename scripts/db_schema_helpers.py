@@ -11,7 +11,6 @@ from scripts.db_migration_helpers import (
     _rebuild_trips_table_without_region,
 )
 
-
 def normalize_trip_fields(fields: list[str]) -> list[str]:
     seen: set[str] = set()
     result: list[str] = ["id"]
@@ -66,6 +65,81 @@ def create_team_members_table(conn: sqlite3.Connection) -> None:
         conn.execute(
             "ALTER TABLE Team_members ADD COLUMN active INTEGER NOT NULL DEFAULT 0 CHECK(active IN (0, 1))"
         )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS User_Accounts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            team_member_id INTEGER NOT NULL,
+            username TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            role TEXT NOT NULL CHECK(role IN ('admin', 'team', 'planner', 'reviewer', 'field_member')),
+            must_change_password INTEGER NOT NULL DEFAULT 1 CHECK(must_change_password IN (0, 1)),
+            password_changed_at TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (team_member_id) REFERENCES Team_members(id) ON DELETE CASCADE,
+            UNIQUE(team_member_id)
+        )
+        """
+    )
+    account_columns = [row[1] for row in conn.execute("PRAGMA table_info(User_Accounts)").fetchall()]
+    user_accounts_sql_row = conn.execute(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name='User_Accounts'"
+    ).fetchone()
+    user_accounts_sql = str(user_accounts_sql_row[0] if user_accounts_sql_row else "")
+    if "is_active" in account_columns or "'team'" not in user_accounts_sql:
+        _rebuild_user_accounts_without_is_active(conn)
+        account_columns = [row[1] for row in conn.execute("PRAGMA table_info(User_Accounts)").fetchall()]
+    if "must_change_password" not in account_columns:
+        conn.execute(
+            "ALTER TABLE User_Accounts ADD COLUMN must_change_password INTEGER NOT NULL DEFAULT 1 CHECK(must_change_password IN (0, 1))"
+        )
+    if "password_changed_at" not in account_columns:
+        conn.execute("ALTER TABLE User_Accounts ADD COLUMN password_changed_at TEXT")
+
+
+def _rebuild_user_accounts_without_is_active(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS User_Accounts_new (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            team_member_id INTEGER NOT NULL,
+            username TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            role TEXT NOT NULL CHECK(role IN ('admin', 'team', 'planner', 'reviewer', 'field_member')),
+            must_change_password INTEGER NOT NULL DEFAULT 1 CHECK(must_change_password IN (0, 1)),
+            password_changed_at TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (team_member_id) REFERENCES Team_members(id) ON DELETE CASCADE,
+            UNIQUE(team_member_id)
+        )
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO User_Accounts_new (
+            id,
+            team_member_id,
+            username,
+            password_hash,
+            role,
+            must_change_password,
+            password_changed_at,
+            created_at
+        )
+        SELECT
+            id,
+            team_member_id,
+            username,
+            password_hash,
+            role,
+            1,
+            NULL,
+            COALESCE(created_at, CURRENT_TIMESTAMP)
+        FROM User_Accounts
+        """
+    )
+    conn.execute("DROP TABLE User_Accounts")
+    conn.execute("ALTER TABLE User_Accounts_new RENAME TO User_Accounts")
 
 
 def create_trips_table(conn: sqlite3.Connection, fields: list[str]) -> None:

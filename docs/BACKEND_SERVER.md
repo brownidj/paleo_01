@@ -79,48 +79,47 @@ Set it up as a small, stable Linux-style service host on macOS with Docker, reve
 
 ### Local runtime quick start (implemented in this repo)
 - Stack files:
-  - `docker-compose.yml`
-  - `docker-compose.internet.yml` (internet override profile)
-  - `Caddyfile`
-  - `Caddyfile.internet` (public DNS + Let's Encrypt)
-  - `.env.example`
-  - `.env.prod.example`
+  - `deploy/docker/docker-compose.yml`
+  - `deploy/docker/docker-compose.internet.yml` (internet override profile)
+  - `deploy/caddy/Caddyfile`
+  - `deploy/caddy/Caddyfile.internet` (public DNS + Let's Encrypt)
+  - `config/env/local.env.example`
+  - `config/env/prod.env.example`
   - `backend/` (FastAPI app with `/v1/health`)
   - `scripts/bootstrap_local_backend.sh`
   - `scripts/bootstrap_internet_backend.sh`
 - First run:
-  - `cp .env.example .env` (if not already present)
-  - Update `.env` secrets and, if needed, set `SERVER_HOST`
+  - `cp config/env/local.env.example config/env/local.env` (if not already present)
+  - Update `config/env/local.env` secrets and, if needed, set `SERVER_HOST`
   - `scripts/bootstrap_local_backend.sh`
 - Verify:
-  - `docker compose ps`
+  - `docker compose --env-file config/env/local.env -f deploy/docker/docker-compose.yml ps`
   - `curl -k https://localhost/v1/health`
 
 ## 3. Network and security
 - Expose only `443` (and optionally `80` for redirect) on LAN.
 - Keep DB port private (not exposed outside Docker network).
-- Use long random secrets in `.env` (JWT secret, DB password).
+- Use long random secrets in env files under `config/env/` (JWT secret, DB password).
 - Create separate staging and prod env files even on one machine.
 - Restrict inbound access to your LAN subnet via macOS firewall/router rules.
 
 ### Section 3 implementation status in this repo
-- `postgres` is now internal-only in `docker-compose.yml` (no host `ports:` mapping).
-- `Caddyfile` now blocks non-private source IPs in local-staging mode.
+- Compose stack now lives under `deploy/docker/`, and Caddy config under `deploy/caddy/`.
 - Env templates now exist for separation:
-  - `.env.example` (local)
-  - `.env.staging.example`
-  - `.env.prod.example`
+  - `config/env/local.env.example` (local)
+  - `config/env/staging.env.example`
+  - `config/env/prod.env.example`
 - `scripts/bootstrap_local_backend.sh` supports `ENV_FILE=...` and warns on placeholder secrets.
 
 ### Section 3 runbook (this machine)
 1. Create local env file:
-   - `cp .env.staging.example .env.staging`
+   - `cp config/env/staging.env.example config/env/staging.env`
    - set strong `POSTGRES_PASSWORD`, `JWT_SECRET`, `JWT_REFRESH_SECRET`
    - set `SERVER_HOST=paleo-server.local`
 2. Start stack with explicit env:
-   - `ENV_FILE=.env.staging scripts/bootstrap_local_backend.sh`
+   - `ENV_FILE=config/env/staging.env scripts/bootstrap_local_backend.sh`
 3. Verify DB is not host-exposed:
-   - `docker compose --env-file .env.staging ps`
+   - `docker compose --env-file config/env/staging.env -f deploy/docker/docker-compose.yml ps`
    - confirm no `0.0.0.0:5432` or `127.0.0.1:5432` mapping for `postgres`
 4. Verify API via reverse proxy:
    - add host mapping on each client machine:
@@ -146,13 +145,13 @@ Set it up as a small, stable Linux-style service host on macOS with Docker, reve
      - WAN `80` -> this machine `80`
      - WAN `443` -> this machine `443`
 2. Prepare production env
-   - `cp .env.prod.example .env.prod`
+   - `cp config/env/prod.env.example config/env/prod.env`
    - set:
      - `SERVER_HOST` to your public hostname
      - `ACME_EMAIL` to your ops email
      - strong `POSTGRES_PASSWORD`, `JWT_SECRET`, `JWT_REFRESH_SECRET`
 3. Start internet profile
-   - `ENV_FILE=.env.prod scripts/bootstrap_internet_backend.sh`
+   - `ENV_FILE=config/env/prod.env scripts/bootstrap_internet_backend.sh`
 4. Verify from outside LAN (mobile data or external host)
    - `curl https://<your-public-host>/v1/health`
    - expected: `{"status":"ok","database":"up","env":"prod"}`
@@ -191,16 +190,16 @@ Set it up as a small, stable Linux-style service host on macOS with Docker, reve
   - backup job success
   - restore dry-run.
 
-If you want, I can generate a concrete `docker-compose.yml`, `.env.example`, and a step-by-step bootstrap script tailored to this repo next.
+If you want, I can generate a concrete compose/env/bootstrap bundle tailored to this repo next.
 
 ## Migration later (this machine -> MacBook)
 1. Freeze writes briefly (maintenance window).
 2. Take final Postgres backup (`pg_dump` + optional volume snapshot).
 3. Copy deployment bundle:
-   - `docker-compose.yml`
-   - `Caddyfile` / reverse-proxy config
+   - `deploy/docker/docker-compose.yml`
+   - `deploy/caddy/Caddyfile` / reverse-proxy config
    - migration scripts
-   - `.env` values (regenerate secrets where appropriate)
+   - `config/env/*.env` values (regenerate secrets where appropriate)
 4. Restore DB on MacBook and run migrations.
 5. Smoke test:
    - auth/login

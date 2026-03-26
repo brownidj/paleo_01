@@ -6,6 +6,30 @@ from tests._repo_test_base import RepoTestCase
 
 
 class TestTripRepositoryTripUser(RepoTestCase):
+    def test_user_accounts_table_exists_with_expected_columns(self):
+        with closing(sqlite3.connect(self.db_path)) as conn:
+            table = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='User_Accounts'"
+            ).fetchone()
+            self.assertIsNotNone(table)
+            columns = {row[1] for row in conn.execute("PRAGMA table_info(User_Accounts)").fetchall()}
+            self.assertTrue(
+                {
+                    "team_member_id",
+                    "username",
+                    "password_hash",
+                    "role",
+                    "must_change_password",
+                    "password_changed_at",
+                    "created_at",
+                }.issubset(columns)
+            )
+            self.assertNotIn("is_active", columns)
+            account_sql = conn.execute(
+                "SELECT sql FROM sqlite_master WHERE type='table' AND name='User_Accounts'"
+            ).fetchone()[0]
+            self.assertIn("'team'", account_sql)
+
     def test_create_and_fetch_trip(self):
         row_id = self.repo.create_trip(
             {
@@ -48,6 +72,25 @@ class TestTripRepositoryTripUser(RepoTestCase):
 
         active_names = names[:first_inactive_idx]
         self.assertEqual(active_names, ["Zoe Adams", "Alice", "Aaron Brown", "Carol"])
+
+    def test_list_team_members_includes_user_role(self):
+        with closing(sqlite3.connect(self.db_path)) as conn:
+            member_id = conn.execute(
+                "SELECT id FROM Team_members WHERE name = ?",
+                ("Alice",),
+            ).fetchone()[0]
+            conn.execute(
+                """
+                INSERT INTO User_Accounts (team_member_id, username, password_hash, role, must_change_password)
+                VALUES (?, ?, ?, ?, 1)
+                """,
+                (member_id, "alice", "pbkdf2_sha256$310000$salt$digest", "planner"),
+            )
+            conn.commit()
+
+        team_members = self.repo.list_team_members()
+        alice = next(tm for tm in team_members if tm["name"] == "Alice")
+        self.assertEqual(alice.get("role"), "planner")
 
 
 if __name__ == "__main__":

@@ -143,10 +143,8 @@ rg --files "$ROOT_DIR" \
       - `repository/repository_trip_user.py`, `repository/repository_location.py`, `repository/repository_finds.py`, `repository/repository_geology_schema.py`, `repository/repository_geology_data.py`, `repository/repository_migrations.py`.
     - `repository/domain_types.py`: typed payload/row structures for core entities (Trip, Location/CollectionEvent, Find, Geology).
   - **UI Entrypoints**:
-    - `app/main.py` is the canonical executable entrypoint and launches `PlanningPhaseWindow`.
-    - `main.py` at project root is a thin compatibility wrapper forwarding to `app.main.main`.
-    - `app/planning_phase_main.py` is a thin wrapper that forwards to `app.main.main`.
-    - Shared IDE run config added: `.idea/runConfigurations/App_Main.xml` points to `$PROJECT_DIR$/app/main.py`.
+    - `main.py` at project root is the canonical executable entrypoint and launches `PlanningPhaseWindow`.
+    - Shared IDE run config added: `.idea/runConfigurations/App_Main.xml` points to `$PROJECT_DIR$/main.py`.
   - **UI Modules**:
     - `ui/planning_phase_window.py`: composition root for tabs, dialog controller, navigation coordinator, and app palette.
     - `ui/planning_tabs_controller.py`: notebook tab construction and initial tab-data loading.
@@ -209,8 +207,7 @@ rg --files "$ROOT_DIR" \
   - Applied location+date-proximity event ownership reassignment (`same location`, `event_year within ±5 years of trip year`): 33 event-owner changes; orphan trips reduced from 36 to 16.
   - Added auto-hiding list scrollbars for all tab list panels; scrollbars appear only when rows/columns overflow.
   - **Prompt Compliance Snapshot**:
-  - `app/main.py` remains thin: **compliant**.
-  - root `main.py` remains thin compatibility-only: **compliant**.
+  - root `main.py` remains thin: **compliant**.
   - DB layer uses parameterized queries and context managers: **compliant**.
   - File size <= 300 rule: **compliant**.
     - `trip_repository.py` and `ui/planning_phase_window.py` are now compliant.
@@ -220,7 +217,7 @@ rg --files "$ROOT_DIR" \
 
 - **Overall rating**: **Strong (about 9.0/10)** for behavior stability, DB safety, and architecture clarity; Find dialog behavior and New/Edit path confidence are now materially stronger.
 - **Strong areas**:
-  - Thin entrypoints and clear app bootstrap flow are intact (`app/main.py` canonical, wrapper retained only for compatibility).
+  - Thin entrypoints and clear app bootstrap flow are intact (root `main.py` canonical, wrapper retained only for compatibility).
   - Core DB work is pragmatic and robust (parameterized SQL, explicit transaction/close handling, schema/migration separation).
   - High-change UI behavior is now isolated via dedicated controllers/coordinator and covered by regression tests.
   - Current automated suite is stable (all tests passing) and test modules are domain-focused.
@@ -251,6 +248,7 @@ rg --files "$ROOT_DIR" \
 2. Resolve remaining trip records with `0` collection events through deterministic reassignment or explicit archival.
 3. Add a reusable `--dry-run/--apply` script for event-ownership normalization with CSV diff output.
 4. Add an explicit team-assignment rebuild script (`--dry-run/--apply`) that can regenerate `Trips.team` deterministically from publication + date-window rules.
+5. Implement Search + partial/fuzzy matching for location resolution (for example when trip location text and `Locations.name` are close but not exact).
 
 ## Test run report
 

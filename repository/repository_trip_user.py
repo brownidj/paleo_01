@@ -5,6 +5,88 @@ from repository.repository_base import DEFAULT_TRIP_FIELDS
 
 
 class RepositoryTripUserMixin:
+    @staticmethod
+    def _rebuild_user_accounts_without_is_active(conn) -> None:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS "User_Accounts_new" (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                team_member_id INTEGER NOT NULL,
+                username TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL,
+                role TEXT NOT NULL CHECK(role IN ('admin', 'team', 'planner', 'reviewer', 'field_member')),
+                must_change_password INTEGER NOT NULL DEFAULT 1 CHECK(must_change_password IN (0, 1)),
+                password_changed_at TEXT,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (team_member_id) REFERENCES Team_members(id) ON DELETE CASCADE,
+                UNIQUE(team_member_id)
+            )
+            """
+        )
+        conn.execute(
+            """
+            INSERT INTO "User_Accounts_new" (
+                id,
+                team_member_id,
+                username,
+                password_hash,
+                role,
+                must_change_password,
+                password_changed_at,
+                created_at
+            )
+            SELECT
+                id,
+                team_member_id,
+                username,
+                password_hash,
+                role,
+                1,
+                NULL,
+                COALESCE(created_at, CURRENT_TIMESTAMP)
+            FROM "User_Accounts"
+            """
+        )
+        conn.execute('DROP TABLE "User_Accounts"')
+        conn.execute('ALTER TABLE "User_Accounts_new" RENAME TO "User_Accounts"')
+
+    def _ensure_user_accounts_table(self) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS "User_Accounts" (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    team_member_id INTEGER NOT NULL,
+                    username TEXT NOT NULL UNIQUE,
+                    password_hash TEXT NOT NULL,
+                    role TEXT NOT NULL CHECK(role IN ('admin', 'team', 'planner', 'reviewer', 'field_member')),
+                    must_change_password INTEGER NOT NULL DEFAULT 1 CHECK(must_change_password IN (0, 1)),
+                    password_changed_at TEXT,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (team_member_id) REFERENCES Team_members(id) ON DELETE CASCADE,
+                    UNIQUE(team_member_id)
+                )
+                """
+            )
+            columns = [row["name"] for row in conn.execute('PRAGMA table_info("User_Accounts")').fetchall()]
+            schema_row = conn.execute(
+                "SELECT sql FROM sqlite_master WHERE type='table' AND name='User_Accounts'"
+            ).fetchone()
+            schema_sql = str(schema_row["sql"] if schema_row else "")
+            if "is_active" in columns or "'team'" not in schema_sql:
+                self._rebuild_user_accounts_without_is_active(conn)
+                columns = [row["name"] for row in conn.execute('PRAGMA table_info("User_Accounts")').fetchall()]
+            if "must_change_password" not in columns:
+                conn.execute(
+                    'ALTER TABLE "User_Accounts" ADD COLUMN must_change_password INTEGER NOT NULL DEFAULT 1 CHECK(must_change_password IN (0, 1))'
+                )
+                columns = [row["name"] for row in conn.execute('PRAGMA table_info("User_Accounts")').fetchall()]
+            if "password_changed_at" not in columns:
+                conn.execute('ALTER TABLE "User_Accounts" ADD COLUMN password_changed_at TEXT')
+                columns = [row["name"] for row in conn.execute('PRAGMA table_info("User_Accounts")').fetchall()]
+            if "created_at" not in columns:
+                conn.execute('ALTER TABLE "User_Accounts" ADD COLUMN created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP')
+
     def _ensure_team_members_table(self) -> None:
         with self._connect() as conn:
             conn.execute(
@@ -46,6 +128,7 @@ class RepositoryTripUserMixin:
                 conn.execute(
                     'ALTER TABLE "Team_members" ADD COLUMN active INTEGER NOT NULL DEFAULT 0 CHECK(active IN (0, 1))'
                 )
+        self._ensure_user_accounts_table()
 
     def ensure_trips_table(self, fields: list[str] | None = None) -> None:
         self._ensure_team_members_table()
@@ -144,7 +227,19 @@ class RepositoryTripUserMixin:
         self._ensure_team_members_table()
         with self._connect() as conn:
             rows = conn.execute(
-                'SELECT id, name, phone_number, institution, recruitment_date, retirement_date, active FROM "Team_members"'
+                """
+                SELECT
+                    tm.id,
+                    tm.name,
+                    tm.phone_number,
+                    tm.institution,
+                    ua.role AS role,
+                    tm.recruitment_date,
+                    tm.retirement_date,
+                    tm.active
+                FROM "Team_members" tm
+                LEFT JOIN "User_Accounts" ua ON ua.team_member_id = tm.id
+                """
             ).fetchall()
         team_members = [cast(TeamMemberRecord, dict(row)) for row in rows]
         team_members.sort(

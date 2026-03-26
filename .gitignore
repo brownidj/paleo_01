@@ -25,6 +25,8 @@ htmlcov/
 !.env.example
 !.env.staging.example
 !.env.prod.example
+config/env/*.env
+!config/env/*.env.example
 secrets/*.txt
 !secrets/*.txt.example
 

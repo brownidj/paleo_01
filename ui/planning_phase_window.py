@@ -8,7 +8,6 @@ from tkinter import messagebox, ttk
 
 from app.api_auth import ApiAuthClient
 from repository import DEFAULT_DB_PATH
-from repository.postgres_trip_repository import PostgresTripRepository
 from repository.trip_repository import TripRepository
 from ui.auto_hide_scrollbars import attach_auto_hiding_scrollbars
 from ui.planning_tabs_controller import PlanningTabsController
@@ -69,6 +68,13 @@ class PlanningPhaseWindow(tk.Tk):
 
         backend = db_backend.strip().lower()
         if backend == "postgres":
+            try:
+                from repository.postgres_trip_repository import PostgresTripRepository
+            except ModuleNotFoundError as exc:
+                raise RuntimeError(
+                    "Postgres backend requires optional dependency 'psycopg'. "
+                    "Install backend requirements or run with PALEO_DESKTOP_DB_BACKEND=sqlite."
+                ) from exc
             self.repo = PostgresTripRepository(str(self._db_path))
         else:
             self.repo = TripRepository(str(self._db_path))

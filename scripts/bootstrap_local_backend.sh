@@ -4,12 +4,13 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-ENV_FILE="${ENV_FILE:-.env}"
+ENV_FILE="${ENV_FILE:-config/env/local.env}"
+COMPOSE_FILE="deploy/docker/docker-compose.yml"
 
 if [[ ! -f "$ENV_FILE" ]]; then
-  if [[ "$ENV_FILE" == ".env" ]]; then
-    cp .env.example .env
-    echo "Created .env from .env.example. Update secrets before non-local use."
+  if [[ "$ENV_FILE" == "config/env/local.env" ]]; then
+    cp config/env/local.env.example config/env/local.env
+    echo "Created config/env/local.env from config/env/local.env.example. Update secrets before non-local use."
   else
     echo "ENV_FILE '$ENV_FILE' not found." >&2
     exit 1
@@ -29,8 +30,8 @@ if grep -Eq "replace-with|change-me" "$ENV_FILE"; then
   echo "Warning: '$ENV_FILE' still contains placeholder secrets."
 fi
 
-"${COMPOSE_CMD[@]}" --env-file "$ENV_FILE" up -d --build
-"${COMPOSE_CMD[@]}" ps
+PALEO_ENV_FILE="$ENV_FILE" "${COMPOSE_CMD[@]}" --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d --build
+PALEO_ENV_FILE="$ENV_FILE" "${COMPOSE_CMD[@]}" --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps
 
 echo
 echo "Backend stack started."

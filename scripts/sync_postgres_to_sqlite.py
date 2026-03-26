@@ -51,8 +51,10 @@ def _parse_sqlite_default(default_value: str | None):
 
 
 def _load_dotenv_if_present() -> None:
-    env_path = Path(__file__).resolve().parents[1] / ".env"
-    if not env_path.exists():
+    project_root = Path(__file__).resolve().parents[1]
+    candidates = [project_root / "config" / "env" / "local.env", project_root / ".env"]
+    env_path = next((path for path in candidates if path.exists()), None)
+    if env_path is None:
         return
     for raw_line in env_path.read_text(encoding="utf-8").splitlines():
         line = raw_line.strip()

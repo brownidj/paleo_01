@@ -20,7 +20,7 @@ except ImportError:
     )
 
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 7
 
 
 def project_root() -> Path:
@@ -95,6 +95,22 @@ def _apply_migration_step(conn: sqlite3.Connection, step_version: int, trip_fiel
     if step_version == 3:
         # Normalize Finds schema to derive trip through CollectionEvents only.
         create_locations_table(conn)
+        return
+    if step_version == 4:
+        # Add auth accounts linked to Team_members.
+        create_team_members_table(conn)
+        return
+    if step_version == 5:
+        # Derive account status from Team_members.active by dropping User_Accounts.is_active.
+        create_team_members_table(conn)
+        return
+    if step_version == 6:
+        # Extend user-account roles to include team.
+        create_team_members_table(conn)
+        return
+    if step_version == 7:
+        # Add password-rotation fields to user accounts.
+        create_team_members_table(conn)
         return
     raise ValueError(f"Unsupported migration step: {step_version}")
 
