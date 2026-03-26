@@ -6,7 +6,9 @@ from collections.abc import Mapping
 from pathlib import Path
 from tkinter import messagebox, ttk
 
+from app.api_auth import ApiAuthClient
 from repository import DEFAULT_DB_PATH
+from repository.postgres_trip_repository import PostgresTripRepository
 from repository.trip_repository import TripRepository
 from ui.auto_hide_scrollbars import attach_auto_hiding_scrollbars
 from ui.planning_tabs_controller import PlanningTabsController
@@ -45,7 +47,12 @@ class PlanningPhaseWindow(tk.Tk):
         },
     }
 
-    def __init__(self, db_path: str = DEFAULT_DB_PATH):
+    def __init__(
+        self,
+        db_path: str = DEFAULT_DB_PATH,
+        auth_client: ApiAuthClient | None = None,
+        db_backend: str = "sqlite",
+    ):
         super().__init__()
         self.title("Planning Phase")
         self.geometry("980x560")
@@ -58,8 +65,13 @@ class PlanningPhaseWindow(tk.Tk):
         self._trip_toast_shown_count = 0
         self._trip_toast_hide_after_id: str | None = None
         self._trip_toast_last_iid: str | None = None
+        self.auth_client = auth_client
 
-        self.repo = TripRepository(str(self._db_path))
+        backend = db_backend.strip().lower()
+        if backend == "postgres":
+            self.repo = PostgresTripRepository(str(self._db_path))
+        else:
+            self.repo = TripRepository(str(self._db_path))
         self.repo.ensure_trips_table()
         self.fields = self.repo.get_fields()
         self.list_fields = ["trip_name", "start_date", "collection_events_count", "finds_count", "team", "location"]
@@ -167,6 +179,9 @@ class PlanningPhaseWindow(tk.Tk):
         for record in records:
             values = [self._trip_list_value(record, field) for field in self.list_fields]
             self.trips_tree.insert("", "end", iid=str(record["id"]), values=values)
+        load_collection_plan = getattr(self.tabs_controller, "load_collection_plan_trips", None)
+        if callable(load_collection_plan):
+            load_collection_plan()
         self._restore_trip_selection()
 
     def _trip_list_value(self, record: Mapping[str, object], field: str):
