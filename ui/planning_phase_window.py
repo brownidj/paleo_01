@@ -69,9 +69,10 @@ class PlanningPhaseWindow(PlanningPhaseWindowSelectionMixin, PlanningPhaseWindow
         self.finds_tab = self.tabs_controller.finds_tab
         self.collection_plan_tab = self.tabs_controller.collection_plan_tab
         self.team_members_tab = self.tabs_controller.team_members_tab
-        set_provider = getattr(self.finds_tab, "set_current_trip_provider", None)
-        if callable(set_provider):
-            set_provider(self._get_selected_trip_id)
+        for tab in (self.collection_events_tab, self.finds_tab):
+            set_provider = getattr(tab, "set_current_trip_provider", None)
+            if callable(set_provider):
+                set_provider(self._get_selected_trip_id)
         self.navigation = TripNavigationCoordinator(
             tabs=self.tabs,
             trips_tab=self.trips_tab,

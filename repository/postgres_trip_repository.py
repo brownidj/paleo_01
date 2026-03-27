@@ -75,7 +75,10 @@ class PostgresTripRepository(PostgresTripRepositoryDomainMixin):
                 """,
                 (data.get("trip_name"), data.get("start_date"), data.get("end_date"), data.get("team"), data.get("location"), data.get("notes")),
             )
-            return int(cur.fetchone()["id"])
+            trip_id = int(cur.fetchone()["id"])
+            if "team" in data:
+                self._sync_trip_team_members(cur, trip_id, data.get("team"))
+            return trip_id
 
     def update_trip(self, trip_id: int, data: TripPayloadMap) -> None:
         with self._connect() as conn, conn.cursor() as cur:
@@ -93,6 +96,8 @@ class PostgresTripRepository(PostgresTripRepositoryDomainMixin):
                 """,
                 (data.get("trip_name"), data.get("start_date"), data.get("end_date"), data.get("team"), data.get("location"), data.get("notes"), trip_id),
             )
+            if "team" in data:
+                self._sync_trip_team_members(cur, trip_id, data.get("team"))
 
     def list_active_team_members(self) -> list[str]:
         with self._connect() as conn, conn.cursor() as cur:
@@ -155,3 +160,52 @@ class PostgresTripRepository(PostgresTripRepositoryDomainMixin):
     def _last_name(name: str) -> str:
         parts = [p for p in name.strip().lower().split(" ") if p]
         return parts[-1] if parts else ""
+
+    @staticmethod
+    def _parse_team_names(raw_team: object) -> list[str]:
+        raw = str(raw_team or "")
+        names: list[str] = []
+        seen: set[str] = set()
+        for name in (part.strip() for part in raw.split(";")):
+            if not name:
+                continue
+            key = name.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            names.append(name)
+        return names
+
+    def _sync_trip_team_members(self, cur, trip_id: int, raw_team: object) -> None:
+        team_names = self._parse_team_names(raw_team)
+        cur.execute("DELETE FROM trip_team_members WHERE trip_id = %s", (trip_id,))
+        if not team_names:
+            return
+        lowered = [name.lower() for name in team_names]
+        cur.execute(
+            """
+            SELECT id, LOWER(TRIM(name)) AS normalized_name
+            FROM team_members
+            WHERE LOWER(TRIM(name)) = ANY(%s)
+            """,
+            (lowered,),
+        )
+        rows = cur.fetchall()
+        by_name: dict[str, int] = {}
+        for row in rows:
+            normalized = str(row.get("normalized_name") or "")
+            member_id = int(row.get("id") or 0)
+            if normalized and member_id > 0 and normalized not in by_name:
+                by_name[normalized] = member_id
+        for team_name in team_names:
+            member_id = by_name.get(team_name.lower())
+            if member_id is None:
+                continue
+            cur.execute(
+                """
+                INSERT INTO trip_team_members (trip_id, team_member_id)
+                VALUES (%s, %s)
+                ON CONFLICT (trip_id, team_member_id) DO NOTHING
+                """,
+                (trip_id, member_id),
+            )
