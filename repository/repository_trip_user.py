@@ -6,6 +6,13 @@ from repository.repository_base import DEFAULT_TRIP_FIELDS
 
 class RepositoryTripUserMixin:
     @staticmethod
+    def _first_location_candidate(raw_location: object) -> str:
+        return next(
+            (part.strip() for part in str(raw_location or "").split(";") if part.strip()),
+            "",
+        )
+
+    @staticmethod
     def _rebuild_user_accounts_without_is_active(conn) -> None:
         conn.execute(
             """
@@ -210,10 +217,35 @@ class RepositoryTripUserMixin:
         set_sql = ", ".join([f'"{name}" = ?' for name in update_fields])
         values = [data[name] for name in update_fields] + [trip_id]
         with self._connect() as conn:
+            if "location" in data:
+                location_name = self._first_location_candidate(data.get("location"))
+                if not location_name:
+                    raise ValueError("Trip location is required.")
+                location_row = conn.execute(
+                    """
+                    SELECT id
+                    FROM "Locations"
+                    WHERE LOWER(TRIM(name)) = LOWER(TRIM(?))
+                    ORDER BY id
+                    LIMIT 1
+                    """,
+                    (location_name,),
+                ).fetchone()
+                if not location_row:
+                    raise ValueError("Trip location was not found in Locations.")
             conn.execute(
                 f'UPDATE "Trips" SET {set_sql} WHERE id = ?',
                 values,
             )
+            if "location" in data:
+                conn.execute(
+                    """
+                    UPDATE "CollectionEvents"
+                    SET location_id = ?
+                    WHERE trip_id = ?
+                    """,
+                    (int(location_row["id"]), trip_id),
+                )
 
     def list_active_team_members(self) -> list[str]:
         self._ensure_team_members_table()

@@ -91,6 +91,10 @@ class FindRecord(TypedDict, total=False):
     research_group: str | None
     notes: str | None
     collection_year_latest_estimate: int | None
+    find_date: str | None
+    find_time: str | None
+    latitude: str | None
+    longitude: str | None
     created_at: str | None
     updated_at: str | None
     trip_name: str | None

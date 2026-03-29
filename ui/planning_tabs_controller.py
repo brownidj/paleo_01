@@ -180,12 +180,19 @@ class PlanningTabsController:
 
     def load_initial_tab_data(self, load_trips: Callable[[], None]) -> None:
         load_trips()
-        self.load_collection_plan_trips()
-        self.location_tab.load_locations()
-        self.geology_tab.load_geology()
-        self.collection_events_tab.load_collection_events()
-        self.finds_tab.load_finds()
-        self.team_members_tab.load_team_members()
+        current_tab = self.tabs.select()
+        if current_tab == str(self.collection_plan_tab):
+            self.load_collection_plan_trips()
+        elif current_tab == str(self.location_tab):
+            self.location_tab.load_locations()
+        elif current_tab == str(self.geology_tab):
+            self.geology_tab.load_geology()
+        elif current_tab == str(self.collection_events_tab):
+            self.collection_events_tab.load_collection_events()
+        elif current_tab == str(self.finds_tab):
+            self.finds_tab.load_finds()
+        elif current_tab == str(self.team_members_tab):
+            self.team_members_tab.load_team_members()
 
     def load_collection_plan_trips(self) -> None:
         if self.collection_plan_tree is None:
@@ -197,10 +204,19 @@ class PlanningTabsController:
         records = self.repo.list_trips()
         records = [trip for trip in records if self._include_collection_plan_trip(trip.get("end_date"))]
         records.sort(key=lambda trip: (str(trip.get("trip_name") or "").lower(), str(trip.get("start_date") or "")))
+        latest_by_trip: dict[int, dict[str, object]] = {}
+        list_latest = getattr(self.repo, "list_latest_collection_events_by_trip", None)
+        if callable(list_latest):
+            try:
+                latest_by_trip = dict(list_latest())
+            except Exception:
+                latest_by_trip = {}
         for trip in records:
             trip_id = int(trip["id"])
-            events = self.repo.list_collection_events(trip_id)
-            latest_event = max(events, key=lambda row: int(row.get("id") or 0)) if events else None
+            latest_event = latest_by_trip.get(trip_id)
+            if latest_event is None:
+                events = self.repo.list_collection_events(trip_id)
+                latest_event = max(events, key=lambda row: int(row.get("id") or 0)) if events else None
             collection_event_name = str(latest_event.get("collection_name") or "") if latest_event else ""
             self._collection_plan_event_by_trip[trip_id] = int(latest_event["id"]) if latest_event else None
             tree.insert(

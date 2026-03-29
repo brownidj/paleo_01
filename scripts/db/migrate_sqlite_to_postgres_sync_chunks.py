@@ -227,7 +227,7 @@ def sync_collection_events_and_finds(sqlite_conn: sqlite3.Connection, pg_conn: C
         SELECT id, location_id, collection_event_id, source_system, source_occurrence_no, identified_name, accepted_name,
                identified_rank, accepted_rank, difference, identified_no, accepted_no, phylum, class_name, taxon_order,
                family, genus, abund_value, abund_unit, reference_no, taxonomy_comments, occurrence_comments, research_group,
-               notes, collection_year_latest_estimate, created_at, updated_at
+               notes, find_date, find_time, latitude, longitude, collection_year_latest_estimate, created_at, updated_at
         FROM Finds ORDER BY id
         """,
     )
@@ -238,13 +238,13 @@ def sync_collection_events_and_finds(sqlite_conn: sqlite3.Connection, pg_conn: C
             (id, location_id, collection_event_id, source_system, source_occurrence_no, identified_name, accepted_name,
              identified_rank, accepted_rank, difference, identified_no, accepted_no, phylum, class_name, taxon_order, family,
              genus, abund_value, abund_unit, reference_no, taxonomy_comments, occurrence_comments, research_group, notes,
-             collection_year_latest_estimate, created_at, updated_at)
+             find_date, find_time, latitude, longitude, collection_year_latest_estimate, created_at, updated_at)
         VALUES
             (%(id)s, %(location_id)s, %(collection_event_id)s, %(source_system)s, %(source_occurrence_no)s, %(identified_name)s,
              %(accepted_name)s, %(identified_rank)s, %(accepted_rank)s, %(difference)s, %(identified_no)s, %(accepted_no)s,
              %(phylum)s, %(class_name)s, %(taxon_order)s, %(family)s, %(genus)s, %(abund_value)s, %(abund_unit)s,
              %(reference_no)s, %(taxonomy_comments)s, %(occurrence_comments)s, %(research_group)s, %(notes)s,
-             %(collection_year_latest_estimate)s, %(created_at)s, %(updated_at)s)
+             %(find_date)s, %(find_time)s, %(latitude)s, %(longitude)s, %(collection_year_latest_estimate)s, %(created_at)s, %(updated_at)s)
         ON CONFLICT (id) DO UPDATE SET
             location_id = EXCLUDED.location_id, collection_event_id = EXCLUDED.collection_event_id, source_system = EXCLUDED.source_system,
             source_occurrence_no = EXCLUDED.source_occurrence_no, identified_name = EXCLUDED.identified_name, accepted_name = EXCLUDED.accepted_name,
@@ -253,6 +253,7 @@ def sync_collection_events_and_finds(sqlite_conn: sqlite3.Connection, pg_conn: C
             taxon_order = EXCLUDED.taxon_order, family = EXCLUDED.family, genus = EXCLUDED.genus, abund_value = EXCLUDED.abund_value,
             abund_unit = EXCLUDED.abund_unit, reference_no = EXCLUDED.reference_no, taxonomy_comments = EXCLUDED.taxonomy_comments,
             occurrence_comments = EXCLUDED.occurrence_comments, research_group = EXCLUDED.research_group, notes = EXCLUDED.notes,
+            find_date = EXCLUDED.find_date, find_time = EXCLUDED.find_time, latitude = EXCLUDED.latitude, longitude = EXCLUDED.longitude,
             collection_year_latest_estimate = EXCLUDED.collection_year_latest_estimate, created_at = EXCLUDED.created_at, updated_at = EXCLUDED.updated_at
         """,
         find_rows,

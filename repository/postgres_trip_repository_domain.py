@@ -88,9 +88,57 @@ class PostgresTripRepositoryDomainMixin:
     def list_finds(self, trip_id: int | None = None) -> list[FindRecord]:
         with self._connect() as conn, conn.cursor() as cur:
             if trip_id is None:
-                cur.execute("SELECT f.id, f.source_occurrence_no, f.accepted_name, f.identified_name, f.reference_no, f.collection_year_latest_estimate, t.trip_name, ce.collection_name, ce.collection_subset FROM finds f LEFT JOIN collection_events ce ON ce.id=f.collection_event_id LEFT JOIN trips t ON t.id=ce.trip_id LEFT JOIN locations l ON l.id=f.location_id ORDER BY LOWER(COALESCE(l.name,'')), f.id")
+                cur.execute(
+                    """
+                    SELECT
+                        f.id,
+                        f.source_occurrence_no,
+                        ft.accepted_name AS accepted_name,
+                        ft.identified_name AS identified_name,
+                        ft.reference_no AS reference_no,
+                        ft.collection_year_latest_estimate AS collection_year_latest_estimate,
+                        f.find_date,
+                        f.find_time,
+                        f.latitude,
+                        f.longitude,
+                        t.trip_name,
+                        ce.collection_name,
+                        ce.collection_subset
+                    FROM finds f
+                    LEFT JOIN find_taxonomy ft ON ft.find_id = f.id
+                    LEFT JOIN collection_events ce ON ce.id = f.collection_event_id
+                    LEFT JOIN trips t ON t.id = ce.trip_id
+                    LEFT JOIN locations l ON l.id = f.location_id
+                    ORDER BY LOWER(COALESCE(l.name, '')), f.id
+                    """
+                )
             else:
-                cur.execute("SELECT f.id, f.source_occurrence_no, f.accepted_name, f.identified_name, f.reference_no, f.collection_year_latest_estimate, t.trip_name, ce.collection_name, ce.collection_subset FROM finds f LEFT JOIN collection_events ce ON ce.id=f.collection_event_id LEFT JOIN trips t ON t.id=ce.trip_id LEFT JOIN locations l ON l.id=f.location_id WHERE ce.trip_id = %s ORDER BY LOWER(COALESCE(l.name,'')), f.id", (trip_id,))
+                cur.execute(
+                    """
+                    SELECT
+                        f.id,
+                        f.source_occurrence_no,
+                        ft.accepted_name AS accepted_name,
+                        ft.identified_name AS identified_name,
+                        ft.reference_no AS reference_no,
+                        ft.collection_year_latest_estimate AS collection_year_latest_estimate,
+                        f.find_date,
+                        f.find_time,
+                        f.latitude,
+                        f.longitude,
+                        t.trip_name,
+                        ce.collection_name,
+                        ce.collection_subset
+                    FROM finds f
+                    LEFT JOIN find_taxonomy ft ON ft.find_id = f.id
+                    LEFT JOIN collection_events ce ON ce.id = f.collection_event_id
+                    LEFT JOIN trips t ON t.id = ce.trip_id
+                    LEFT JOIN locations l ON l.id = f.location_id
+                    WHERE ce.trip_id = %s
+                    ORDER BY LOWER(COALESCE(l.name, '')), f.id
+                    """,
+                    (trip_id,),
+                )
             rows = cur.fetchall()
         return [cast(FindRecord, dict(r)) for r in rows]
 
@@ -99,22 +147,121 @@ class PostgresTripRepositoryDomainMixin:
             cur.execute("SELECT COUNT(DISTINCT id) AS event_count FROM collection_events WHERE trip_id = %s", (trip_id,))
             return int(cur.fetchone()["event_count"])
 
+    def count_collection_events_by_trip(self) -> dict[int, int]:
+        with self._connect() as conn, conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT trip_id, COUNT(*) AS event_count
+                FROM collection_events
+                WHERE trip_id IS NOT NULL
+                GROUP BY trip_id
+                """
+            )
+            rows = cur.fetchall()
+        return {int(row["trip_id"]): int(row["event_count"] or 0) for row in rows}
+
     def count_finds_for_trip(self, trip_id: int) -> int:
         with self._connect() as conn, conn.cursor() as cur:
             cur.execute("SELECT COUNT(*) AS find_count FROM finds f JOIN collection_events ce ON ce.id=f.collection_event_id WHERE ce.trip_id = %s", (trip_id,))
             return int(cur.fetchone()["find_count"])
 
+    def count_finds_by_trip(self) -> dict[int, int]:
+        with self._connect() as conn, conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT ce.trip_id, COUNT(*) AS find_count
+                FROM finds f
+                JOIN collection_events ce ON ce.id = f.collection_event_id
+                WHERE ce.trip_id IS NOT NULL
+                GROUP BY ce.trip_id
+                """
+            )
+            rows = cur.fetchall()
+        return {int(row["trip_id"]): int(row["find_count"] or 0) for row in rows}
+
+    def list_latest_collection_events_by_trip(self) -> dict[int, CollectionEventRecord]:
+        with self._connect() as conn, conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT ce.trip_id, ce.id, ce.collection_name
+                FROM collection_events ce
+                JOIN (
+                    SELECT trip_id, MAX(id) AS max_id
+                    FROM collection_events
+                    WHERE trip_id IS NOT NULL
+                    GROUP BY trip_id
+                ) latest
+                    ON latest.trip_id = ce.trip_id AND latest.max_id = ce.id
+                """
+            )
+            rows = cur.fetchall()
+        return {
+            int(row["trip_id"]): cast(
+                CollectionEventRecord,
+                {
+                    "trip_id": int(row["trip_id"]),
+                    "id": int(row["id"]),
+                    "collection_name": row["collection_name"],
+                },
+            )
+            for row in rows
+        }
+
     def create_find(self, data: dict[str, object]) -> int:
         collection_event_id, location_id, text_values, year_value = self._normalize_find_payload(data)
-        cols = ["location_id", "collection_event_id", "source_system", "source_occurrence_no", "identified_name", "accepted_name", "identified_rank", "accepted_rank", "difference", "identified_no", "accepted_no", "phylum", "class_name", "taxon_order", "family", "genus", "abund_value", "abund_unit", "reference_no", "taxonomy_comments", "occurrence_comments", "research_group", "notes", "collection_year_latest_estimate"]
-        vals = [location_id, collection_event_id] + [text_values[c] for c in cols[2:-1]] + [year_value]
+        cols = ["location_id", "collection_event_id", "source_system", "source_occurrence_no", "find_date", "find_time", "latitude", "longitude"]
+        vals = [location_id, collection_event_id, text_values["source_system"], text_values["source_occurrence_no"], text_values["find_date"], text_values["find_time"], text_values["latitude"], text_values["longitude"]]
         with self._connect() as conn, conn.cursor() as cur:
             cur.execute(f'INSERT INTO finds ({", ".join(cols)}) VALUES ({", ".join(["%s"]*len(cols))}) RETURNING id', vals)
-            return int(cur.fetchone()["id"])
+            find_id = int(cur.fetchone()["id"])
+            self._upsert_split_find_rows(cur, find_id, text_values, year_value)
+            return find_id
 
     def get_find(self, find_id: int) -> FindRecord | None:
         with self._connect() as conn, conn.cursor() as cur:
-            cur.execute("SELECT id, location_id, collection_event_id, source_system, source_occurrence_no, identified_name, accepted_name, identified_rank, accepted_rank, difference, identified_no, accepted_no, phylum, class_name, taxon_order, family, genus, abund_value, abund_unit, reference_no, taxonomy_comments, occurrence_comments, research_group, notes, collection_year_latest_estimate, created_at::text AS created_at, updated_at::text AS updated_at FROM finds WHERE id = %s", (find_id,))
+            cur.execute(
+                """
+                SELECT
+                    f.id,
+                    f.location_id,
+                    l.name AS location_name,
+                    f.collection_event_id,
+                    f.source_system,
+                    f.source_occurrence_no,
+                    ft.identified_name AS identified_name,
+                    ft.accepted_name AS accepted_name,
+                    ft.identified_rank AS identified_rank,
+                    ft.accepted_rank AS accepted_rank,
+                    ft.difference AS difference,
+                    ft.identified_no AS identified_no,
+                    ft.accepted_no AS accepted_no,
+                    ft.phylum AS phylum,
+                    ft.class_name AS class_name,
+                    ft.taxon_order AS taxon_order,
+                    ft.family AS family,
+                    ft.genus AS genus,
+                    fo.abund_value AS abund_value,
+                    fo.abund_unit AS abund_unit,
+                    ft.reference_no AS reference_no,
+                    ft.taxonomy_comments AS taxonomy_comments,
+                    fo.occurrence_comments AS occurrence_comments,
+                    fo.research_group AS research_group,
+                    fo.notes AS notes,
+                    f.find_date,
+                    f.find_time,
+                    f.latitude,
+                    f.longitude,
+                    ft.collection_year_latest_estimate AS collection_year_latest_estimate,
+                    f.created_at::text AS created_at,
+                    f.updated_at::text AS updated_at
+                FROM finds f
+                LEFT JOIN locations l ON l.id = f.location_id
+                LEFT JOIN find_field_observations fo ON fo.find_id = f.id
+                LEFT JOIN find_taxonomy ft ON ft.find_id = f.id
+                WHERE f.id = %s
+                """,
+                (find_id,),
+            )
             row = cur.fetchone()
         return cast(FindRecord, dict(row)) if row else None
 
@@ -122,9 +269,241 @@ class PostgresTripRepositoryDomainMixin:
         collection_event_id, location_id, text_values, year_value = self._normalize_find_payload(data)
         with self._connect() as conn, conn.cursor() as cur:
             cur.execute(
-                "UPDATE finds SET location_id=%s, collection_event_id=%s, source_system=%s, source_occurrence_no=%s, identified_name=%s, accepted_name=%s, identified_rank=%s, accepted_rank=%s, difference=%s, identified_no=%s, accepted_no=%s, phylum=%s, class_name=%s, taxon_order=%s, family=%s, genus=%s, abund_value=%s, abund_unit=%s, reference_no=%s, taxonomy_comments=%s, occurrence_comments=%s, research_group=%s, notes=%s, collection_year_latest_estimate=%s WHERE id=%s",
-                (location_id, collection_event_id, text_values["source_system"], text_values["source_occurrence_no"], text_values["identified_name"], text_values["accepted_name"], text_values["identified_rank"], text_values["accepted_rank"], text_values["difference"], text_values["identified_no"], text_values["accepted_no"], text_values["phylum"], text_values["class_name"], text_values["taxon_order"], text_values["family"], text_values["genus"], text_values["abund_value"], text_values["abund_unit"], text_values["reference_no"], text_values["taxonomy_comments"], text_values["occurrence_comments"], text_values["research_group"], text_values["notes"], year_value, find_id),
+                "UPDATE finds SET location_id=%s, collection_event_id=%s, source_system=%s, source_occurrence_no=%s, find_date=%s, find_time=%s, latitude=%s, longitude=%s WHERE id=%s",
+                (location_id, collection_event_id, text_values["source_system"], text_values["source_occurrence_no"], text_values["find_date"], text_values["find_time"], text_values["latitude"], text_values["longitude"], find_id),
             )
+            self._upsert_split_find_rows(cur, find_id, text_values, year_value)
+
+    def get_find_field_observations(self, find_id: int) -> dict[str, object] | None:
+        with self._connect() as conn, conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT
+                    fo.find_id,
+                    fo.provisional_identification,
+                    fo.abund_value,
+                    fo.abund_unit,
+                    fo.research_group,
+                    fo.notes,
+                    fo.occurrence_comments,
+                    fo.created_at::text AS created_at,
+                    fo.updated_at::text AS updated_at
+                FROM find_field_observations fo
+                WHERE fo.find_id = %s
+                """,
+                (find_id,),
+            )
+            row = cur.fetchone()
+        return cast(dict[str, object], dict(row)) if row else None
+
+    def update_find_field_observations(self, find_id: int, data: dict[str, object]) -> None:
+        values = {k: (str(data.get(k) or "").strip() or None) for k in ("provisional_identification", "abund_value", "abund_unit", "research_group", "notes", "occurrence_comments")}
+        with self._connect() as conn, conn.cursor() as cur:
+            cur.execute("SELECT id FROM finds WHERE id = %s", (find_id,))
+            if not cur.fetchone():
+                raise ValueError("Find does not exist.")
+            cur.execute(
+                """
+                INSERT INTO find_field_observations (
+                    find_id, provisional_identification, notes, abund_value, abund_unit, occurrence_comments, research_group
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (find_id) DO UPDATE SET
+                    provisional_identification = EXCLUDED.provisional_identification,
+                    notes = EXCLUDED.notes,
+                    abund_value = EXCLUDED.abund_value,
+                    abund_unit = EXCLUDED.abund_unit,
+                    occurrence_comments = EXCLUDED.occurrence_comments,
+                    research_group = EXCLUDED.research_group,
+                    updated_at = CURRENT_TIMESTAMP
+                """,
+                (
+                    find_id,
+                    values["provisional_identification"],
+                    values["notes"],
+                    values["abund_value"],
+                    values["abund_unit"],
+                    values["occurrence_comments"],
+                    values["research_group"],
+                ),
+            )
+
+    def get_find_taxonomy(self, find_id: int) -> dict[str, object] | None:
+        with self._connect() as conn, conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT
+                    ft.find_id,
+                    ft.identified_name,
+                    ft.accepted_name,
+                    ft.identified_rank,
+                    ft.accepted_rank,
+                    ft.difference,
+                    ft.identified_no,
+                    ft.accepted_no,
+                    ft.phylum,
+                    ft.class_name,
+                    ft.taxon_order,
+                    ft.family,
+                    ft.genus,
+                    ft.reference_no,
+                    ft.taxonomy_comments,
+                    ft.collection_year_latest_estimate,
+                    ft.created_at::text AS created_at,
+                    ft.updated_at::text AS updated_at
+                FROM find_taxonomy ft
+                WHERE ft.find_id = %s
+                """,
+                (find_id,),
+            )
+            row = cur.fetchone()
+        return cast(dict[str, object], dict(row)) if row else None
+
+    def update_find_taxonomy(self, find_id: int, data: dict[str, object]) -> None:
+        text_values = {
+            k: (str(data.get(k) or "").strip() or None)
+            for k in (
+                "identified_name",
+                "accepted_name",
+                "identified_rank",
+                "accepted_rank",
+                "difference",
+                "identified_no",
+                "accepted_no",
+                "phylum",
+                "class_name",
+                "taxon_order",
+                "family",
+                "genus",
+                "reference_no",
+                "taxonomy_comments",
+            )
+        }
+        year_raw = data.get("collection_year_latest_estimate")
+        if year_raw in (None, ""):
+            year_value = None
+        else:
+            try:
+                year_value = int(str(year_raw).strip())
+            except (TypeError, ValueError) as exc:
+                raise ValueError("collection_year_latest_estimate must be an integer.") from exc
+        with self._connect() as conn, conn.cursor() as cur:
+            cur.execute("SELECT id FROM finds WHERE id = %s", (find_id,))
+            if not cur.fetchone():
+                raise ValueError("Find does not exist.")
+            cur.execute(
+                """
+                INSERT INTO find_taxonomy (
+                    find_id, identified_name, accepted_name, identified_rank, accepted_rank, difference,
+                    identified_no, accepted_no, phylum, class_name, taxon_order, family, genus,
+                    reference_no, taxonomy_comments, collection_year_latest_estimate
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (find_id) DO UPDATE SET
+                    identified_name = EXCLUDED.identified_name,
+                    accepted_name = EXCLUDED.accepted_name,
+                    identified_rank = EXCLUDED.identified_rank,
+                    accepted_rank = EXCLUDED.accepted_rank,
+                    difference = EXCLUDED.difference,
+                    identified_no = EXCLUDED.identified_no,
+                    accepted_no = EXCLUDED.accepted_no,
+                    phylum = EXCLUDED.phylum,
+                    class_name = EXCLUDED.class_name,
+                    taxon_order = EXCLUDED.taxon_order,
+                    family = EXCLUDED.family,
+                    genus = EXCLUDED.genus,
+                    reference_no = EXCLUDED.reference_no,
+                    taxonomy_comments = EXCLUDED.taxonomy_comments,
+                    collection_year_latest_estimate = EXCLUDED.collection_year_latest_estimate,
+                    updated_at = CURRENT_TIMESTAMP
+                """,
+                (
+                    find_id,
+                    text_values["identified_name"],
+                    text_values["accepted_name"],
+                    text_values["identified_rank"],
+                    text_values["accepted_rank"],
+                    text_values["difference"],
+                    text_values["identified_no"],
+                    text_values["accepted_no"],
+                    text_values["phylum"],
+                    text_values["class_name"],
+                    text_values["taxon_order"],
+                    text_values["family"],
+                    text_values["genus"],
+                    text_values["reference_no"],
+                    text_values["taxonomy_comments"],
+                    year_value,
+                ),
+            )
+
+    def _upsert_split_find_rows(self, cur, find_id: int, text_values: dict[str, str | None], year_value: int | None) -> None:
+        cur.execute(
+            """
+            INSERT INTO find_field_observations (
+                find_id, provisional_identification, notes, abund_value, abund_unit, occurrence_comments, research_group
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (find_id) DO UPDATE SET
+                provisional_identification = EXCLUDED.provisional_identification,
+                notes = EXCLUDED.notes,
+                abund_value = EXCLUDED.abund_value,
+                abund_unit = EXCLUDED.abund_unit,
+                occurrence_comments = EXCLUDED.occurrence_comments,
+                research_group = EXCLUDED.research_group,
+                updated_at = CURRENT_TIMESTAMP
+            """,
+            (
+                find_id,
+                text_values["identified_name"],
+                text_values["notes"],
+                text_values["abund_value"],
+                text_values["abund_unit"],
+                text_values["occurrence_comments"],
+                text_values["research_group"],
+            ),
+        )
+        cur.execute(
+            """
+            INSERT INTO find_taxonomy (
+                find_id, identified_name, accepted_name, identified_rank, accepted_rank, difference,
+                identified_no, accepted_no, phylum, class_name, taxon_order, family, genus,
+                reference_no, taxonomy_comments, collection_year_latest_estimate
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (find_id) DO UPDATE SET
+                identified_name = EXCLUDED.identified_name,
+                accepted_name = EXCLUDED.accepted_name,
+                identified_rank = EXCLUDED.identified_rank,
+                accepted_rank = EXCLUDED.accepted_rank,
+                difference = EXCLUDED.difference,
+                identified_no = EXCLUDED.identified_no,
+                accepted_no = EXCLUDED.accepted_no,
+                phylum = EXCLUDED.phylum,
+                class_name = EXCLUDED.class_name,
+                taxon_order = EXCLUDED.taxon_order,
+                family = EXCLUDED.family,
+                genus = EXCLUDED.genus,
+                reference_no = EXCLUDED.reference_no,
+                taxonomy_comments = EXCLUDED.taxonomy_comments,
+                collection_year_latest_estimate = EXCLUDED.collection_year_latest_estimate,
+                updated_at = CURRENT_TIMESTAMP
+            """,
+            (
+                find_id,
+                text_values["identified_name"],
+                text_values["accepted_name"],
+                text_values["identified_rank"],
+                text_values["accepted_rank"],
+                text_values["difference"],
+                text_values["identified_no"],
+                text_values["accepted_no"],
+                text_values["phylum"],
+                text_values["class_name"],
+                text_values["taxon_order"],
+                text_values["family"],
+                text_values["genus"],
+                text_values["reference_no"],
+                text_values["taxonomy_comments"],
+                year_value,
+            ),
+        )
 
     def list_geology_records(self) -> list[GeologyRecord]:
         with self._connect() as conn, conn.cursor() as cur:
@@ -249,7 +628,7 @@ class PostgresTripRepositoryDomainMixin:
             if not ce_row:
                 raise ValueError("Selected collection event does not exist.")
             location_id = int(ce_row["location_id"])
-        text_fields = ("source_system", "source_occurrence_no", "identified_name", "accepted_name", "identified_rank", "accepted_rank", "difference", "identified_no", "accepted_no", "phylum", "class_name", "taxon_order", "family", "genus", "abund_value", "abund_unit", "reference_no", "taxonomy_comments", "occurrence_comments", "research_group", "notes")
+        text_fields = ("source_system", "source_occurrence_no", "identified_name", "accepted_name", "identified_rank", "accepted_rank", "difference", "identified_no", "accepted_no", "phylum", "class_name", "taxon_order", "family", "genus", "abund_value", "abund_unit", "reference_no", "taxonomy_comments", "occurrence_comments", "research_group", "notes", "find_date", "find_time", "latitude", "longitude")
         text_values: dict[str, str | None] = {}
         for field in text_fields:
             raw = str(data.get(field) or "").strip()

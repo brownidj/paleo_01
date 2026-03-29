@@ -3,31 +3,15 @@ from tkinter import ttk
 
 
 class FindFormDialog(tk.Toplevel):
-    READONLY_FIELDS = ("id", "location_id", "created_at", "updated_at")
-    TEXT_FIELDS = ("taxonomy_comments", "occurrence_comments", "notes")
+    READONLY_FIELDS = ("location_name",)
+    TEXT_FIELDS: tuple[str, ...] = ()
     EDITABLE_FIELDS = (
+        "find_date",
+        "find_time",
+        "latitude",
+        "longitude",
         "source_system",
         "source_occurrence_no",
-        "identified_name",
-        "accepted_name",
-        "identified_rank",
-        "accepted_rank",
-        "difference",
-        "identified_no",
-        "accepted_no",
-        "phylum",
-        "class_name",
-        "taxon_order",
-        "family",
-        "genus",
-        "abund_value",
-        "abund_unit",
-        "reference_no",
-        "taxonomy_comments",
-        "occurrence_comments",
-        "research_group",
-        "notes",
-        "collection_year_latest_estimate",
     )
 
     def __init__(
@@ -35,6 +19,9 @@ class FindFormDialog(tk.Toplevel):
         parent: tk.Widget,
         collection_event_choices: list[tuple[int, str]],
         on_save,
+        on_saved=None,
+        on_open_field_observations=None,
+        on_open_taxonomy=None,
         initial_data: dict[str, object] | None = None,
         title: str = "Find",
         is_new: bool = False,
@@ -44,12 +31,16 @@ class FindFormDialog(tk.Toplevel):
         self.resizable(True, True)
         self.minsize(640, 520)
         self.on_save = on_save
+        self.on_saved = on_saved
+        self._on_open_field_observations = on_open_field_observations
+        self._find_id = int(initial_data["id"]) if initial_data and initial_data.get("id") not in (None, "") else None
         self._choice_map: dict[str, int] = {label: ce_id for ce_id, label in collection_event_choices}
         self._selected_collection_event_id = (
             int(initial_data["collection_event_id"]) if initial_data and initial_data.get("collection_event_id") else None
         )
         self._edit_var = tk.IntVar(value=0)
         self._last_saved_payload: dict[str, object] = {}
+        self._on_open_taxonomy = on_open_taxonomy
 
         outer = ttk.Frame(self, padding=10)
         outer.pack(fill="both", expand=True)
@@ -89,7 +80,7 @@ class FindFormDialog(tk.Toplevel):
             self._inputs[field] = entry
             row += 1
 
-        ttk.Label(form, text="collection_event_id").grid(row=row, column=0, sticky="e", padx=4, pady=4)
+        ttk.Label(form, text="Collection Event").grid(row=row, column=0, sticky="e", padx=4, pady=4)
         self.collection_event_var = tk.StringVar(value=collection_event_choices[0][1] if collection_event_choices else "")
         self.collection_event_combo = ttk.Combobox(
             form,
@@ -129,9 +120,22 @@ class FindFormDialog(tk.Toplevel):
         edit_radio = ttk.Radiobutton(controls, text="Edit", variable=self._edit_var, value=1)
         edit_radio.grid(row=0, column=1, padx=(6, 4), sticky="e")
         edit_radio.bind("<Button-1>", self._on_edit_radio_click, add="+")
-        self._save_button = ttk.Button(controls, text="Save", command=self._save)
-        self._save_button.grid(row=0, column=2, padx=4, sticky="e")
-        ttk.Button(controls, text="Close", command=self._close).grid(row=0, column=3, padx=4, sticky="e")
+        button_col = 2
+        if callable(self._on_open_field_observations) and isinstance(self._find_id, int):
+            ttk.Button(
+                controls,
+                text="Observations",
+                command=self._open_field_observations,
+            ).grid(row=0, column=button_col, padx=4, sticky="e")
+            button_col += 1
+        if callable(self._on_open_taxonomy) and isinstance(self._find_id, int):
+            ttk.Button(
+                controls,
+                text="Taxonomy",
+                command=self._open_taxonomy,
+            ).grid(row=0, column=button_col, padx=4, sticky="e")
+            button_col += 1
+        ttk.Button(controls, text="Close", command=self._close).grid(row=0, column=button_col, padx=4, sticky="e")
 
         self._last_saved_payload = self._collect_payload()
         self._set_edit_mode(self._edit_var.get() == 1)
@@ -152,16 +156,6 @@ class FindFormDialog(tk.Toplevel):
                 payload[field] = widget.get().strip()
         return payload
 
-    def _save(self) -> None:
-        if self._edit_var.get() != 1:
-            return
-        payload = self._collect_payload()
-        should_close = self.on_save(payload)
-        if should_close is False:
-            return
-        self._last_saved_payload = payload
-        self.destroy()
-
     def _save_if_changed(self) -> bool:
         payload = self._collect_payload()
         if payload == self._last_saved_payload:
@@ -170,6 +164,8 @@ class FindFormDialog(tk.Toplevel):
         if should_close is False:
             return False
         self._last_saved_payload = payload
+        if callable(self.on_saved):
+            self.on_saved()
         return True
 
     def _close(self) -> None:
@@ -179,7 +175,6 @@ class FindFormDialog(tk.Toplevel):
 
     def _set_edit_mode(self, editable: bool) -> None:
         self.collection_event_combo.configure(state="readonly" if editable else "disabled")
-        self._save_button.configure(state="normal" if editable else "disabled")
         for field in self.READONLY_FIELDS:
             widget = self._inputs.get(field)
             if widget is None:
@@ -203,3 +198,17 @@ class FindFormDialog(tk.Toplevel):
         self._edit_var.set(1)
         self._set_edit_mode(True)
         return "break"
+
+    def _open_field_observations(self) -> None:
+        if not callable(self._on_open_field_observations) or not isinstance(self._find_id, int):
+            return
+        if not self._save_if_changed():
+            return
+        self._on_open_field_observations(self._find_id)
+
+    def _open_taxonomy(self) -> None:
+        if not callable(self._on_open_taxonomy) or not isinstance(self._find_id, int):
+            return
+        if not self._save_if_changed():
+            return
+        self._on_open_taxonomy(self._find_id)

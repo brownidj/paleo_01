@@ -198,7 +198,17 @@ class TestTripRepositoryLocationFinds(RepoTestCase):
     def test_finds_schema_includes_collection_year_latest_estimate(self):
         with closing(sqlite3.connect(self.db_path)) as conn:
             columns = [row[1] for row in conn.execute("PRAGMA table_info(Finds)").fetchall()]
+            split_tables = {
+                row[0] for row in conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('FindFieldObservations', 'FindTaxonomy')"
+                ).fetchall()
+            }
         self.assertIn("collection_year_latest_estimate", columns)
+        self.assertIn("find_date", columns)
+        self.assertIn("find_time", columns)
+        self.assertIn("latitude", columns)
+        self.assertIn("longitude", columns)
+        self.assertEqual(split_tables, {"FindFieldObservations", "FindTaxonomy"})
 
     def test_create_find_requires_collection_event_and_sets_location(self):
         with closing(sqlite3.connect(self.db_path)) as conn:
@@ -230,23 +240,45 @@ class TestTripRepositoryLocationFinds(RepoTestCase):
                 "accepted_name": "Taxon A",
                 "identified_name": "Taxon A",
                 "collection_year_latest_estimate": 1999,
+                "find_date": "2026-03-28",
+                "find_time": "14:35",
+                "latitude": "-22.12345",
+                "longitude": "147.54321",
             }
         )
         self.assertIsInstance(find_id, int)
 
         with closing(sqlite3.connect(self.db_path)) as conn:
             row = conn.execute(
-                "SELECT location_id, collection_event_id, source_occurrence_no, accepted_name, collection_year_latest_estimate "
+                "SELECT location_id, collection_event_id, source_occurrence_no, find_date, find_time, latitude, longitude "
                 "FROM Finds WHERE id = ?",
+                (find_id,),
+            ).fetchone()
+            field_row = conn.execute(
+                "SELECT provisional_identification, notes, abund_value, abund_unit FROM FindFieldObservations WHERE find_id = ?",
+                (find_id,),
+            ).fetchone()
+            taxonomy_row = conn.execute(
+                "SELECT identified_name, accepted_name, collection_year_latest_estimate FROM FindTaxonomy WHERE find_id = ?",
                 (find_id,),
             ).fetchone()
         self.assertIsNotNone(row)
         assert row is not None
+        self.assertIsNotNone(field_row)
+        self.assertIsNotNone(taxonomy_row)
+        assert field_row is not None
+        assert taxonomy_row is not None
         self.assertEqual(row[0], location_id)
         self.assertEqual(row[1], ce_id)
         self.assertEqual(row[2], "SRC-1")
-        self.assertEqual(row[3], "Taxon A")
-        self.assertEqual(row[4], 1999)
+        self.assertEqual(row[3], "2026-03-28")
+        self.assertEqual(row[4], "14:35")
+        self.assertEqual(row[5], "-22.12345")
+        self.assertEqual(row[6], "147.54321")
+        self.assertEqual(field_row[0], "Taxon A")
+        self.assertEqual(taxonomy_row[0], "Taxon A")
+        self.assertEqual(taxonomy_row[1], "Taxon A")
+        self.assertEqual(taxonomy_row[2], 1999)
 
     def test_update_find_moves_collection_event_and_location(self):
         with closing(sqlite3.connect(self.db_path)) as conn:
@@ -300,24 +332,45 @@ class TestTripRepositoryLocationFinds(RepoTestCase):
                 "identified_name": "Taxon B",
                 "reference_no": "REF-2",
                 "collection_year_latest_estimate": 2001,
+                "find_date": "2026-03-29",
+                "find_time": "09:10",
+                "latitude": "-23.10000",
+                "longitude": "143.10000",
             },
         )
 
         with closing(sqlite3.connect(self.db_path)) as conn:
             row = conn.execute(
-                "SELECT location_id, collection_event_id, source_occurrence_no, accepted_name, identified_name, reference_no, collection_year_latest_estimate "
+                "SELECT location_id, collection_event_id, source_occurrence_no, find_date, find_time, latitude, longitude "
                 "FROM Finds WHERE id = ?",
+                (find_id,),
+            ).fetchone()
+            field_row = conn.execute(
+                "SELECT provisional_identification, notes, occurrence_comments, research_group FROM FindFieldObservations WHERE find_id = ?",
+                (find_id,),
+            ).fetchone()
+            taxonomy_row = conn.execute(
+                "SELECT identified_name, accepted_name, reference_no, collection_year_latest_estimate FROM FindTaxonomy WHERE find_id = ?",
                 (find_id,),
             ).fetchone()
         self.assertIsNotNone(row)
         assert row is not None
+        self.assertIsNotNone(field_row)
+        self.assertIsNotNone(taxonomy_row)
+        assert field_row is not None
+        assert taxonomy_row is not None
         self.assertEqual(row[0], loc_b)
         self.assertEqual(row[1], ce_b)
         self.assertEqual(row[2], "SRC-2")
-        self.assertEqual(row[3], "Taxon B")
-        self.assertEqual(row[4], "Taxon B")
-        self.assertEqual(row[5], "REF-2")
-        self.assertEqual(row[6], 2001)
+        self.assertEqual(row[3], "2026-03-29")
+        self.assertEqual(row[4], "09:10")
+        self.assertEqual(row[5], "-23.10000")
+        self.assertEqual(row[6], "143.10000")
+        self.assertEqual(field_row[0], "Taxon B")
+        self.assertEqual(taxonomy_row[0], "Taxon B")
+        self.assertEqual(taxonomy_row[1], "Taxon B")
+        self.assertEqual(taxonomy_row[2], "REF-2")
+        self.assertEqual(taxonomy_row[3], 2001)
 
     def test_create_collection_event_for_trip_uses_trip_location(self):
         trip_id = self.repo.create_trip({"trip_name": "Trip CE", "location": "Plan Site"})
@@ -376,6 +429,54 @@ class TestTripRepositoryLocationFinds(RepoTestCase):
         self.assertIsNotNone(row)
         assert row is not None
         self.assertEqual(row[0], f"Updated CE [#{event_id}]")
+
+    def test_update_trip_location_repoints_collection_event_location(self):
+        with closing(sqlite3.connect(self.db_path)) as conn:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                INSERT INTO Locations (
+                    name, latitude, longitude, altitude_value, altitude_unit,
+                    country_code, state, lga, basin, geogscale, geography_comments
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                ("Site A", "-22.0", "143.0", "", "", "AU", "QLD", "", "", "site", ""),
+            )
+            site_a = int(cur.lastrowid)
+            cur.execute(
+                """
+                INSERT INTO Locations (
+                    name, latitude, longitude, altitude_value, altitude_unit,
+                    country_code, state, lga, basin, geogscale, geography_comments
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                ("Site B", "-22.1", "143.1", "", "", "AU", "QLD", "", "", "site", ""),
+            )
+            site_b = int(cur.lastrowid)
+            conn.commit()
+
+        trip_id = self.repo.create_trip({"trip_name": "Trip Loc Sync", "location": "Site A"})
+        event_id = self.repo.create_collection_event_for_trip(trip_id, "CE-Loc-Sync")
+
+        with closing(sqlite3.connect(self.db_path)) as conn:
+            before_row = conn.execute(
+                "SELECT location_id FROM CollectionEvents WHERE id = ?",
+                (event_id,),
+            ).fetchone()
+        self.assertIsNotNone(before_row)
+        assert before_row is not None
+        self.assertEqual(int(before_row[0]), site_a)
+
+        self.repo.update_trip(trip_id, {"location": "Site B"})
+
+        with closing(sqlite3.connect(self.db_path)) as conn:
+            after_row = conn.execute(
+                "SELECT location_id FROM CollectionEvents WHERE id = ?",
+                (event_id,),
+            ).fetchone()
+        self.assertIsNotNone(after_row)
+        assert after_row is not None
+        self.assertEqual(int(after_row[0]), site_b)
 
     def test_backfill_collection_event_codes(self):
         with closing(sqlite3.connect(self.db_path)) as conn:

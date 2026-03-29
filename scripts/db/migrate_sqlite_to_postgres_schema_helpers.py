@@ -170,9 +170,88 @@ def ensure_schema(pg: Connection) -> None:
                 research_group TEXT,
                 notes TEXT,
                 collection_year_latest_estimate INTEGER,
+                find_date TEXT,
+                find_time TEXT,
+                latitude TEXT,
+                longitude TEXT,
                 created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
+            """
+        )
+        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS find_date TEXT")
+        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS find_time TEXT")
+        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS latitude TEXT")
+        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS longitude TEXT")
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS find_field_observations (
+                id BIGSERIAL PRIMARY KEY,
+                find_id BIGINT NOT NULL UNIQUE REFERENCES finds(id) ON DELETE CASCADE,
+                provisional_identification TEXT,
+                notes TEXT,
+                abund_value TEXT,
+                abund_unit TEXT,
+                occurrence_comments TEXT,
+                research_group TEXT,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS find_taxonomy (
+                id BIGSERIAL PRIMARY KEY,
+                find_id BIGINT NOT NULL UNIQUE REFERENCES finds(id) ON DELETE CASCADE,
+                identified_name TEXT,
+                accepted_name TEXT,
+                identified_rank TEXT,
+                accepted_rank TEXT,
+                difference TEXT,
+                identified_no TEXT,
+                accepted_no TEXT,
+                phylum TEXT,
+                class_name TEXT,
+                taxon_order TEXT,
+                family TEXT,
+                genus TEXT,
+                reference_no TEXT,
+                taxonomy_comments TEXT,
+                collection_year_latest_estimate INTEGER,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        cur.execute(
+            """
+            INSERT INTO find_field_observations (
+                find_id, provisional_identification, notes, abund_value, abund_unit, occurrence_comments, research_group,
+                created_at, updated_at
+            )
+            SELECT
+                f.id, f.identified_name, f.notes, f.abund_value, f.abund_unit, f.occurrence_comments, f.research_group,
+                f.created_at, f.updated_at
+            FROM finds f
+            LEFT JOIN find_field_observations fo ON fo.find_id = f.id
+            WHERE fo.find_id IS NULL
+            """
+        )
+        cur.execute(
+            """
+            INSERT INTO find_taxonomy (
+                find_id, identified_name, accepted_name, identified_rank, accepted_rank, difference, identified_no, accepted_no,
+                phylum, class_name, taxon_order, family, genus, reference_no, taxonomy_comments, collection_year_latest_estimate,
+                created_at, updated_at
+            )
+            SELECT
+                f.id, f.identified_name, f.accepted_name, f.identified_rank, f.accepted_rank, f.difference, f.identified_no, f.accepted_no,
+                f.phylum, f.class_name, f.taxon_order, f.family, f.genus, f.reference_no, f.taxonomy_comments, f.collection_year_latest_estimate,
+                f.created_at, f.updated_at
+            FROM finds f
+            LEFT JOIN find_taxonomy ft ON ft.find_id = f.id
+            WHERE ft.find_id IS NULL
             """
         )
 

@@ -147,12 +147,23 @@ class TestDbLegacyMigrationsFinds(unittest.TestCase):
                         with closing(sqlite3.connect(db_path)) as conn:
                             version = conn.execute("PRAGMA user_version").fetchone()[0]
                             cols = {row[1] for row in conn.execute("PRAGMA table_info(Finds)").fetchall()}
+                            split_tables = {
+                                row[0]
+                                for row in conn.execute(
+                                    "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('FindFieldObservations', 'FindTaxonomy')"
+                                ).fetchall()
+                            }
                             row = conn.execute(
                                 "SELECT id, location_id, collection_event_id, source_occurrence_no, accepted_name FROM Finds WHERE id = 1"
                             ).fetchone()
                             self.assertEqual(version, SCHEMA_VERSION)
                             self.assertNotIn("trip_id", cols)
                             self.assertIn("collection_year_latest_estimate", cols)
+                            self.assertIn("find_date", cols)
+                            self.assertIn("find_time", cols)
+                            self.assertIn("latitude", cols)
+                            self.assertIn("longitude", cols)
+                            self.assertEqual(split_tables, {"FindFieldObservations", "FindTaxonomy"})
                             self.assertEqual(row, (1, 1, 1, "occ-1", "Taxon A"))
                     finally:
                         self._cleanup(db_path, csv_path)
