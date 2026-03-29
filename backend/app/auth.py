@@ -62,6 +62,7 @@ def _issue_token_pair(*, settings: Settings, principal: Principal) -> TokenPairR
             "role": principal.role,
             "name": principal.display_name,
             "mcp": 1 if principal.must_change_password else 0,
+            "tmid": principal.team_member_id,
             "typ": TOKEN_TYPE_ACCESS,
         },
         secret=settings.jwt_secret,
@@ -73,6 +74,7 @@ def _issue_token_pair(*, settings: Settings, principal: Principal) -> TokenPairR
             "role": principal.role,
             "name": principal.display_name,
             "mcp": 1 if principal.must_change_password else 0,
+            "tmid": principal.team_member_id,
             "typ": TOKEN_TYPE_REFRESH,
         },
         secret=settings.jwt_refresh_secret,
@@ -91,6 +93,7 @@ def _principal_from_payload(payload: dict[str, Any]) -> Principal:
     role = str(payload.get("role") or "").strip()
     display_name = str(payload.get("name") or username).strip() or username
     must_change_password = int(payload.get("mcp", 0)) == 1
+    team_member_id = int(payload.get("tmid", 0) or 0)
     if not username or not role:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload.")
     return Principal(
@@ -98,6 +101,7 @@ def _principal_from_payload(payload: dict[str, Any]) -> Principal:
         role=role,
         display_name=display_name,
         must_change_password=must_change_password,
+        team_member_id=team_member_id,
     )
 
 
@@ -112,6 +116,7 @@ def _load_db_auth_user(username: str, settings: Settings) -> DbAuthUser | None:
                         ua.password_hash AS password_hash,
                         ua.role AS role,
                         ua.must_change_password AS must_change_password,
+                        ua.team_member_id AS team_member_id,
                         tm.name AS display_name,
                         tm.active AS team_active
                     FROM user_accounts ua
@@ -134,6 +139,7 @@ def _load_db_auth_user(username: str, settings: Settings) -> DbAuthUser | None:
         display_name=str(row.get("display_name") or row.get("username") or "").strip() or str(row.get("username")),
         team_active=int(row.get("team_active") or 0) == 1,
         must_change_password=int(row.get("must_change_password") or 0) == 1,
+        team_member_id=int(row.get("team_member_id") or 0),
     )
 
 
@@ -146,6 +152,7 @@ def _load_active_principal(username: str, settings: Settings) -> Principal | Non
         role=user.role,
         display_name=user.display_name,
         must_change_password=user.must_change_password,
+        team_member_id=user.team_member_id,
     )
 
 
@@ -214,6 +221,7 @@ def login(payload: LoginRequest, settings: Settings = Depends(get_settings)) -> 
         role=user.role,
         display_name=user.display_name,
         must_change_password=user.must_change_password,
+        team_member_id=user.team_member_id,
     )
     return _issue_token_pair(settings=settings, principal=principal)
 
@@ -280,4 +288,5 @@ def me(principal: Principal = Depends(get_current_principal)) -> UserResponse:
         role=principal.role,
         display_name=principal.display_name,
         must_change_password=principal.must_change_password,
+        team_member_id=principal.team_member_id,
     )

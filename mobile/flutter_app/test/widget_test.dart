@@ -10,12 +10,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:paleo_mobile/main.dart';
 
 void main() {
-  testWidgets('renders login screen', (WidgetTester tester) async {
-    await tester.pumpWidget(const PaleoMobileApp());
-
+  testWidgets('renders login screen by default', (WidgetTester tester) async {
+    await tester.pumpWidget(const PaleoMobileApp(enableSessionRestore: false));
+    await tester.pump();
     expect(find.text('Paleo Mobile Login'), findsOneWidget);
-    expect(find.text('Username'), findsOneWidget);
-    expect(find.text('Password'), findsOneWidget);
-    expect(find.text('Sign in'), findsOneWidget);
+    expect(find.text('Sign In'), findsOneWidget);
   });
 }

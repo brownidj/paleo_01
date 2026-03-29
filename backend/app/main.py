@@ -1,4 +1,4 @@
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from psycopg import connect
 from psycopg.rows import dict_row
@@ -20,21 +20,11 @@ def startup_bootstrap() -> None:
 class TripSummary(BaseModel):
     id: int
     trip_name: str
-
-
-class TripDetail(BaseModel):
-    id: int
-    trip_name: str
-    start_date: str | None
-    end_date: str | None
-    location: str | None
-    team: str | None
-    notes: str | None
-    can_view_details: bool
-    team_members: list["TeamMemberSummary"] = Field(default_factory=list)
-    locations: list["TripLocationSummary"] = Field(default_factory=list)
-    collection_events: list["TripCollectionEventSummary"] = Field(default_factory=list)
-    find_count: int = 0
+    start_date: str | None = None
+    end_date: str | None = None
+    team: str | None = None
+    location: str | None = None
+    notes: str | None = None
 
 
 class TeamMemberSummary(BaseModel):
@@ -51,6 +41,21 @@ class TripCollectionEventSummary(BaseModel):
     id: int
     collection_name: str
     event_year: int | None = None
+
+
+class TripDetailResponse(BaseModel):
+    id: int
+    trip_name: str
+    start_date: str | None = None
+    end_date: str | None = None
+    team: str | None = None
+    location: str | None = None
+    notes: str | None = None
+    can_view_details: bool
+    team_members: list[TeamMemberSummary] = Field(default_factory=list)
+    locations: list[TripLocationSummary] = Field(default_factory=list)
+    collection_events: list[TripCollectionEventSummary] = Field(default_factory=list)
+    find_count: int | None = None
 
 
 class CollectionEventSummary(BaseModel):
@@ -84,6 +89,12 @@ def root() -> dict[str, str]:
     return {"service": "paleo-api", "status": "running"}
 
 
+def _ensure_mobile_team_member(principal: Principal) -> int:
+    if principal.team_member_id <= 0:
+        raise HTTPException(status_code=403, detail="Team membership is required.")
+    return principal.team_member_id
+
+
 @app.get(
     "/v1/trips",
     response_model=list[TripSummary],
@@ -91,37 +102,29 @@ def root() -> dict[str, str]:
 def list_trips(
     principal: Principal = Depends(require_roles("admin", "team", "planner", "reviewer", "field_member")),
 ) -> list[TripSummary]:
+    _ensure_mobile_team_member(principal)
     settings = get_settings()
-    try:
-        with connect(settings.database_url, row_factory=dict_row) as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    SELECT
-                        t.id AS id,
-                        t.trip_name AS trip_name
-                    FROM user_accounts ua
-                    JOIN team_members tm ON tm.id = ua.team_member_id
-                    JOIN trip_team_members ttm ON ttm.team_member_id = tm.id
-                    JOIN trips t ON t.id = ttm.trip_id
-                    WHERE lower(ua.username) = lower(%s)
-                      AND tm.active = TRUE
-                      AND (t.end_date IS NULL OR t.end_date > CURRENT_DATE)
-                    ORDER BY t.trip_name ASC, t.start_date ASC
-                    """,
-                    (principal.username,),
-                )
-                rows = cur.fetchall()
-    except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"trips_db_unavailable: {exc}",
-        ) from exc
-
+    with connect(settings.database_url, row_factory=dict_row) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT id, trip_name, start_date, end_date, team, location, notes
+                FROM trips
+                WHERE COALESCE(NULLIF(split_part(CAST(end_date AS text), 'T', 1), ''), '9999-12-31')
+                      > to_char(CURRENT_DATE, 'YYYY-MM-DD')
+                ORDER BY start_date DESC NULLS LAST, trip_name ASC, id ASC
+                """
+            )
+            rows = cur.fetchall()
     return [
         TripSummary(
-            id=int(row["id"]),
+            id=int(row.get("id") or 0),
             trip_name=str(row.get("trip_name") or ""),
+            start_date=str(row.get("start_date") or "") or None,
+            end_date=str(row.get("end_date") or "") or None,
+            team=str(row.get("team") or "") or None,
+            location=str(row.get("location") or "") or None,
+            notes=str(row.get("notes") or "") or None,
         )
         for row in rows
     ]
@@ -129,123 +132,124 @@ def list_trips(
 
 @app.get(
     "/v1/trips/{trip_id}",
-    response_model=TripDetail,
+    response_model=TripDetailResponse,
 )
 def get_trip_detail(
     trip_id: int,
     principal: Principal = Depends(require_roles("admin", "team", "planner", "reviewer", "field_member")),
-) -> TripDetail:
+) -> TripDetailResponse:
+    team_member_id = _ensure_mobile_team_member(principal)
     settings = get_settings()
-    try:
-        with connect(settings.database_url, row_factory=dict_row) as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    SELECT
-                        t.id AS id,
-                        t.trip_name AS trip_name,
-                        t.start_date::text AS start_date,
-                        t.end_date::text AS end_date,
-                        t.location AS location,
-                        t.team AS team,
-                        t.notes AS notes
-                    FROM user_accounts ua
-                    JOIN team_members tm ON tm.id = ua.team_member_id
-                    JOIN trip_team_members ttm ON ttm.team_member_id = tm.id
-                    JOIN trips t ON t.id = ttm.trip_id
-                    WHERE lower(ua.username) = lower(%s)
-                      AND tm.active = TRUE
-                      AND t.id = %s
-                      AND (t.end_date IS NULL OR t.end_date > CURRENT_DATE)
-                    LIMIT 1
-                    """,
-                    (principal.username, trip_id),
+    with connect(settings.database_url, row_factory=dict_row) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT id, trip_name, start_date, end_date, team, location, notes
+                FROM trips
+                WHERE id = %s
+                  AND COALESCE(NULLIF(split_part(CAST(end_date AS text), 'T', 1), ''), '9999-12-31')
+                      > to_char(CURRENT_DATE, 'YYYY-MM-DD')
+                LIMIT 1
+                """,
+                (trip_id,),
+            )
+            trip_row = cur.fetchone()
+            if not trip_row:
+                raise HTTPException(status_code=404, detail="Trip not found.")
+
+            cur.execute(
+                """
+                SELECT 1
+                FROM trip_team_members
+                WHERE trip_id = %s AND team_member_id = %s
+                LIMIT 1
+                """,
+                (trip_id, team_member_id),
+            )
+            can_view_details = cur.fetchone() is not None
+
+            if not can_view_details:
+                return TripDetailResponse(
+                    id=int(trip_row.get("id") or 0),
+                    trip_name=str(trip_row.get("trip_name") or ""),
+                    start_date=str(trip_row.get("start_date") or "") or None,
+                    end_date=str(trip_row.get("end_date") or "") or None,
+                    team=str(trip_row.get("team") or "") or None,
+                    location=str(trip_row.get("location") or "") or None,
+                    notes=str(trip_row.get("notes") or "") or None,
+                    can_view_details=False,
                 )
-                row = cur.fetchone()
-                if row:
-                    cur.execute(
-                        """
-                        SELECT tm.id, tm.name
-                        FROM trip_team_members ttm
-                        JOIN team_members tm ON tm.id = ttm.team_member_id
-                        WHERE ttm.trip_id = %s
-                        ORDER BY tm.name ASC
-                        """,
-                        (trip_id,),
-                    )
-                    team_rows = cur.fetchall()
 
-                    cur.execute(
-                        """
-                        SELECT l.id, l.name
-                        FROM trip_locations tl
-                        JOIN locations l ON l.id = tl.location_id
-                        WHERE tl.trip_id = %s
-                        ORDER BY l.name ASC, l.id ASC
-                        """,
-                        (trip_id,),
-                    )
-                    location_rows = cur.fetchall()
+            cur.execute(
+                """
+                SELECT tm.id, tm.name
+                FROM trip_team_members ttm
+                JOIN team_members tm ON tm.id = ttm.team_member_id
+                WHERE ttm.trip_id = %s
+                ORDER BY tm.name ASC
+                """,
+                (trip_id,),
+            )
+            team_rows = cur.fetchall()
 
-                    cur.execute(
-                        """
-                        SELECT id, collection_name, event_year
-                        FROM collection_events
-                        WHERE trip_id = %s
-                        ORDER BY event_year DESC NULLS LAST, id ASC
-                        """,
-                        (trip_id,),
-                    )
-                    collection_event_rows = cur.fetchall()
+            cur.execute(
+                """
+                SELECT l.id, l.name
+                FROM trip_locations tl
+                JOIN locations l ON l.id = tl.location_id
+                WHERE tl.trip_id = %s
+                ORDER BY l.name ASC, l.id ASC
+                """,
+                (trip_id,),
+            )
+            location_rows = cur.fetchall()
 
-                    cur.execute(
-                        """
-                        SELECT COUNT(*) AS count
-                        FROM finds f
-                        JOIN collection_events ce ON ce.id = f.collection_event_id
-                        WHERE ce.trip_id = %s
-                        """,
-                        (trip_id,),
-                    )
-                    find_count = int((cur.fetchone() or {}).get("count") or 0)
-                else:
-                    team_rows = []
-                    location_rows = []
-                    collection_event_rows = []
-                    find_count = 0
-    except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"trip_detail_db_unavailable: {exc}",
-        ) from exc
+            cur.execute(
+                """
+                SELECT id, collection_name, event_year
+                FROM collection_events
+                WHERE trip_id = %s
+                ORDER BY event_year DESC NULLS LAST, id ASC
+                """,
+                (trip_id,),
+            )
+            event_rows = cur.fetchall()
 
-    if not row:
-        raise HTTPException(status_code=404, detail="Trip not found.")
+            cur.execute(
+                """
+                SELECT COUNT(*) AS count
+                FROM finds f
+                JOIN collection_events ce ON ce.id = f.collection_event_id
+                WHERE ce.trip_id = %s
+                """,
+                (trip_id,),
+            )
+            find_count = int(cur.fetchone().get("count") or 0)
 
-    return TripDetail(
-        id=int(row["id"]),
-        trip_name=str(row.get("trip_name") or ""),
-        start_date=row.get("start_date"),
-        end_date=row.get("end_date"),
-        location=row.get("location"),
-        team=row.get("team"),
-        notes=row.get("notes"),
+    return TripDetailResponse(
+        id=int(trip_row.get("id") or 0),
+        trip_name=str(trip_row.get("trip_name") or ""),
+        start_date=str(trip_row.get("start_date") or "") or None,
+        end_date=str(trip_row.get("end_date") or "") or None,
+        team=str(trip_row.get("team") or "") or None,
+        location=str(trip_row.get("location") or "") or None,
+        notes=str(trip_row.get("notes") or "") or None,
         can_view_details=True,
         team_members=[
-            TeamMemberSummary(id=int(r.get("id") or 0), name=str(r.get("name") or ""))
-            for r in team_rows
+            TeamMemberSummary(id=int(row.get("id") or 0), name=str(row.get("name") or ""))
+            for row in team_rows
         ],
         locations=[
-            TripLocationSummary(id=int(r.get("id") or 0), name=str(r.get("name") or ""))
-            for r in location_rows
+            TripLocationSummary(id=int(row.get("id") or 0), name=str(row.get("name") or ""))
+            for row in location_rows
         ],
         collection_events=[
             TripCollectionEventSummary(
-                id=int(r.get("id") or 0),
-                collection_name=str(r.get("collection_name") or ""),
-                event_year=int(r["event_year"]) if r.get("event_year") is not None else None,
+                id=int(row.get("id") or 0),
+                collection_name=str(row.get("collection_name") or ""),
+                event_year=int(row.get("event_year")) if row.get("event_year") is not None else None,
             )
-            for r in collection_event_rows
+            for row in event_rows
         ],
         find_count=find_count,
     )

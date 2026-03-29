@@ -1,394 +1,217 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/io_client.dart';
+
+import 'src/api/api_client.dart';
+import 'src/auth/token_store.dart';
+import 'src/models/auth_models.dart';
+import 'src/models/trip_models.dart';
+import 'src/screens/login_screen.dart';
+import 'src/screens/trip_detail_screen.dart';
+import 'src/screens/trips_screen.dart';
 
 void main() {
   runApp(const PaleoMobileApp());
 }
 
-class PaleoMobileApp extends StatelessWidget {
-  const PaleoMobileApp({super.key});
+class PaleoMobileApp extends StatefulWidget {
+  const PaleoMobileApp({super.key, this.enableSessionRestore = true});
+
+  final bool enableSessionRestore;
+
+  @override
+  State<PaleoMobileApp> createState() => _PaleoMobileAppState();
+}
+
+class _PaleoMobileAppState extends State<PaleoMobileApp> {
+  static const String _apiBaseUrl = String.fromEnvironment(
+    'PALEO_API_BASE_URL',
+    defaultValue: 'https://localhost',
+  );
+  static const bool _verifyTls = bool.fromEnvironment(
+    'PALEO_API_VERIFY_TLS',
+    defaultValue: false,
+  );
+
+  late final ApiClient _apiClient;
+  late final TokenStore _tokenStore;
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+  final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
+      GlobalKey<ScaffoldMessengerState>();
+
+  AuthUser? _currentUser;
+  List<TripSummary> _trips = const <TripSummary>[];
+  bool _busy = true;
+  String? _errorText;
+
+  @override
+  void initState() {
+    super.initState();
+    _apiClient = ApiClient(baseUrl: _apiBaseUrl, verifyTls: _verifyTls);
+    _tokenStore = TokenStore();
+    if (widget.enableSessionRestore) {
+      _restoreSession();
+    } else {
+      _busy = false;
+    }
+  }
+
+  Future<void> _restoreSession() async {
+    setState(() {
+      _busy = true;
+      _errorText = null;
+    });
+    final access = await _tokenStore.readAccessToken();
+    final refresh = await _tokenStore.readRefreshToken();
+    if ((access ?? '').isEmpty || (refresh ?? '').isEmpty) {
+      setState(() => _busy = false);
+      return;
+    }
+    _apiClient.setTokens(accessToken: access!, refreshToken: refresh!);
+    try {
+      final user = await _apiClient.me();
+      final trips = await _apiClient.listCurrentTrips();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _currentUser = user;
+        _trips = trips;
+        _busy = false;
+      });
+    } catch (_) {
+      await _tokenStore.clear();
+      _apiClient.clearTokens();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _currentUser = null;
+        _trips = const <TripSummary>[];
+        _busy = false;
+      });
+    }
+  }
+
+  Future<void> _login({
+    required String username,
+    required String password,
+  }) async {
+    setState(() => _errorText = null);
+    try {
+      final result = await _apiClient.login(
+        username: username,
+        password: password,
+      );
+      await _tokenStore.saveTokens(
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+      );
+      final user = await _apiClient.me();
+      final trips = await _apiClient.listCurrentTrips();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _currentUser = user;
+        _trips = trips;
+        _errorText = null;
+      });
+    } on ApiClientError catch (exc) {
+      setState(() => _errorText = exc.message);
+    }
+  }
+
+  Future<void> _refreshTrips() async {
+    try {
+      final trips = await _apiClient.listCurrentTrips();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _trips = trips;
+        _errorText = null;
+      });
+    } on ApiClientError catch (exc) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _errorText = exc.message);
+    }
+  }
+
+  Future<void> _openTrip(TripSummary trip) async {
+    try {
+      final detail = await _apiClient.getTripDetail(trip.id);
+      final navigator = _navigatorKey.currentState;
+      if (!mounted || navigator == null) {
+        return;
+      }
+      await navigator.push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => TripDetailScreen(
+            trip: detail,
+            onCreateFind:
+                ({
+                  required int collectionEventId,
+                  required String source,
+                  required String acceptedName,
+                }) => _apiClient.createFind(
+                  collectionEventId: collectionEventId,
+                  source: source,
+                  acceptedName: acceptedName,
+                ),
+          ),
+        ),
+      );
+    } on ApiClientError catch (exc) {
+      if (!mounted) {
+        return;
+      }
+      _scaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text(exc.message)),
+      );
+    }
+  }
+
+  Future<void> _logout() async {
+    await _tokenStore.clear();
+    _apiClient.clearTokens();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _currentUser = null;
+      _trips = const <TripSummary>[];
+      _errorText = null;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Paleo Mobile',
+      navigatorKey: _navigatorKey,
+      scaffoldMessengerKey: _scaffoldMessengerKey,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1D6F4E)),
       ),
-      home: const LoginScreen(),
+      home: _buildHome(),
     );
   }
-}
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
-
-  @override
-  State<LoginScreen> createState() => _LoginScreenState();
-}
-
-class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController _username = TextEditingController();
-  final TextEditingController _password = TextEditingController();
-  final PaleoApi _api = PaleoApi();
-  bool _loading = false;
-  String? _error;
-
-  Future<void> _submit() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      final token = await _api.login(
-        username: _username.text.trim(),
-        password: _password.text,
-      );
-      if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => TripsScreen(api: _api, token: token),
-        ),
-      );
-    } catch (e) {
-      setState(() => _error = e.toString());
-    } finally {
-      if (mounted) setState(() => _loading = false);
+  Widget _buildHome() {
+    if (_busy) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-  }
-
-  @override
-  void dispose() {
-    _username.dispose();
-    _password.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Paleo Mobile Login')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: _username,
-              decoration: const InputDecoration(labelText: 'Username'),
-              autocorrect: false,
-              enableSuggestions: false,
-              keyboardType: TextInputType.emailAddress,
-              textInputAction: TextInputAction.next,
-            ),
-            TextField(
-              controller: _password,
-              decoration: const InputDecoration(labelText: 'Password'),
-              obscureText: true,
-              autocorrect: false,
-              enableSuggestions: false,
-              smartDashesType: SmartDashesType.disabled,
-              smartQuotesType: SmartQuotesType.disabled,
-              textInputAction: TextInputAction.done,
-              onSubmitted: (_) => _submit(),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: _loading ? null : _submit,
-                child: Text(_loading ? 'Signing in...' : 'Sign in'),
-              ),
-            ),
-            if (_error != null) ...[
-              const SizedBox(height: 12),
-              Text(_error!, style: const TextStyle(color: Colors.red)),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class TripsScreen extends StatefulWidget {
-  const TripsScreen({required this.api, required this.token, super.key});
-
-  final PaleoApi api;
-  final String token;
-
-  @override
-  State<TripsScreen> createState() => _TripsScreenState();
-}
-
-class _TripsScreenState extends State<TripsScreen> {
-  late Future<List<TripSummary>> _tripsFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _tripsFuture = widget.api.fetchTrips(widget.token);
-  }
-
-  void _reload() {
-    setState(() {
-      _tripsFuture = widget.api.fetchTrips(widget.token);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Current Trips'),
-        actions: [
-          IconButton(onPressed: _reload, icon: const Icon(Icons.refresh)),
-        ],
-      ),
-      body: FutureBuilder<List<TripSummary>>(
-        future: _tripsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text('Failed to load trips: ${snapshot.error}'),
-              ),
-            );
-          }
-          final trips = snapshot.data ?? <TripSummary>[];
-          if (trips.isEmpty) {
-            return const Center(child: Text('No current trips available.'));
-          }
-          return ListView.separated(
-            itemCount: trips.length,
-            separatorBuilder: (_, _) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              final trip = trips[index];
-              return ListTile(
-                title: Text(trip.tripName),
-                subtitle: const Text('Tap to view trip details'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => TripDetailScreen(
-                        api: widget.api,
-                        token: widget.token,
-                        tripId: trip.id,
-                        tripName: trip.tripName,
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
-}
-
-class TripDetailScreen extends StatelessWidget {
-  const TripDetailScreen({
-    required this.api,
-    required this.token,
-    required this.tripId,
-    required this.tripName,
-    super.key,
-  });
-
-  final PaleoApi api;
-  final String token;
-  final int tripId;
-  final String tripName;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(tripName)),
-      body: FutureBuilder<TripDetail>(
-        future: api.fetchTripDetail(token: token, tripId: tripId),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text('Failed to load details: ${snapshot.error}'),
-              ),
-            );
-          }
-          final detail = snapshot.data!;
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              _detailRow('Trip', detail.tripName),
-              _detailRow('Start', detail.startDate ?? '-'),
-              _detailRow('End', detail.endDate ?? '-'),
-              _detailRow('Location', detail.location ?? '-'),
-              _detailRow('Team', detail.team ?? '-'),
-              _detailRow('Notes', detail.notes ?? '-'),
-              if (!detail.canViewDetails)
-                const Padding(
-                  padding: EdgeInsets.only(top: 12),
-                  child: Card(
-                    child: ListTile(
-                      leading: Icon(Icons.info_outline),
-                      title: Text('Limited access'),
-                      subtitle: Text(
-                        'You are a team member, but not assigned to this trip. '
-                        'Detailed fields are hidden.',
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _detailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Text(value),
-        ],
-      ),
-    );
-  }
-}
-
-class PaleoApi {
-  static const String _base = String.fromEnvironment(
-    'PALEO_API_BASE_URL',
-    defaultValue: 'https://localhost',
-  );
-
-  final http.Client _client = IOClient(
-    HttpClient()
-      ..badCertificateCallback = ((cert, host, port) =>
-          host == 'localhost' || host == '127.0.0.1'),
-  );
-
-  Uri _uri(String path) => Uri.parse('$_base$path');
-
-  Future<String> login({
-    required String username,
-    required String password,
-  }) async {
-    final response = await _client.post(
-      _uri('/v1/auth/login'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'username': username, 'password': password}),
-    );
-    if (response.statusCode != 200) {
-      throw Exception(
-        'Login failed (${response.statusCode}): ${response.body}',
-      );
+    if (_currentUser == null) {
+      return LoginScreen(onLogin: _login, errorText: _errorText);
     }
-    final json = jsonDecode(response.body) as Map<String, dynamic>;
-    final token = (json['access_token'] as String?) ?? '';
-    if (token.isEmpty) {
-      throw Exception('Login response missing access token.');
-    }
-    return token;
-  }
-
-  Future<List<TripSummary>> fetchTrips(String token) async {
-    final response = await _client.get(
-      _uri('/v1/trips'),
-      headers: {'Authorization': 'Bearer $token'},
-    );
-    if (response.statusCode != 200) {
-      throw Exception(
-        'Trips request failed (${response.statusCode}): ${response.body}',
-      );
-    }
-    final body = jsonDecode(response.body) as List<dynamic>;
-    return body
-        .map((item) => TripSummary.fromJson(item as Map<String, dynamic>))
-        .toList();
-  }
-
-  Future<TripDetail> fetchTripDetail({
-    required String token,
-    required int tripId,
-  }) async {
-    final response = await _client.get(
-      _uri('/v1/trips/$tripId'),
-      headers: {'Authorization': 'Bearer $token'},
-    );
-    if (response.statusCode != 200) {
-      throw Exception(
-        'Trip details failed (${response.statusCode}): ${response.body}',
-      );
-    }
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    return TripDetail.fromJson(body);
-  }
-}
-
-class TripSummary {
-  TripSummary({required this.id, required this.tripName});
-
-  final int id;
-  final String tripName;
-
-  factory TripSummary.fromJson(Map<String, dynamic> json) {
-    return TripSummary(
-      id: (json['id'] as num).toInt(),
-      tripName: (json['trip_name'] as String?) ?? '',
-    );
-  }
-}
-
-class TripDetail {
-  TripDetail({
-    required this.id,
-    required this.tripName,
-    required this.canViewDetails,
-    this.startDate,
-    this.endDate,
-    this.location,
-    this.team,
-    this.notes,
-  });
-
-  final int id;
-  final String tripName;
-  final String? startDate;
-  final String? endDate;
-  final String? location;
-  final String? team;
-  final String? notes;
-  final bool canViewDetails;
-
-  factory TripDetail.fromJson(Map<String, dynamic> json) {
-    return TripDetail(
-      id: (json['id'] as num).toInt(),
-      tripName: (json['trip_name'] as String?) ?? '',
-      startDate: json['start_date'] as String?,
-      endDate: json['end_date'] as String?,
-      location: json['location'] as String?,
-      team: json['team'] as String?,
-      notes: json['notes'] as String?,
-      canViewDetails: (json['can_view_details'] as bool?) ?? true,
+    return TripsScreen(
+      trips: _trips,
+      loading: false,
+      errorText: _errorText,
+      onRefresh: _refreshTrips,
+      onOpenTrip: _openTrip,
+      onLogout: _logout,
     );
   }
 }

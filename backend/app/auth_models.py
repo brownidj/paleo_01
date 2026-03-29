@@ -11,6 +11,7 @@ class Principal:
     role: str
     display_name: str
     must_change_password: bool
+    team_member_id: int
 
 
 @dataclass(frozen=True)
@@ -21,6 +22,7 @@ class DbAuthUser:
     display_name: str
     team_active: bool
     must_change_password: bool
+    team_member_id: int
 
 
 class LoginRequest(BaseModel):
@@ -56,6 +58,7 @@ class UserResponse(BaseModel):
     role: str
     display_name: str
     must_change_password: bool
+    team_member_id: int
 
 
 class BasicMessageResponse(BaseModel):

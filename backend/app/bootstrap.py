@@ -68,3 +68,34 @@ def bootstrap_postgres_auth() -> None:
                     settings.bootstrap_admin_display_name,
                 ),
             )
+            cur.execute("SELECT to_regclass('public.trips') IS NOT NULL AS trips_present")
+            trips_present = bool(cur.fetchone()[0])
+            if trips_present:
+                cur.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS trip_team_members (
+                        trip_id BIGINT NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+                        team_member_id BIGINT NOT NULL REFERENCES team_members(id) ON DELETE CASCADE,
+                        PRIMARY KEY (trip_id, team_member_id)
+                    )
+                    """
+                )
+                cur.execute(
+                    """
+                    CREATE INDEX IF NOT EXISTS idx_trip_team_members_member ON trip_team_members(team_member_id)
+                    """
+                )
+                cur.execute(
+                    """
+                    INSERT INTO trip_team_members (trip_id, team_member_id)
+                    SELECT DISTINCT
+                        t.id AS trip_id,
+                        tm.id AS team_member_id
+                    FROM trips t
+                    CROSS JOIN LATERAL regexp_split_to_table(COALESCE(t.team, ''), ';') AS raw_member(name_part)
+                    JOIN team_members tm
+                      ON lower(trim(tm.name)) = lower(trim(raw_member.name_part))
+                    WHERE trim(raw_member.name_part) <> ''
+                    ON CONFLICT (trip_id, team_member_id) DO NOTHING
+                    """
+                )
