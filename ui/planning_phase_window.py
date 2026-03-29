@@ -37,6 +37,8 @@ class PlanningPhaseWindow(PlanningPhaseWindowSelectionMixin, PlanningPhaseWindow
         self._trip_toast_shown_count = 0
         self._trip_toast_hide_after_id: str | None = None
         self._trip_toast_last_iid: str | None = None
+        self._collection_events_count_map: dict[int, int] = {}
+        self._finds_count_map: dict[int, int] = {}
         self.auth_client = auth_client
         self.repo: Any
 
@@ -157,12 +159,23 @@ class PlanningPhaseWindow(PlanningPhaseWindowSelectionMixin, PlanningPhaseWindow
         except sqlite3.Error as e:
             messagebox.showerror("Database Error", str(e))
             return
+        self._collection_events_count_map = {}
+        self._finds_count_map = {}
+        count_events_by_trip = getattr(self.repo, "count_collection_events_by_trip", None)
+        if callable(count_events_by_trip):
+            try:
+                self._collection_events_count_map = dict(count_events_by_trip())
+            except Exception:
+                self._collection_events_count_map = {}
+        count_finds_by_trip = getattr(self.repo, "count_finds_by_trip", None)
+        if callable(count_finds_by_trip):
+            try:
+                self._finds_count_map = dict(count_finds_by_trip())
+            except Exception:
+                self._finds_count_map = {}
         for record in records:
             values = [self._trip_list_value(record, field) for field in self.list_fields]
             self.trips_tree.insert("", "end", iid=str(record["id"]), values=values)
-        load_collection_plan = getattr(self.tabs_controller, "load_collection_plan_trips", None)
-        if callable(load_collection_plan):
-            load_collection_plan()
         self._restore_trip_selection()
 
     def _trip_list_value(self, record: Mapping[str, object], field: str):
@@ -172,6 +185,8 @@ class PlanningPhaseWindow(PlanningPhaseWindowSelectionMixin, PlanningPhaseWindow
         except (TypeError, ValueError):
             trip_id = None
         if field == "collection_events_count":
+            if trip_id is not None and trip_id in self._collection_events_count_map:
+                return int(self._collection_events_count_map.get(trip_id, 0))
             count_fn = getattr(self.repo, "count_collection_events_for_trip", None)
             if callable(count_fn) and trip_id is not None:
                 try:
@@ -180,6 +195,8 @@ class PlanningPhaseWindow(PlanningPhaseWindowSelectionMixin, PlanningPhaseWindow
                     return 0
             return 0
         if field == "finds_count":
+            if trip_id is not None and trip_id in self._finds_count_map:
+                return int(self._finds_count_map.get(trip_id, 0))
             count_fn = getattr(self.repo, "count_finds_for_trip", None)
             if callable(count_fn) and trip_id is not None:
                 try:
@@ -200,6 +217,10 @@ class PlanningPhaseWindow(PlanningPhaseWindowSelectionMixin, PlanningPhaseWindow
         current_tab = self.tabs.select()
         if current_tab == str(self.trips_tab):
             self._maybe_show_trip_edit_toast()
+        elif current_tab == str(self.collection_plan_tab):
+            load_collection_plan = getattr(self.tabs_controller, "load_collection_plan_trips", None)
+            if callable(load_collection_plan):
+                load_collection_plan()
         elif current_tab == str(self.location_tab):
             maybe = getattr(self.location_tab, "maybe_show_edit_toast", None)
             if callable(maybe):

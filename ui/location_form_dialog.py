@@ -1,5 +1,8 @@
 import tkinter as tk
+from pathlib import Path
 from tkinter import ttk
+
+from PIL import Image, ImageTk
 
 
 class LocationFormDialog(tk.Toplevel):
@@ -40,17 +43,40 @@ class LocationFormDialog(tk.Toplevel):
         self._on_edit_geology = on_edit_geology
         self._geology_label_to_id: dict[str, int] = {}
         self._geology_id: int | None = int(initial_data.get("geology_id")) if initial_data and initial_data.get("geology_id") else None
+        self._map_icon_image: ImageTk.PhotoImage | None = None
 
         frame = ttk.Frame(self, padding=10)
         frame.pack(fill="both", expand=True)
+        style = ttk.Style(frame)
+        style.configure("LocationMapIcon.TButton", font=("Helvetica", 15), padding=0)
 
+        map_compact_fields = {"latitude", "longitude"}
         for i, field in enumerate(self.FIELDS):
             ttk.Label(frame, text=field).grid(row=i, column=0, sticky="e", padx=4, pady=4)
-            entry = ttk.Entry(frame, width=42)
+            entry_width = 37 if field in map_compact_fields else 42
+            entry = ttk.Entry(frame, width=entry_width)
             entry.grid(row=i, column=1, sticky="w", padx=4, pady=4)
             if initial_data and initial_data.get(field) is not None:
                 entry.insert(0, str(initial_data.get(field, "")))
             self.entries[field] = entry
+
+        latitude_row = self.FIELDS.index("latitude")
+        self.map_button = ttk.Button(
+            frame,
+            text="🗺",
+            width=2,
+            style="LocationMapIcon.TButton",
+            state="disabled",
+        )
+        self.map_button.grid(
+            row=latitude_row,
+            column=2,
+            rowspan=2,
+            sticky="nsew",
+            padx=0,
+            pady=0,
+        )
+        self._configure_map_button_icon()
 
         geology_row = len(self.FIELDS)
         ttk.Label(frame, text="geology").grid(row=geology_row, column=0, sticky="e", padx=4, pady=4)
@@ -110,6 +136,22 @@ class LocationFormDialog(tk.Toplevel):
 
         self.transient(parent)
         self.grab_set()
+
+    def _configure_map_button_icon(self) -> None:
+        icon_path = Path(__file__).resolve().parents[1] / "assets" / "images" / "icons" / "map-icon.png"
+        if not icon_path.exists():
+            return
+        latitude_entry = self.entries.get("latitude")
+        if latitude_entry is None:
+            return
+        self.update_idletasks()
+        side = max(int(latitude_entry.winfo_reqheight()) * 2 + 8, 24)
+        try:
+            image = Image.open(icon_path).resize((side, side), Image.Resampling.LANCZOS)
+            self._map_icon_image = ImageTk.PhotoImage(image)
+        except Exception:
+            return
+        self.map_button.configure(image=self._map_icon_image, text="")
 
     def _save(self) -> None:
         payload: dict[str, object] = {field: entry.get().strip() for field, entry in self.entries.items()}

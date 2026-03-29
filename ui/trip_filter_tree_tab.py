@@ -23,10 +23,13 @@ class TripFilterTreeTab(ttk.Frame):
         self._fetch_rows = fetch_rows
         self._trip_filter_trip_id: int | None = None
         self._current_trip_id_provider = None
+        self._trip_filter_hint_label: ttk.Label | None = None
 
         self.trip_filter_var = tk.IntVar(value=0)
-        trip_filter_radio = ttk.Radiobutton(self, text="Trip filter", variable=self.trip_filter_var, value=1)
-        trip_filter_radio.pack(anchor="w", padx=10, pady=(10, 4))
+        self._trip_filter_header = ttk.Frame(self)
+        self._trip_filter_header.pack(fill="x", padx=10, pady=(10, 4))
+        trip_filter_radio = ttk.Radiobutton(self._trip_filter_header, text="Trip filter", variable=self.trip_filter_var, value=1)
+        trip_filter_radio.pack(side="left", anchor="w")
         trip_filter_radio.bind("<Button-1>", self._on_trip_filter_click, add="+")
 
         self.tree = ttk.Treeview(self, columns=self._list_columns, show="headings")
@@ -34,6 +37,15 @@ class TripFilterTreeTab(ttk.Frame):
             self.tree.heading(col, text=col.replace("_", " "))
             self.tree.column(col, width=widths.get(col, 120), anchor="w")
         attach_auto_hiding_scrollbars(self, self.tree, padx=10, pady=6)
+
+    def set_trip_filter_hint(self, text: str, font: tuple[str, int, str] | None = None) -> None:
+        if self._trip_filter_hint_label is None:
+            self._trip_filter_hint_label = ttk.Label(self._trip_filter_header, text=text)
+            self._trip_filter_hint_label.pack(side="right", anchor="e")
+        else:
+            self._trip_filter_hint_label.configure(text=text)
+        if font is not None:
+            self._trip_filter_hint_label.configure(font=font)
 
     def load_rows(self) -> None:
         for item in self.tree.get_children():

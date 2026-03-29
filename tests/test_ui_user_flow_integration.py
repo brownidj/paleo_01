@@ -163,7 +163,7 @@ class TestUiUserFlowIntegration(unittest.TestCase):
             new_find_id = None
             for iid in self.window.finds_tab.tree.get_children():
                 values = self.window.finds_tab.tree.item(iid, "values")
-                if len(values) >= 3 and values[2] == "A-NEW":
+                if "A-NEW" in values:
                     new_find_id = int(iid)
                     break
             self.assertIsNotNone(new_find_id)

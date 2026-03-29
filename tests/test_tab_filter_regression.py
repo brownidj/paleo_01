@@ -88,6 +88,7 @@ class TestTabFilterRegression(unittest.TestCase):
     def test_collection_events_trip_filter_repeat_activation_keeps_rows_visible(self):
         tab = CollectionEventsTab(self.root, self.repo)
         tab.load_collection_events()
+        self.assertEqual(tab.trip_filter_var.get(), 1)
         all_count = len(tab.tree.get_children())
         self.assertGreaterEqual(all_count, 2)
 
@@ -155,11 +156,29 @@ class TestTabFilterRegression(unittest.TestCase):
         expected_rows = self.repo.list_collection_events(self.trip_b)
         self.assertEqual(len(expected_rows), 1)
         expected_event_id = str(expected_rows[0]["id"])
-
-        tab._on_trip_filter_click(None)
         self.assertEqual(tab.trip_filter_var.get(), 1)
         visible_iids = list(tab.tree.get_children())
         self.assertEqual(visible_iids, [expected_event_id])
+
+    def test_collection_events_double_click_edit_updates_selected_event(self):
+        tab = CollectionEventsTab(self.root, self.repo)
+        tab.activate_trip_filter(self.trip_a)
+        visible_iids = list(tab.tree.get_children())
+        self.assertEqual(len(visible_iids), 1)
+        event_id = int(visible_iids[0])
+
+        tab.edit_collection_event_by_id(event_id, "Edited CE")
+
+        refreshed_values = tab.tree.item(str(event_id), "values")
+        self.assertTrue(str(refreshed_values[0]).startswith("Edited CE [#"))
+        with closing(sqlite3.connect(self.db_path)) as conn:
+            row = conn.execute(
+                "SELECT collection_name FROM CollectionEvents WHERE id = ?",
+                (event_id,),
+            ).fetchone()
+        self.assertIsNotNone(row)
+        assert row is not None
+        self.assertEqual(row[0], f"Edited CE [#{event_id}]")
 
 
 if __name__ == "__main__":

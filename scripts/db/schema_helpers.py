@@ -259,6 +259,10 @@ def create_locations_table(conn: sqlite3.Connection) -> None:
             research_group TEXT,
             notes TEXT,
             collection_year_latest_estimate INTEGER,
+            find_date TEXT,
+            find_time TEXT,
+            latitude TEXT,
+            longitude TEXT,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (location_id) REFERENCES Locations(id) ON DELETE SET NULL,
@@ -268,10 +272,167 @@ def create_locations_table(conn: sqlite3.Connection) -> None:
     )
     _rebuild_finds_table_without_trip_id(conn)
     find_columns = [row[1] for row in conn.execute("PRAGMA table_info(Finds)").fetchall()]
+    required_text_columns = {
+        "source_system",
+        "source_occurrence_no",
+        "identified_name",
+        "accepted_name",
+        "identified_rank",
+        "accepted_rank",
+        "difference",
+        "identified_no",
+        "accepted_no",
+        "phylum",
+        "class_name",
+        "taxon_order",
+        "family",
+        "genus",
+        "abund_value",
+        "abund_unit",
+        "reference_no",
+        "taxonomy_comments",
+        "occurrence_comments",
+        "research_group",
+        "notes",
+    }
+    for column in sorted(required_text_columns):
+        if column not in find_columns:
+            conn.execute(f"ALTER TABLE Finds ADD COLUMN {column} TEXT")
+            find_columns.append(column)
     if "collection_year_latest_estimate" not in find_columns:
         conn.execute("ALTER TABLE Finds ADD COLUMN collection_year_latest_estimate INTEGER")
+        find_columns.append("collection_year_latest_estimate")
+    if "find_date" not in find_columns:
+        conn.execute("ALTER TABLE Finds ADD COLUMN find_date TEXT")
+        find_columns.append("find_date")
+    if "find_time" not in find_columns:
+        conn.execute("ALTER TABLE Finds ADD COLUMN find_time TEXT")
+        find_columns.append("find_time")
+    if "latitude" not in find_columns:
+        conn.execute("ALTER TABLE Finds ADD COLUMN latitude TEXT")
+        find_columns.append("latitude")
+    if "longitude" not in find_columns:
+        conn.execute("ALTER TABLE Finds ADD COLUMN longitude TEXT")
+        find_columns.append("longitude")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_finds_location ON Finds(location_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_finds_collection_event ON Finds(collection_event_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_finds_source_occurrence ON Finds(source_occurrence_no)")
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS FindFieldObservations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            find_id INTEGER NOT NULL UNIQUE,
+            provisional_identification TEXT,
+            notes TEXT,
+            abund_value TEXT,
+            abund_unit TEXT,
+            occurrence_comments TEXT,
+            research_group TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (find_id) REFERENCES Finds(id) ON DELETE CASCADE
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS FindTaxonomy (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            find_id INTEGER NOT NULL UNIQUE,
+            identified_name TEXT,
+            accepted_name TEXT,
+            identified_rank TEXT,
+            accepted_rank TEXT,
+            difference TEXT,
+            identified_no TEXT,
+            accepted_no TEXT,
+            phylum TEXT,
+            class_name TEXT,
+            taxon_order TEXT,
+            family TEXT,
+            genus TEXT,
+            reference_no TEXT,
+            taxonomy_comments TEXT,
+            collection_year_latest_estimate INTEGER,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (find_id) REFERENCES Finds(id) ON DELETE CASCADE
+        )
+        """
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_find_field_observations_find_id ON FindFieldObservations(find_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_find_taxonomy_find_id ON FindTaxonomy(find_id)")
+    conn.execute(
+        """
+        INSERT INTO FindFieldObservations (
+            find_id,
+            provisional_identification,
+            notes,
+            abund_value,
+            abund_unit,
+            occurrence_comments,
+            research_group,
+            created_at,
+            updated_at
+        )
+        SELECT
+            f.id,
+            f.identified_name,
+            f.notes,
+            f.abund_value,
+            f.abund_unit,
+            f.occurrence_comments,
+            f.research_group,
+            f.created_at,
+            f.updated_at
+        FROM Finds f
+        WHERE NOT EXISTS (SELECT 1 FROM FindFieldObservations fo WHERE fo.find_id = f.id)
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO FindTaxonomy (
+            find_id,
+            identified_name,
+            accepted_name,
+            identified_rank,
+            accepted_rank,
+            difference,
+            identified_no,
+            accepted_no,
+            phylum,
+            class_name,
+            taxon_order,
+            family,
+            genus,
+            reference_no,
+            taxonomy_comments,
+            collection_year_latest_estimate,
+            created_at,
+            updated_at
+        )
+        SELECT
+            f.id,
+            f.identified_name,
+            f.accepted_name,
+            f.identified_rank,
+            f.accepted_rank,
+            f.difference,
+            f.identified_no,
+            f.accepted_no,
+            f.phylum,
+            f.class_name,
+            f.taxon_order,
+            f.family,
+            f.genus,
+            f.reference_no,
+            f.taxonomy_comments,
+            f.collection_year_latest_estimate,
+            f.created_at,
+            f.updated_at
+        FROM Finds f
+        WHERE NOT EXISTS (SELECT 1 FROM FindTaxonomy ft WHERE ft.find_id = f.id)
+        """
+    )
     _migrate_legacy_collection_fields(conn)
     _rebuild_locations_table_without_legacy_columns(conn)
