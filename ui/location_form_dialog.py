@@ -2,6 +2,7 @@ import json
 import tkinter as tk
 import webbrowser
 import threading
+import time
 from io import BytesIO
 from pathlib import Path
 from tkinter import messagebox, ttk
@@ -50,6 +51,9 @@ class LocationFormDialog(tk.Toplevel):
     NONE_OPTION = "(None)"
     NEW_GEOLOGY_OPTION = "New geology"
     _ga_legend_cache: list[tuple[str, str, str, str]] | None = None
+    _small_marker_icon: tk.PhotoImage | None = None
+    _boundary_vertex_icon: tk.PhotoImage | None = None
+    _boundary_vertex_selected_icon: tk.PhotoImage | None = None
 
     def __init__(
         self,
@@ -244,6 +248,7 @@ class LocationFormDialog(tk.Toplevel):
         map_widget.set_tile_server(*self.MAP_TILE_TYPES[selected_map_type])
         map_widget.set_position(lat, lon)
         map_widget.set_zoom(initial_zoom)
+        self._start_map_loading_indicator(modal, map_widget, selected_map_type, lat, lon, initial_zoom)
         map_widget.canvas.delete("button")
         location_name = str(self.entries.get("name").get() if self.entries.get("name") else "").strip()
         marker_text = f"{location_name}\n{lat:.6f}, {lon:.6f}" if location_name else f"{lat:.6f}, {lon:.6f}"
@@ -251,10 +256,9 @@ class LocationFormDialog(tk.Toplevel):
             lat,
             lon,
             text=marker_text,
-            marker_color_circle="#FF2D2D",
-            marker_color_outside="#FF0000",
+            icon=self._get_small_marker_icon(modal),
+            icon_anchor="s",
         )
-        self._apply_half_size_marker(map_widget, marker)
         marker_text_bg_id: int | None = None
 
         def _sync_marker_text_background() -> None:
@@ -471,6 +475,7 @@ class LocationFormDialog(tk.Toplevel):
             zoom_scale.configure(to=zoom_max)
             map_widget.set_position(lat, lon)
             map_widget.set_zoom(current_zoom)
+            self._start_map_loading_indicator(modal, map_widget, selection, lat, lon, current_zoom)
             marker.delete()
             if marker_text_bg_id is not None:
                 map_widget.canvas.delete(marker_text_bg_id)
@@ -479,10 +484,9 @@ class LocationFormDialog(tk.Toplevel):
                 lat,
                 lon,
                 text=marker_text,
-                marker_color_circle="#FF2D2D",
-                marker_color_outside="#FF0000",
+                icon=self._get_small_marker_icon(modal),
+                icon_anchor="s",
             )
-            self._apply_half_size_marker(map_widget, marker)
             _sync_zoom_controls()
 
         _update_legend_button_visibility()
@@ -666,24 +670,141 @@ class LocationFormDialog(tk.Toplevel):
             return False
         return True
 
-    @staticmethod
-    def _apply_half_size_marker(map_widget, marker) -> None:
-        canvas = getattr(map_widget, "canvas", None)
-        if canvas is None:
+    @classmethod
+    def _get_small_marker_icon(cls, master: tk.Misc) -> tk.PhotoImage:
+        if cls._small_marker_icon is not None:
+            return cls._small_marker_icon
+        size = 24
+        img = tk.PhotoImage(master=master, width=size, height=size)
+        cx = (size - 1) / 2.0
+        cy = (size - 1) / 2.0
+        outer_r = 10.2
+        inner_r = 4.8
+        for x in range(size):
+            for y in range(size):
+                dx = x - cx
+                dy = y - cy
+                dist2 = dx * dx + dy * dy
+                if dist2 <= outer_r * outer_r:
+                    color = "#A21D1D"
+                    if dist2 <= inner_r * inner_r:
+                        color = "#FF4D4D"
+                    img.put(color, (x, y))
+        cls._small_marker_icon = img
+        return img
+
+    @classmethod
+    def _get_boundary_vertex_icon(cls, master: tk.Misc) -> tk.PhotoImage:
+        if cls._boundary_vertex_icon is not None:
+            return cls._boundary_vertex_icon
+        size = 12
+        img = tk.PhotoImage(master=master, width=size, height=size)
+        cx = (size - 1) / 2.0
+        cy = (size - 1) / 2.0
+        outer_r = 4.6
+        inner_r = 2.3
+        for x in range(size):
+            for y in range(size):
+                dx = x - cx
+                dy = y - cy
+                dist2 = dx * dx + dy * dy
+                if dist2 <= outer_r * outer_r:
+                    color = "#B8860B"
+                    if dist2 <= inner_r * inner_r:
+                        color = "#FFD54F"
+                    img.put(color, (x, y))
+        cls._boundary_vertex_icon = img
+        return img
+
+    @classmethod
+    def _get_boundary_vertex_selected_icon(cls, master: tk.Misc) -> tk.PhotoImage:
+        if cls._boundary_vertex_selected_icon is not None:
+            return cls._boundary_vertex_selected_icon
+        size = 14
+        img = tk.PhotoImage(master=master, width=size, height=size)
+        cx = (size - 1) / 2.0
+        cy = (size - 1) / 2.0
+        outer_r = 5.4
+        inner_r = 2.7
+        for x in range(size):
+            for y in range(size):
+                dx = x - cx
+                dy = y - cy
+                dist2 = dx * dx + dy * dy
+                if dist2 <= outer_r * outer_r:
+                    color = "#D35400"
+                    if dist2 <= inner_r * inner_r:
+                        color = "#FFF176"
+                    img.put(color, (x, y))
+        cls._boundary_vertex_selected_icon = img
+        return img
+
+    @classmethod
+    def _start_map_loading_indicator(
+        cls,
+        host: tk.Misc,
+        map_widget,
+        map_type: str,
+        lat: float,
+        lon: float,
+        zoom: int,
+    ) -> None:
+        if not host.winfo_exists():
             return
-        for item_name in ("canvas_marker", "canvas_icon", "canvas_text"):
-            item_id = getattr(marker, item_name, None)
-            if not item_id:
-                continue
-            try:
-                bbox = canvas.bbox(item_id)
-                if not bbox:
-                    continue
-                center_x = (bbox[0] + bbox[2]) / 2.0
-                center_y = (bbox[1] + bbox[3]) / 2.0
-                canvas.scale(item_id, center_x, center_y, 0.5, 0.5)
-            except Exception:
-                continue
+        token = int(getattr(map_widget, "_paleo_loading_token", 0)) + 1
+        setattr(map_widget, "_paleo_loading_token", token)
+        overlay = getattr(map_widget, "_paleo_loading_overlay", None)
+        progress = getattr(map_widget, "_paleo_loading_progress", None)
+        if overlay is None or not overlay.winfo_exists():
+            overlay = tk.Frame(map_widget, bg="#F7FAFD", bd=1, relief="solid")
+            tk.Label(overlay, text="Map loading...", bg="#F7FAFD", fg="#20262C").pack(side="left", padx=(10, 6), pady=8)
+            progress = ttk.Progressbar(overlay, mode="indeterminate", length=120)
+            progress.pack(side="left", padx=(0, 10), pady=8)
+            setattr(map_widget, "_paleo_loading_overlay", overlay)
+            setattr(map_widget, "_paleo_loading_progress", progress)
+        overlay.place(relx=0.5, rely=0.5, anchor="center")
+        overlay.lift()
+        progress.start(10)
+        started_at = time.monotonic()
+
+        def _hide_if_current() -> None:
+            if not host.winfo_exists() or not map_widget.winfo_exists():
+                return
+            if int(getattr(map_widget, "_paleo_loading_token", 0)) != token:
+                return
+            overlay_local = getattr(map_widget, "_paleo_loading_overlay", None)
+            progress_local = getattr(map_widget, "_paleo_loading_progress", None)
+            if progress_local is not None:
+                progress_local.stop()
+            if overlay_local is not None and overlay_local.winfo_exists():
+                overlay_local.place_forget()
+
+        def _worker() -> None:
+            probe_url = cls._map_tile_probe_url(map_type, lat, lon, zoom)
+            if probe_url:
+                try:
+                    requests.get(probe_url, timeout=8)
+                except Exception:
+                    pass
+            elapsed = time.monotonic() - started_at
+            minimum = 0.35
+            if elapsed < minimum:
+                time.sleep(minimum - elapsed)
+            host.after(0, _hide_if_current)
+
+        threading.Thread(target=_worker, daemon=True).start()
+
+    @classmethod
+    def _map_tile_probe_url(cls, map_type: str, lat: float, lon: float, zoom: int) -> str | None:
+        tile_settings = cls.MAP_TILE_TYPES.get(map_type)
+        if not tile_settings:
+            return None
+        template = tile_settings[0]
+        x_tile, y_tile = cls._lat_lon_to_xyz(lat, lon, int(zoom))
+        try:
+            return str(template).format(z=int(zoom), x=x_tile, y=y_tile)
+        except Exception:
+            return None
 
 
     def _save(self) -> None:

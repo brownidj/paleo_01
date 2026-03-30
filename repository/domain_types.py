@@ -109,6 +109,7 @@ class CollectionEventRecord(TypedDict, total=False):
     event_year: int | None
     collection_name: str | None
     collection_subset: str | None
+    boundary_geojson: str | None
     location_name: str | None
     find_count: int
 

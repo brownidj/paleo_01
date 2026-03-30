@@ -31,6 +31,12 @@ def _fetch_sqlite_rows(conn: sqlite3.Connection, sql: str) -> list[dict[str, obj
     return [dict(row) for row in rows]
 
 
+def _sqlite_columns(conn: sqlite3.Connection, table_name: str) -> set[str]:
+    conn.row_factory = sqlite3.Row
+    rows = conn.execute(f'PRAGMA table_info("{table_name}")').fetchall()
+    return {str(row["name"]) for row in rows}
+
+
 def sync_people_and_locations(sqlite_conn: sqlite3.Connection, pg_conn: Connection) -> dict[str, int]:
     counts: dict[str, int] = {}
 
@@ -204,31 +210,70 @@ def sync_geology_and_trips(sqlite_conn: sqlite3.Connection, pg_conn: Connection)
 
 def sync_collection_events_and_finds(sqlite_conn: sqlite3.Connection, pg_conn: Connection) -> dict[str, int]:
     counts: dict[str, int] = {}
+    collection_event_columns = _sqlite_columns(sqlite_conn, "CollectionEvents")
+    boundary_expr = "boundary_geojson" if "boundary_geojson" in collection_event_columns else "NULL AS boundary_geojson"
 
     collection_rows = _fetch_sqlite_rows(
         sqlite_conn,
-        "SELECT id, location_id, collection_name, collection_subset, trip_id, event_year FROM CollectionEvents ORDER BY id",
+        f"SELECT id, location_id, collection_name, collection_subset, {boundary_expr}, trip_id, event_year FROM CollectionEvents ORDER BY id",
     )
     counts["collection_events"] = upsert_table(
         pg_conn,
         """
-        INSERT INTO collection_events (id, location_id, collection_name, collection_subset, trip_id, event_year)
-        VALUES (%(id)s, %(location_id)s, %(collection_name)s, %(collection_subset)s, %(trip_id)s, %(event_year)s)
+        INSERT INTO collection_events (id, location_id, collection_name, collection_subset, boundary_geojson, trip_id, event_year)
+        VALUES (%(id)s, %(location_id)s, %(collection_name)s, %(collection_subset)s, %(boundary_geojson)s, %(trip_id)s, %(event_year)s)
         ON CONFLICT (id) DO UPDATE SET
             location_id = EXCLUDED.location_id, collection_name = EXCLUDED.collection_name,
-            collection_subset = EXCLUDED.collection_subset, trip_id = EXCLUDED.trip_id, event_year = EXCLUDED.event_year
+            collection_subset = EXCLUDED.collection_subset, boundary_geojson = EXCLUDED.boundary_geojson,
+            trip_id = EXCLUDED.trip_id, event_year = EXCLUDED.event_year
         """,
         collection_rows,
     )
 
+    find_columns = _sqlite_columns(sqlite_conn, "Finds")
+
+    def sqlite_expr(column: str, fallback_sql: str) -> str:
+        if column in find_columns:
+            return column
+        return f"{fallback_sql} AS {column}"
+
     find_rows = _fetch_sqlite_rows(
         sqlite_conn,
-        """
-        SELECT id, location_id, collection_event_id, source_system, source_occurrence_no, identified_name, accepted_name,
-               identified_rank, accepted_rank, difference, identified_no, accepted_no, phylum, class_name, taxon_order,
-               family, genus, abund_value, abund_unit, reference_no, taxonomy_comments, occurrence_comments, research_group,
-               notes, find_date, find_time, latitude, longitude, collection_year_latest_estimate, created_at, updated_at
-        FROM Finds ORDER BY id
+        f"""
+        SELECT
+            id,
+            location_id,
+            collection_event_id,
+            source_system,
+            source_occurrence_no,
+            identified_name,
+            accepted_name,
+            identified_rank,
+            accepted_rank,
+            difference,
+            identified_no,
+            accepted_no,
+            phylum,
+            class_name,
+            taxon_order,
+            family,
+            genus,
+            abund_value,
+            abund_unit,
+            reference_no,
+            taxonomy_comments,
+            occurrence_comments,
+            research_group,
+            notes,
+            {sqlite_expr("find_date", "NULL")},
+            {sqlite_expr("find_time", "NULL")},
+            {sqlite_expr("latitude", "NULL")},
+            {sqlite_expr("longitude", "NULL")},
+            collection_year_latest_estimate,
+            {sqlite_expr("created_at", "CURRENT_TIMESTAMP")},
+            {sqlite_expr("updated_at", "CURRENT_TIMESTAMP")}
+        FROM Finds
+        ORDER BY id
         """,
     )
     counts["finds"] = upsert_table(

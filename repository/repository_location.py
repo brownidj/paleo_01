@@ -30,6 +30,7 @@ class RepositoryLocationMixin:
                     location_id INTEGER NOT NULL,
                     collection_name TEXT NOT NULL,
                     collection_subset TEXT,
+                    boundary_geojson TEXT,
                     event_year INTEGER,
                     FOREIGN KEY (trip_id) REFERENCES Trips(id) ON DELETE SET NULL,
                     FOREIGN KEY (location_id) REFERENCES Locations(id)
@@ -44,6 +45,8 @@ class RepositoryLocationMixin:
                 }
             if "event_year" not in collection_event_columns:
                 conn.execute('ALTER TABLE "CollectionEvents" ADD COLUMN event_year INTEGER')
+            if "boundary_geojson" not in collection_event_columns:
+                conn.execute('ALTER TABLE "CollectionEvents" ADD COLUMN boundary_geojson TEXT')
             self._migrate_legacy_collection_fields(conn)
             self._rebuild_locations_table_without_legacy_columns(conn)
             conn.execute(

@@ -20,6 +20,7 @@ class PostgresTripRepository(PostgresTripRepositoryDomainMixin):
         self.database_url = os.getenv("PALEO_DESKTOP_DATABASE_URL", "").strip() or os.getenv("DATABASE_URL", "").strip()
         if not self.database_url:
             raise RuntimeError("PALEO_DESKTOP_DATABASE_URL or DATABASE_URL is required for PostgresTripRepository.")
+        self._ensure_core_schema()
         self._ensure_finds_schema()
 
     @contextmanager
@@ -37,6 +38,13 @@ class PostgresTripRepository(PostgresTripRepositoryDomainMixin):
     def ensure_trips_table(self, fields: list[str] | None = None) -> None:
         _ = fields
         return
+
+    def _ensure_core_schema(self) -> None:
+        from scripts.db.migrate_sqlite_to_postgres_schema_helpers import ensure_schema
+
+        with connect(self.database_url, row_factory=dict_row) as conn:
+            ensure_schema(conn)
+            conn.commit()
 
     def _ensure_finds_schema(self) -> None:
         with self._connect() as conn, conn.cursor() as cur:

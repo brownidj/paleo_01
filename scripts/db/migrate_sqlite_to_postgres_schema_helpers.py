@@ -137,11 +137,13 @@ def ensure_schema(pg: Connection) -> None:
                 location_id BIGINT NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
                 collection_name TEXT NOT NULL,
                 collection_subset TEXT,
+                boundary_geojson TEXT,
                 trip_id BIGINT REFERENCES trips(id) ON DELETE SET NULL,
                 event_year INTEGER
             )
             """
         )
+        cur.execute("ALTER TABLE collection_events ADD COLUMN IF NOT EXISTS boundary_geojson TEXT")
         cur.execute(
             """
             CREATE TABLE IF NOT EXISTS finds (
@@ -183,6 +185,28 @@ def ensure_schema(pg: Connection) -> None:
         cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS find_time TEXT")
         cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS latitude TEXT")
         cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS longitude TEXT")
+        # Compatibility bridge: migration upserts legacy detail fields into finds,
+        # then repository bootstrap can split/migrate them into child tables.
+        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS identified_name TEXT")
+        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS accepted_name TEXT")
+        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS identified_rank TEXT")
+        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS accepted_rank TEXT")
+        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS difference TEXT")
+        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS identified_no TEXT")
+        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS accepted_no TEXT")
+        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS phylum TEXT")
+        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS class_name TEXT")
+        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS taxon_order TEXT")
+        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS family TEXT")
+        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS genus TEXT")
+        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS abund_value TEXT")
+        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS abund_unit TEXT")
+        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS reference_no TEXT")
+        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS taxonomy_comments TEXT")
+        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS occurrence_comments TEXT")
+        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS research_group TEXT")
+        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS notes TEXT")
+        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS collection_year_latest_estimate INTEGER")
         cur.execute(
             """
             CREATE TABLE IF NOT EXISTS find_field_observations (
@@ -226,34 +250,44 @@ def ensure_schema(pg: Connection) -> None:
         )
         cur.execute(
             """
-            INSERT INTO find_field_observations (
-                find_id, provisional_identification, notes, abund_value, abund_unit, occurrence_comments, research_group,
-                created_at, updated_at
-            )
-            SELECT
-                f.id, f.identified_name, f.notes, f.abund_value, f.abund_unit, f.occurrence_comments, f.research_group,
-                f.created_at, f.updated_at
-            FROM finds f
-            LEFT JOIN find_field_observations fo ON fo.find_id = f.id
-            WHERE fo.find_id IS NULL
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_schema='public' AND table_name='finds' AND column_name='identified_name'
+            LIMIT 1
             """
         )
-        cur.execute(
-            """
-            INSERT INTO find_taxonomy (
-                find_id, identified_name, accepted_name, identified_rank, accepted_rank, difference, identified_no, accepted_no,
-                phylum, class_name, taxon_order, family, genus, reference_no, taxonomy_comments, collection_year_latest_estimate,
-                created_at, updated_at
+        has_legacy_detail_columns = cur.fetchone() is not None
+        if has_legacy_detail_columns:
+            cur.execute(
+                """
+                INSERT INTO find_field_observations (
+                    find_id, provisional_identification, notes, abund_value, abund_unit, occurrence_comments, research_group,
+                    created_at, updated_at
+                )
+                SELECT
+                    f.id, f.identified_name, f.notes, f.abund_value, f.abund_unit, f.occurrence_comments, f.research_group,
+                    f.created_at, f.updated_at
+                FROM finds f
+                LEFT JOIN find_field_observations fo ON fo.find_id = f.id
+                WHERE fo.find_id IS NULL
+                """
             )
-            SELECT
-                f.id, f.identified_name, f.accepted_name, f.identified_rank, f.accepted_rank, f.difference, f.identified_no, f.accepted_no,
-                f.phylum, f.class_name, f.taxon_order, f.family, f.genus, f.reference_no, f.taxonomy_comments, f.collection_year_latest_estimate,
-                f.created_at, f.updated_at
-            FROM finds f
-            LEFT JOIN find_taxonomy ft ON ft.find_id = f.id
-            WHERE ft.find_id IS NULL
-            """
-        )
+            cur.execute(
+                """
+                INSERT INTO find_taxonomy (
+                    find_id, identified_name, accepted_name, identified_rank, accepted_rank, difference, identified_no, accepted_no,
+                    phylum, class_name, taxon_order, family, genus, reference_no, taxonomy_comments, collection_year_latest_estimate,
+                    created_at, updated_at
+                )
+                SELECT
+                    f.id, f.identified_name, f.accepted_name, f.identified_rank, f.accepted_rank, f.difference, f.identified_no, f.accepted_no,
+                    f.phylum, f.class_name, f.taxon_order, f.family, f.genus, f.reference_no, f.taxonomy_comments, f.collection_year_latest_estimate,
+                    f.created_at, f.updated_at
+                FROM finds f
+                LEFT JOIN find_taxonomy ft ON ft.find_id = f.id
+                WHERE ft.find_id IS NULL
+                """
+            )
 
 
 def truncate_all(pg: Connection) -> None:

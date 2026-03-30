@@ -1,5 +1,4 @@
 import os
-import tkinter as tk
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 
@@ -47,14 +46,12 @@ def run_planning_phase_app() -> None:
     )
 
     auth_client = ApiAuthClient(base_url=api_base_url, verify_tls=verify_tls)
-    login_root = tk.Tk()
-    login_root.withdraw()
-    if not login_interactive(auth_client, login_root):
-        login_root.destroy()
-        return
-    login_root.destroy()
-
     app = PlanningPhaseWindow(auth_client=auth_client, db_backend=db_backend)
+    app.withdraw()
+    if not login_interactive(auth_client, app):
+        app.destroy()
+        return
+    app.deiconify()
     app.mainloop()
 
 

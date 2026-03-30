@@ -213,6 +213,7 @@ def create_locations_table(conn: sqlite3.Connection) -> None:
             location_id INTEGER NOT NULL,
             collection_name TEXT NOT NULL,
             collection_subset TEXT,
+            boundary_geojson TEXT,
             event_year INTEGER,
             FOREIGN KEY (trip_id) REFERENCES Trips(id) ON DELETE SET NULL,
             FOREIGN KEY (location_id) REFERENCES Locations(id)
@@ -225,6 +226,8 @@ def create_locations_table(conn: sqlite3.Connection) -> None:
         ce_columns = [row[1] for row in conn.execute("PRAGMA table_info(CollectionEvents)").fetchall()]
     if "event_year" not in ce_columns:
         conn.execute("ALTER TABLE CollectionEvents ADD COLUMN event_year INTEGER")
+    if "boundary_geojson" not in ce_columns:
+        conn.execute("ALTER TABLE CollectionEvents ADD COLUMN boundary_geojson TEXT")
     _migrate_legacy_trip_locations(conn)
     conn.execute("CREATE INDEX IF NOT EXISTS idx_trip_locations_trip ON TripLocations(id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_trip_locations_location ON TripLocations(location_id)")
