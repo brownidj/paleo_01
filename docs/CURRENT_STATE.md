@@ -233,15 +233,33 @@ rg --files "$ROOT_DIR" \
   - Collection events carry `trip_id` and `event_year`; trip->collection-events and trip->finds listing/count are wired via `CollectionEvents.trip_id`.
   - Applied location+date-proximity event ownership reassignment (`same location`, `event_year within ±5 years of trip year`): 33 event-owner changes; orphan trips reduced from 36 to 16.
   - Added auto-hiding list scrollbars for all tab list panels; scrollbars appear only when rows/columns overflow.
-  - **Prompt Compliance Snapshot (2026-03-26, updated)**:
+  - Collection Plan tab now supports:
+    - Trip filter default-on behavior.
+    - One row per Collection Event (grouped by Trip).
+    - Team column in list view (currently sourced from `Trips.team`).
+    - Event-bound boundary editing flow with explicit active-event tracking.
+  - Collection Events tab now supports `Duplicate Event`:
+    - visible only when Trip filter is on
+    - enabled only when a Collection Event row is selected
+    - duplicate excludes vertices (`boundary_geojson` reset/null)
+    - Save remains disabled until name is changed.
+  - **Fallbacks and Workarounds to be aware of**:
+    - Collection Plan boundary persistence is capability-checked (`getattr(self.repo, "update_collection_event_boundary", None)`); if unavailable, boundary save is skipped without crashing.
+    - Collection Events duplication is capability-checked (`getattr(self.repo, "duplicate_collection_event", None)`); if unavailable, the UI raises a controlled error.
+    - Collection Plan map UI degrades gracefully when map dependencies/coordinates are unavailable (`tkintermapview` missing or no resolved location coordinates).
+    - Collection Plan dialog close uses a safe fallback path (`locals().get("_close_dialog_safe", dialog.destroy)`) to avoid stale-canvas teardown crashes.
+    - Trip-filter views fall back to broader datasets when no active provider trip id is available.
+    - Type-gate enforcement is intentionally incremental: `check_types.sh` is green for enforced files, while broader full-repo mypy still surfaces issues in non-gated modules.
+    - Team-assignment identity quality remains source-constrained; stronger canonical alias/provenance quality is unlikely without additional publicly available sources.
+  - Type-gate widening and tightening pass (2026-03-30):
+    - `scripts/checks/check_types.sh` scope increased from 51 to 61 files to include additional split UI modules (`planning_phase_window_selection`, `planning_phase_window_palette`, `trip_filter_tree_tab`, `trip_form_dialog`, `trip_form_dialog_pickers`, `collection_events_tab`, `finds_tab`, `location_tab`, `geology_tab`, `team_members_tab`).
+    - targeted mypy overrides were reduced by removing per-module suppressions for `ui.collection_events_tab` and `ui.finds_tab` after code-level typing fixes.
+  - **Prompt Compliance Snapshot (2026-03-30, updated)**:
   - Architecture boundaries (UI/domain/infra separation): **mostly compliant**.
   - Root clutter minimization (`main.py` only at root): **partially compliant** (major infra/env files moved; IDE artifacts still present).
   - `main.py` thin/no wiring rule: **compliant** (`main.py` now delegates to `app/bootstrap_runtime.py`).
   - DB safety (parameterized SQL + safe connection handling): **compliant**.
-  - File size <= 300 lines: **partially compliant**.
-    - Targeted oversized production files now under 300: `ui/planning_phase_window.py` (227), `repository/postgres_trip_repository.py` (157), `backend/app/auth.py` (283), `ui/trip_form_dialog.py` (259).
-    - `scripts/db/migrate_sqlite_to_postgres.py` is now a thin orchestrator (89) with helpers split to `scripts/db/migrate_sqlite_to_postgres_schema_helpers.py` and `scripts/db/migrate_sqlite_to_postgres_sync_chunks.py`.
-    - Existing large files still exceed 300 (current `check_file_sizes` output: `repository/repository_finds.py` 379, `repository/repository_geology_data.py` 320, `tests/test_collection_plan_tab_behavior.py` 330, `tests/test_trip_repository_location_finds.py` 411).
+  - File size <= 300 lines: **not compliant** (current notable oversize files include `ui/planning_tabs_controller.py` (865), `repository/repository_finds.py` (839), `ui/location_form_dialog.py` (831), `repository/postgres_trip_repository_domain.py` (713), `ui/collection_events_tab.py` (381), plus several others).
 
 ## Codebase Goodness Assessment (vs prompt)
 
@@ -254,16 +272,17 @@ rg --files "$ROOT_DIR" \
   - Recent targeted test runs are stable and now include a broader New/Edit Find full-window journey.
   - Internal repository/controller interfaces now use typed payload structures, reducing `dict[str, Any]` usage.
   - Deployment/env layout is cleaner (`deploy/` + `config/env/`) and bootstrap scripts were updated accordingly.
-  - Mypy coverage has been widened and is green for 51 enforced files via `scripts/checks/check_types.sh`, with broader diagnostic coverage green across 74 files.
+  - Mypy coverage has been widened and is green for 61 enforced files via `scripts/checks/check_types.sh`.
 - **Weak areas / debt**:
+  - Full-repo mypy run remains intentionally broader than enforced gate and still reports issues in non-gated UI modules.
   - Mypy remains policy-scoped by command selection (tests are still out of scope), though current runtime/script module coverage is broad and green.
-  - Team-member publication-name matching is currently heuristic/string-based; canonical author identity mapping is not yet modeled.
+  - Team-member publication-name matching is currently heuristic/string-based; further meaningful identity-quality improvement is unlikely without additional publicly available source data.
 
 ## Recommendations
 
 1. Keep event-owned integrity checks mandatory.
 2. Continue incremental type tightening and widen mypy scope for newly split modules with targeted overrides reduced over time.
-3. Improve team-assignment identity quality with canonical author aliases + provenance.
+3. Maintain canonical author-alias + provenance fields, but treat identity-quality lift as data-source constrained unless new public sources become available.
 
 ## ToDo
 
@@ -317,3 +336,8 @@ rg --files "$ROOT_DIR" \
   - `pytest -q tests/test_db_bootstrap.py tests/test_trip_event_integrity_check.py tests/test_ui_user_flow_integration.py`: **PASSED** (`9 passed`).
   - `bash scripts/checks/check_types.sh`: **PASSED** (`Success: no issues found in 51 source files`).
   - `python3 -m mypy --config-file config/mypy.ini --explicit-package-bases app backend/app repository ui scripts/db scripts/checks scripts/accounts scripts/data_ops scripts/dev_seed`: **PASSED** (`Success: no issues found in 74 source files`).
+- **2026-03-30 (targeted UI regression check, after test alignment)**:
+  - `pytest -q tests/test_collection_plan_tab_behavior.py tests/test_tab_filter_regression.py`: **PASSED** (`11 passed`).
+- **2026-03-30 (type-gate tightening pass)**:
+  - `bash scripts/checks/check_types.sh`: **PASSED** (`Success: no issues found in 61 source files`).
+  - Expanded scope and override reduction were applied incrementally in this pass (see architecture/behavior notes above).

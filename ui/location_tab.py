@@ -86,9 +86,12 @@ class LocationTab(ttk.Frame):
             messagebox.showerror("Database Error", str(e))
             return
         allowed_location_names = self._active_trip_location_names()
-        use_trip_filter = self.trip_filter_var.get() == 1 and allowed_location_names is not None
         for loc in locations:
-            if use_trip_filter and str(loc.get("name") or "").strip().lower() not in allowed_location_names:
+            if (
+                self.trip_filter_var.get() == 1
+                and allowed_location_names is not None
+                and str(loc.get("name") or "").strip().lower() not in allowed_location_names
+            ):
                 continue
             self.tree.insert(
                 "",

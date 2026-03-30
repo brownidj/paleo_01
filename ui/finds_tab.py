@@ -1,7 +1,9 @@
 import sqlite3
 import tkinter as tk
 from tkinter import messagebox, ttk
+from typing import Callable, Mapping, cast
 
+from repository.domain_types import CollectionEventRecord
 from repository.trip_repository import TripRepository
 from ui.find_field_observations_dialog import FindFieldObservationsDialog
 from ui.find_form_dialog import FindFormDialog
@@ -34,7 +36,13 @@ class FindsTab(TripFilterTreeTab):
             "source_occurrence_no": 96,
             "accepted_name": 180,
         }
-        super().__init__(parent, repo, self.LIST_COLUMNS, widths, repo.list_finds)
+        super().__init__(
+            parent,
+            repo,
+            self.LIST_COLUMNS,
+            widths,
+            cast(Callable[[int | None], list[Mapping[str, object]]], repo.list_finds),
+        )
         style = ttk.Style(self)
         style.configure("Finds.Treeview.Heading", font=("Helvetica", 10, "bold"))
         self.tree.configure(style="Finds.Treeview")
@@ -307,18 +315,32 @@ class FindsTab(TripFilterTreeTab):
         self._save_toast_hide_after_id = None
 
     @staticmethod
-    def _collection_event_choices(events: list[dict[str, object]]) -> list[tuple[int, str]]:
+    def _event_id(event: CollectionEventRecord) -> int | None:
+        raw = event.get("id")
+        try:
+            if raw is None:
+                return None
+            return int(raw)
+        except (TypeError, ValueError):
+            return None
+
+    @classmethod
+    def _collection_event_choices(cls, events: list[CollectionEventRecord]) -> list[tuple[int, str]]:
         base_labels: dict[int, tuple[str, str]] = {}
         counts: dict[str, int] = {}
         for event in events:
-            event_id = int(event["id"])
+            event_id = cls._event_id(event)
+            if event_id is None:
+                continue
             collection_name = str(event.get("collection_name") or "").strip() or "n/a"
             location_name = str(event.get("location_name") or "").strip() or "n/a"
             base_labels[event_id] = (collection_name, location_name)
             counts[collection_name] = counts.get(collection_name, 0) + 1
         choices: list[tuple[int, str]] = []
         for event in events:
-            event_id = int(event["id"])
+            event_id = cls._event_id(event)
+            if event_id is None or event_id not in base_labels:
+                continue
             collection_name, location_name = base_labels[event_id]
             if counts.get(collection_name, 0) == 1:
                 label = collection_name

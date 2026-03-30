@@ -3,7 +3,7 @@ import sqlite3
 import tkinter as tk
 from datetime import date
 from tkinter import messagebox, ttk
-from typing import Callable
+from typing import Any, Callable, cast
 
 from repository.trip_repository import TripRepository
 from ui.auto_hide_scrollbars import attach_auto_hiding_scrollbars
@@ -135,14 +135,14 @@ class PlanningTabsController:
             else (self._collection_plan_event_by_trip.get(trip_id) if edit_existing else None)
         )
         trip_events = [dict(event) for event in self.repo.list_collection_events(trip_id)]
-        trip_events.sort(key=lambda row: int(row.get("id") or 0))
+        trip_events.sort(key=lambda row: self._to_int(row.get("id")) or 0)
         trip_event_by_id: dict[int, dict[str, object]] = {}
         trip_event_name_by_id: dict[int, str] = {}
         trip_event_id_by_name: dict[str, int] = {}
         for event in trip_events:
             event_id_raw = event.get("id")
             try:
-                event_id = int(event_id_raw) if event_id_raw is not None else None
+                event_id = self._to_int(event_id_raw) if event_id_raw is not None else None
             except (TypeError, ValueError):
                 event_id = None
             if event_id is None:
@@ -248,7 +248,7 @@ class PlanningTabsController:
             map_widget.set_zoom(zoom)
             LocationFormDialog._start_map_loading_indicator(dialog, map_widget, selected_map_type, lat, lon, zoom)
             boundary_points = self._parse_boundary_geojson(existing_boundary_geojson)
-            vertex_markers: list[object] = []
+            vertex_markers: list[Any] = []
             boundary_polygon = None
             selected_vertex_index: int | None = None
             draw_press_moved = False
@@ -284,7 +284,7 @@ class PlanningTabsController:
                     return
                 for marker in vertex_markers:
                     try:
-                        marker.delete()
+                        cast(Any, marker).delete()
                     except Exception:
                         pass
                 vertex_markers.clear()
@@ -361,7 +361,7 @@ class PlanningTabsController:
                 to=zoom_max,
                 orient=tk.HORIZONTAL,
                 resolution=1,
-                showvalue=0,
+                showvalue=False,
                 highlightthickness=0,
                 bd=0,
                 sliderlength=2,
@@ -463,7 +463,8 @@ class PlanningTabsController:
                 best_dist2 = threshold_px * threshold_px
                 for idx, marker in enumerate(vertex_markers):
                     try:
-                        px, py = marker.get_canvas_pos(marker.position)
+                        marker_obj = cast(Any, marker)
+                        px, py = marker_obj.get_canvas_pos(marker_obj.position)
                     except Exception:
                         continue
                     dx = float(px) - float(canvas_x)
@@ -695,12 +696,13 @@ class PlanningTabsController:
         for trip in records:
             trip_id = int(trip["id"])
             trip_events = events_by_trip.get(trip_id, [])
-            trip_events.sort(key=lambda row: int(row.get("id") or 0))
+            trip_events.sort(key=lambda row: self._to_int(row.get("id")) or 0)
             if trip_events:
-                latest_event = max(trip_events, key=lambda row: int(row.get("id") or 0))
-                self._collection_plan_event_by_trip[trip_id] = int(latest_event["id"])
-                for idx, event in enumerate(trip_events):
-                    event_id = int(event.get("id") or 0)
+                latest_event = max(trip_events, key=lambda row: self._to_int(row.get("id")) or 0)
+                latest_event_id = self._to_int(latest_event.get("id"))
+                self._collection_plan_event_by_trip[trip_id] = latest_event_id
+                for idx, trip_event in enumerate(trip_events):
+                    event_id = self._to_int(trip_event.get("id")) or 0
                     row_iid = f"trip:{trip_id}:event:{event_id}"
                     self._collection_plan_row_trip_by_iid[row_iid] = trip_id
                     self._collection_plan_row_event_by_iid[row_iid] = event_id
@@ -711,7 +713,7 @@ class PlanningTabsController:
                         values=(
                             (trip.get("trip_name") or "") if idx == 0 else "",
                             (trip.get("start_date") or "") if idx == 0 else "",
-                            str(event.get("collection_name") or ""),
+                            str(trip_event.get("collection_name") or ""),
                             (trip.get("team") or "") if idx == 0 else "",
                         ),
                     )
@@ -820,6 +822,16 @@ class PlanningTabsController:
     def _parse_coordinate(value: object) -> float | None:
         try:
             return float(str(value or "").strip())
+        except (TypeError, ValueError):
+            return None
+
+    @staticmethod
+    def _to_int(value: object) -> int | None:
+        try:
+            text = str(value).strip()
+            if not text:
+                return None
+            return int(text)
         except (TypeError, ValueError):
             return None
 

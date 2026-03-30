@@ -1,6 +1,7 @@
 import sqlite3
 import tkinter as tk
 from tkinter import messagebox, ttk
+from typing import Callable, Mapping, cast
 
 from repository.trip_repository import TripRepository
 from ui.trip_filter_tree_tab import TripFilterTreeTab
@@ -15,7 +16,13 @@ class CollectionEventsTab(TripFilterTreeTab):
             "location_name": 260,
             "find_count": 80,
         }
-        super().__init__(parent, repo, self.LIST_COLUMNS, widths, repo.list_collection_events)
+        super().__init__(
+            parent,
+            repo,
+            self.LIST_COLUMNS,
+            widths,
+            cast(Callable[[int | None], list[Mapping[str, object]]], repo.list_collection_events),
+        )
         style = ttk.Style(self)
         style.configure("CollectionEvents.Treeview.Heading", font=("Helvetica", 10, "bold"))
         self.tree.configure(style="CollectionEvents.Treeview")
@@ -281,7 +288,8 @@ class CollectionEventsTab(TripFilterTreeTab):
         event_year_raw = source_event.get("event_year")
         event_year_text = str(event_year_raw).strip() if event_year_raw is not None else ""
         try:
-            trip_id = int(source_event.get("trip_id")) if source_event.get("trip_id") is not None else None
+            trip_id_raw = source_event.get("trip_id")
+            trip_id = int(trip_id_raw) if trip_id_raw is not None else None
         except (TypeError, ValueError):
             trip_id = None
         trip = self.repo.get_trip(trip_id) if trip_id is not None else None

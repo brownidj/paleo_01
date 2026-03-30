@@ -364,8 +364,8 @@ class PostgresTripRepository(PostgresTripRepositoryDomainMixin):
             if normalized and member_id > 0 and normalized not in by_name:
                 by_name[normalized] = member_id
         for team_name in team_names:
-            member_id = by_name.get(team_name.lower())
-            if member_id is None:
+            matched_member_id = by_name.get(team_name.lower())
+            if matched_member_id is None:
                 continue
             cur.execute(
                 """
@@ -373,5 +373,5 @@ class PostgresTripRepository(PostgresTripRepositoryDomainMixin):
                 VALUES (%s, %s)
                 ON CONFLICT (trip_id, team_member_id) DO NOTHING
                 """,
-                (trip_id, member_id),
+                (trip_id, matched_member_id),
             )
