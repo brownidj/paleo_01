@@ -1,3 +1,4 @@
+import os
 import sqlite3
 import tkinter as tk
 from collections.abc import Mapping
@@ -11,6 +12,7 @@ from ui.auto_hide_scrollbars import attach_auto_hiding_scrollbars
 from ui.planning_tabs_controller import PlanningTabsController
 from ui.planning_phase_window_palette import PlanningPhaseWindowPaletteMixin
 from ui.planning_phase_window_selection import PlanningPhaseWindowSelectionMixin
+from ui.maintenance_dialog import MaintenanceDialog
 from ui.trip_dialog_controller import TripDialogController
 from ui.trip_navigation_coordinator import TripNavigationCoordinator
 
@@ -24,7 +26,7 @@ class PlanningPhaseWindow(PlanningPhaseWindowSelectionMixin, PlanningPhaseWindow
         db_backend: str = "sqlite",
     ):
         super().__init__()
-        self.title("Planning Phase")
+        self.title("Paleo Trips - Planning and viewing past Finds")
         self.geometry("980x560")
         self._apply_palette()
         self.protocol("WM_DELETE_WINDOW", self._on_close)
@@ -39,7 +41,9 @@ class PlanningPhaseWindow(PlanningPhaseWindowSelectionMixin, PlanningPhaseWindow
         self._trip_toast_last_iid: str | None = None
         self._collection_events_count_map: dict[int, int] = {}
         self._finds_count_map: dict[int, int] = {}
+        self._maintenance_dialog: MaintenanceDialog | None = None
         self.auth_client = auth_client
+        self._postgres_url = os.getenv("PALEO_DESKTOP_DATABASE_URL", "").strip() or os.getenv("DATABASE_URL", "").strip()
         self.repo: Any
 
         backend = db_backend.strip().lower()
@@ -71,7 +75,7 @@ class PlanningPhaseWindow(PlanningPhaseWindowSelectionMixin, PlanningPhaseWindow
         self.finds_tab = self.tabs_controller.finds_tab
         self.collection_plan_tab = self.tabs_controller.collection_plan_tab
         self.team_members_tab = self.tabs_controller.team_members_tab
-        for tab in (self.collection_events_tab, self.finds_tab):
+        for tab in (self.location_tab, self.collection_events_tab, self.finds_tab):
             set_provider = getattr(tab, "set_current_trip_provider", None)
             if callable(set_provider):
                 set_provider(self._get_selected_trip_id)
@@ -102,6 +106,7 @@ class PlanningPhaseWindow(PlanningPhaseWindowSelectionMixin, PlanningPhaseWindow
         )
         self.tabs_controller.build_collection_plan_placeholder()
         self.tabs_controller.load_initial_tab_data(self.load_trips)
+        self._build_main_menu()
         self.after_idle(self._restore_trip_selection)
 
     def _build_trips_tab(self) -> None:
@@ -247,3 +252,22 @@ class PlanningPhaseWindow(PlanningPhaseWindowSelectionMixin, PlanningPhaseWindow
         if not team_value:
             return []
         return [name.strip() for name in team_value.split(";") if name.strip()]
+
+    def _build_main_menu(self) -> None:
+        menubar = tk.Menu(self)
+        tools_menu = tk.Menu(menubar, tearoff=0)
+        tools_menu.add_command(label="Maintenance...", command=self._open_maintenance_dialog)
+        menubar.add_cascade(label="Tools", menu=tools_menu)
+        self.configure(menu=menubar)
+
+    def _open_maintenance_dialog(self) -> None:
+        if self._maintenance_dialog is not None and self._maintenance_dialog.winfo_exists():
+            self._maintenance_dialog.lift()
+            self._maintenance_dialog.focus_force()
+            return
+        self._maintenance_dialog = MaintenanceDialog(
+            self,
+            sqlite_db_path=self._db_path,
+            postgres_url=self._postgres_url,
+        )
+        self._maintenance_dialog.bind("<Destroy>", lambda _event: setattr(self, "_maintenance_dialog", None), add="+")

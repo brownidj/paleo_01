@@ -48,29 +48,29 @@ class TestFindFormDialogBehavior(unittest.TestCase):
         dialog = self._make_dialog()
         self.assertEqual(dialog._edit_var.get(), 0)
         dialog._on_edit_radio_click(None)
-        accepted = dialog._inputs["accepted_name"]
-        assert isinstance(accepted, tk.Entry)
-        accepted.delete(0, "end")
-        accepted.insert(0, "Taxon B")
+        source_occurrence_no = dialog._inputs["source_occurrence_no"]
+        assert isinstance(source_occurrence_no, tk.Entry)
+        source_occurrence_no.delete(0, "end")
+        source_occurrence_no.insert(0, "SRC-002")
 
         dialog._on_edit_radio_click(None)
 
         self.assertEqual(dialog._edit_var.get(), 0)
         self.assertEqual(len(self.saved_payloads), 1)
-        self.assertEqual(self.saved_payloads[0]["accepted_name"], "Taxon B")
+        self.assertEqual(self.saved_payloads[0]["source_occurrence_no"], "SRC-002")
 
     def test_close_saves_when_changed(self):
         dialog = self._make_dialog()
         dialog._on_edit_radio_click(None)
-        identified = dialog._inputs["identified_name"]
-        assert isinstance(identified, tk.Entry)
-        identified.delete(0, "end")
-        identified.insert(0, "Taxon C")
+        source_system = dialog._inputs["source_system"]
+        assert isinstance(source_system, tk.Entry)
+        source_system.delete(0, "end")
+        source_system.insert(0, "GaiaGPS")
 
         dialog._close()
 
         self.assertEqual(len(self.saved_payloads), 1)
-        self.assertEqual(self.saved_payloads[0]["identified_name"], "Taxon C")
+        self.assertEqual(self.saved_payloads[0]["source_system"], "GaiaGPS")
         self.assertFalse(dialog.winfo_exists())
 
     def test_close_does_not_save_when_unchanged(self):

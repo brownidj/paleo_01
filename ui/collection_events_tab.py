@@ -23,12 +23,20 @@ class CollectionEventsTab(TripFilterTreeTab):
         self.tree.heading("location_name", text="Location")
         self.tree.heading("find_count", text="Finds")
         self.tree.column("find_count", anchor="center")
+        self._trip_filter_trip_name_label = ttk.Label(
+            self._trip_filter_header,
+            text="",
+            anchor="center",
+            font=("Helvetica", 10, "bold"),
+        )
+        self._trip_filter_trip_name_label.pack(side="left", fill="x", expand=True, padx=(10, 10))
         self.set_trip_filter_hint(
             "[Double-click to edit. Turn the Trip filter 'off' to see all Collection Events.]",
             font=("Helvetica", 10, "italic"),
         )
         self.tree.bind("<Double-1>", self._on_double_click)
         self.trip_filter_var.set(1)
+        self._update_trip_filter_trip_name()
 
         buttons = ttk.Frame(self)
         buttons.pack(fill="x", padx=10, pady=(4, 10))
@@ -45,19 +53,38 @@ class CollectionEventsTab(TripFilterTreeTab):
         self.trip_filter_var.set(1)
         self.load_rows()
         self._sync_new_event_button_state()
+        self._update_trip_filter_trip_name()
 
     def activate_trip_filter(self, trip_id: int) -> None:
         super().activate_trip_filter(trip_id)
         self._sync_new_event_button_state()
+        self._update_trip_filter_trip_name()
 
     def _on_trip_filter_click(self, event) -> str:
         result = super()._on_trip_filter_click(event)
         self._sync_new_event_button_state()
+        self._update_trip_filter_trip_name()
         return result
 
     def _sync_new_event_button_state(self) -> None:
         enabled = self.trip_filter_var.get() == 1 and self._trip_filter_trip_id is not None
         self.new_event_button.configure(state="normal" if enabled else "disabled")
+
+    def _update_trip_filter_trip_name(self) -> None:
+        if self.trip_filter_var.get() != 1:
+            self._trip_filter_trip_name_label.configure(text="")
+            return
+        trip_id = self._active_trip_filter_trip_id()
+        if trip_id is None:
+            self._trip_filter_trip_name_label.configure(text="")
+            return
+        try:
+            trip = self.repo.get_trip(int(trip_id)) or {}
+        except sqlite3.Error:
+            self._trip_filter_trip_name_label.configure(text="")
+            return
+        trip_name = str(trip.get("trip_name") or "").strip()
+        self._trip_filter_trip_name_label.configure(text=trip_name)
 
     def _selected_trip_id(self) -> int:
         if self.trip_filter_var.get() != 1 or self._trip_filter_trip_id is None:

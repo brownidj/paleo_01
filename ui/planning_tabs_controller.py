@@ -10,7 +10,13 @@ from ui.collection_events_tab import CollectionEventsTab
 from ui.finds_tab import FindsTab
 from ui.geology_tab import GeologyTab
 from ui.location_tab import LocationTab
+from ui.location_form_dialog import LocationFormDialog
 from ui.team_members_tab import TeamMembersTab
+
+try:
+    import tkintermapview
+except ModuleNotFoundError:
+    tkintermapview = None
 
 
 class PlanningTabsController:
@@ -28,8 +34,8 @@ class PlanningTabsController:
         self.team_members_tab = TeamMembersTab(self.tabs, repo)
 
         self.tabs.add(self.trips_tab, text="Trips")
-        self.tabs.add(self.collection_plan_tab, text="Collection Plan")
         self.tabs.add(self.location_tab, text="Location")
+        self.tabs.add(self.collection_plan_tab, text="Collection Plan")
         self.tabs.add(self.collection_events_tab, text="Collection Events")
         self.tabs.add(self.finds_tab, text="Finds")
         self.tabs.add(self.team_members_tab, text="Team Members")
@@ -107,6 +113,8 @@ class PlanningTabsController:
 
         body = ttk.Frame(dialog, padding=12)
         body.pack(fill="both", expand=True)
+        body.columnconfigure(1, weight=1)
+        body.rowconfigure(4, weight=1)
         ttk.Label(body, text="Trip").grid(row=0, column=0, sticky="w", padx=(0, 10), pady=(0, 6))
         ttk.Label(body, text=trip_name).grid(row=0, column=1, sticky="w", pady=(0, 6))
         ttk.Label(body, text="Start").grid(row=1, column=0, sticky="w", padx=(0, 10), pady=(0, 6))
@@ -123,50 +131,122 @@ class PlanningTabsController:
             },
             key=str.lower,
         )
-        create_new_option = "[+]"
-        initial_selection = existing_event_name if (edit_existing and existing_event_name) else create_new_option
+        initial_selection = existing_event_name if (edit_existing and existing_event_name) else ""
         ce_name_var = tk.StringVar(value=initial_selection)
         ce_name_combo = ttk.Combobox(
             body,
             textvariable=ce_name_var,
-            values=[create_new_option, *historical_names],
-            state="readonly",
+            values=historical_names,
+            state="normal",
             width=33,
         )
         ce_name_combo.grid(row=3, column=1, sticky="ew", pady=(0, 6))
+        ce_name_combo.focus_set()
 
-        ttk.Label(body, text="New name").grid(row=4, column=0, sticky="w", padx=(0, 10), pady=(0, 6))
-        ce_name_entry = ttk.Entry(body, width=36)
-        ce_name_entry.grid(row=4, column=1, sticky="ew", pady=(0, 6))
-        ce_name_entry.focus_set()
+        map_frame = ttk.LabelFrame(body, text="Location Map", padding=(6, 6, 6, 6))
+        map_frame.grid(row=4, column=0, columnspan=2, sticky="nsew", pady=(8, 0))
+        map_frame.columnconfigure(0, weight=1)
+        map_frame.rowconfigure(0, weight=1)
+        coords = self._resolve_trip_location_coords(location)
+        if tkintermapview is None:
+            ttk.Label(
+                map_frame,
+                text="Map preview unavailable. Install tkintermapview.",
+                justify="left",
+            ).grid(row=0, column=0, sticky="nw")
+        elif coords is None:
+            ttk.Label(
+                map_frame,
+                text="No map coordinates found for this trip location.",
+                justify="left",
+            ).grid(row=0, column=0, sticky="nw")
+        else:
+            lat, lon = coords
+            selected_map_type, saved_zoom = LocationFormDialog._load_map_preferences()
+            if selected_map_type not in LocationFormDialog.MAP_TILE_TYPES:
+                selected_map_type = LocationFormDialog.DEFAULT_MAP_TYPE
+            zoom_min = 5
+            zoom_max = LocationFormDialog.MAP_TILE_TYPES[selected_map_type][2]
+            zoom = min(max(saved_zoom, zoom_min), zoom_max)
+            if selected_map_type == "OpenTopoMap" and zoom < 10:
+                zoom = 10
+            map_widget = tkintermapview.TkinterMapView(map_frame, corner_radius=0)
+            map_widget.pack(fill="both", expand=True)
+            map_widget.set_tile_server(*LocationFormDialog.MAP_TILE_TYPES[selected_map_type])
+            map_widget.set_position(lat, lon)
+            map_widget.set_zoom(zoom)
+            marker = map_widget.set_marker(
+                lat,
+                lon,
+                text=str(location).strip() or f"{lat:.6f}, {lon:.6f}",
+                marker_color_circle="#FF2D2D",
+                marker_color_outside="#FF0000",
+            )
+            self._apply_half_size_marker(map_widget, marker)
+            zoom_level_var = tk.IntVar(value=int(round(float(map_widget.zoom))))
+            zoom_controls = ttk.Frame(map_frame, padding=(4, 6, 4, 2))
+            zoom_controls.pack(fill="x")
+            ttk.Label(zoom_controls, text="Zoom").pack(side="left")
+            zoom_value_label = ttk.Label(zoom_controls, text=str(zoom_level_var.get()), width=3, anchor="e")
+            zoom_value_label.pack(side="right")
+            zoom_scale = tk.Scale(
+                zoom_controls,
+                from_=zoom_min,
+                to=zoom_max,
+                orient=tk.HORIZONTAL,
+                resolution=1,
+                showvalue=0,
+                highlightthickness=0,
+                bd=0,
+                sliderlength=8,
+                width=10,
+            )
+            zoom_scale.pack(side="left", fill="x", expand=True, padx=(8, 8))
 
-        def _sync_new_name_state() -> None:
-            use_new_name = ce_name_var.get() == create_new_option
-            ce_name_entry.configure(state="normal" if use_new_name else "disabled")
-            if not use_new_name:
-                ce_name_entry.delete(0, "end")
+            syncing_zoom = False
 
-        ce_name_combo.bind("<<ComboboxSelected>>", lambda _event: _sync_new_name_state())
-        _sync_new_name_state()
+            def _sync_zoom_controls() -> None:
+                nonlocal syncing_zoom
+                syncing_zoom = True
+                current_zoom = int(round(float(map_widget.zoom)))
+                current_zoom = min(max(current_zoom, zoom_min), zoom_max)
+                zoom_level_var.set(current_zoom)
+                zoom_scale.set(current_zoom)
+                zoom_value_label.configure(text=str(current_zoom))
+                LocationFormDialog._save_map_preferences(selected_map_type, current_zoom)
+                syncing_zoom = False
+
+            def _set_zoom_from_scale(raw_value: str) -> None:
+                nonlocal syncing_zoom
+                if syncing_zoom:
+                    return
+                target_zoom = int(round(float(raw_value)))
+                map_widget.set_zoom(target_zoom)
+                map_widget.set_position(lat, lon)
+                _sync_zoom_controls()
+
+            def _mouse_zoom_and_sync(event) -> None:
+                map_widget.mouse_zoom(event)
+                map_widget.set_position(lat, lon)
+                _sync_zoom_controls()
+
+            zoom_scale.configure(command=_set_zoom_from_scale)
+            map_widget.canvas.bind("<MouseWheel>", _mouse_zoom_and_sync)
+            map_widget.canvas.bind("<Button-4>", _mouse_zoom_and_sync)
+            map_widget.canvas.bind("<Button-5>", _mouse_zoom_and_sync)
+            _sync_zoom_controls()
 
         buttons = ttk.Frame(body)
-        buttons.grid(row=5, column=0, columnspan=2, sticky="e", pady=(6, 0))
+        buttons.grid(row=5, column=0, columnspan=2, sticky="e", pady=(10, 0))
         ttk.Button(buttons, text="Cancel", command=dialog.destroy).pack(side="right")
 
         def _save_plan() -> None:
-            selected_name = ce_name_var.get().strip()
-            creating_new_name = selected_name == create_new_option
-            if creating_new_name:
-                collection_event_name = ce_name_entry.get().strip()
-            else:
-                collection_event_name = selected_name
+            collection_event_name = ce_name_var.get().strip()
             if not collection_event_name:
                 messagebox.showerror("New Plan", "Collection Event name is required.", parent=dialog)
                 return
             try:
-                if creating_new_name:
-                    self.repo.create_collection_event_for_trip(trip_id, collection_event_name)
-                elif edit_existing and existing_event_id is not None:
+                if edit_existing and existing_event_id is not None:
                     self.repo.update_collection_event_name(existing_event_id, collection_event_name)
                 else:
                     self.repo.create_collection_event_for_trip(trip_id, collection_event_name)
@@ -177,6 +257,10 @@ class PlanningTabsController:
             self.load_collection_plan_trips()
 
         ttk.Button(buttons, text="Save" if edit_existing else "Create", command=_save_plan).pack(side="right", padx=(0, 6))
+        dialog.update_idletasks()
+        target_width = int(round(dialog.winfo_reqwidth() * 1.5))
+        target_height = int(round(dialog.winfo_reqheight() * 2.0))
+        dialog.geometry(f"{target_width}x{target_height}")
 
     def load_initial_tab_data(self, load_trips: Callable[[], None]) -> None:
         load_trips()
@@ -248,3 +332,50 @@ class PlanningTabsController:
         except ValueError:
             return True
         return end_date > date.today()
+
+    def _resolve_trip_location_coords(self, location_name: str) -> tuple[float, float] | None:
+        name_key = str(location_name or "").strip().lower()
+        if not name_key:
+            return None
+        try:
+            locations = self.repo.list_locations()
+        except Exception:
+            return None
+        for row in locations:
+            candidate = str(row.get("name") or "").strip().lower()
+            if candidate != name_key:
+                continue
+            lat = self._parse_coordinate(row.get("latitude"))
+            lon = self._parse_coordinate(row.get("longitude"))
+            if lat is None or lon is None:
+                continue
+            if not (-90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0):
+                continue
+            return lat, lon
+        return None
+
+    @staticmethod
+    def _parse_coordinate(value: object) -> float | None:
+        try:
+            return float(str(value or "").strip())
+        except (TypeError, ValueError):
+            return None
+
+    @staticmethod
+    def _apply_half_size_marker(map_widget, marker) -> None:
+        canvas = getattr(map_widget, "canvas", None)
+        if canvas is None:
+            return
+        for item_name in ("canvas_marker", "canvas_icon", "canvas_text"):
+            item_id = getattr(marker, item_name, None)
+            if not item_id:
+                continue
+            try:
+                bbox = canvas.bbox(item_id)
+                if not bbox:
+                    continue
+                center_x = (bbox[0] + bbox[2]) / 2.0
+                center_y = (bbox[1] + bbox[3]) / 2.0
+                canvas.scale(item_id, center_x, center_y, 0.5, 0.5)
+            except Exception:
+                continue
