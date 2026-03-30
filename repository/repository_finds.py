@@ -78,6 +78,7 @@ class RepositoryFindsMixin:
                         ce.event_year,
                         ce.collection_name,
                         ce.collection_subset,
+                        ce.boundary_geojson,
                         l.name AS location_name,
                         COUNT(f.id) AS find_count
                     FROM "CollectionEvents" ce
@@ -96,6 +97,7 @@ class RepositoryFindsMixin:
                         ce.event_year,
                         ce.collection_name,
                         ce.collection_subset,
+                        ce.boundary_geojson,
                         l.name AS location_name,
                         COUNT(f.id) AS find_count
                     FROM "CollectionEvents" ce
@@ -178,6 +180,80 @@ class RepositoryFindsMixin:
                 WHERE id = ?
                 """,
                 (formatted_name, collection_event_id),
+            )
+            if int(cur.rowcount or 0) == 0:
+                raise ValueError("Collection Event does not exist.")
+
+    def duplicate_collection_event(self, source_collection_event_id: int, collection_name: str) -> int:
+        self.ensure_locations_table()
+        cleaned_name = self._normalize_collection_event_base_name(collection_name)
+        if not cleaned_name:
+            raise ValueError("collection_name is required.")
+        with self._connect() as conn:
+            source_row = conn.execute(
+                """
+                SELECT trip_id, location_id, collection_subset, event_year
+                FROM "CollectionEvents"
+                WHERE id = ?
+                """,
+                (source_collection_event_id,),
+            ).fetchone()
+            if not source_row:
+                raise ValueError("Collection Event does not exist.")
+            cur = conn.execute(
+                """
+                INSERT INTO "CollectionEvents" (
+                    trip_id, location_id, collection_name, collection_subset, boundary_geojson, event_year
+                )
+                VALUES (?, ?, ?, ?, NULL, ?)
+                """,
+                (
+                    source_row["trip_id"],
+                    source_row["location_id"],
+                    cleaned_name,
+                    source_row["collection_subset"],
+                    source_row["event_year"],
+                ),
+            )
+            collection_event_id = int(cur.lastrowid)
+            formatted_name = self._format_collection_event_name(cleaned_name, collection_event_id)
+            conn.execute(
+                'UPDATE "CollectionEvents" SET collection_name = ? WHERE id = ?',
+                (formatted_name, collection_event_id),
+            )
+            return collection_event_id
+
+    def get_collection_event(self, collection_event_id: int) -> CollectionEventRecord | None:
+        self.ensure_locations_table()
+        with self._connect() as conn:
+            row = conn.execute(
+                """
+                SELECT
+                    ce.id,
+                    ce.trip_id,
+                    ce.event_year,
+                    ce.collection_name,
+                    ce.collection_subset,
+                    ce.boundary_geojson,
+                    l.name AS location_name
+                FROM "CollectionEvents" ce
+                JOIN "Locations" l ON l.id = ce.location_id
+                WHERE ce.id = ?
+                """,
+                (collection_event_id,),
+            ).fetchone()
+        return cast(CollectionEventRecord, dict(row)) if row else None
+
+    def update_collection_event_boundary(self, collection_event_id: int, boundary_geojson: str | None) -> None:
+        self.ensure_locations_table()
+        with self._connect() as conn:
+            cur = conn.execute(
+                """
+                UPDATE "CollectionEvents"
+                SET boundary_geojson = ?
+                WHERE id = ?
+                """,
+                (boundary_geojson, collection_event_id),
             )
             if int(cur.rowcount or 0) == 0:
                 raise ValueError("Collection Event does not exist.")

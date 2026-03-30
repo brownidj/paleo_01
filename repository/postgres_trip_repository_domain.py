@@ -79,11 +79,34 @@ class PostgresTripRepositoryDomainMixin:
     def list_collection_events(self, trip_id: int | None = None) -> list[CollectionEventRecord]:
         with self._connect() as conn, conn.cursor() as cur:
             if trip_id is None:
-                cur.execute("SELECT ce.id, ce.trip_id, ce.event_year, ce.collection_name, ce.collection_subset, l.name AS location_name, COUNT(f.id) AS find_count FROM collection_events ce JOIN locations l ON l.id=ce.location_id LEFT JOIN finds f ON f.collection_event_id=ce.id GROUP BY ce.id, l.name ORDER BY LOWER(COALESCE(l.name,'')), LOWER(COALESCE(ce.collection_subset,'')), ce.id")
+                cur.execute("SELECT ce.id, ce.trip_id, ce.event_year, ce.collection_name, ce.collection_subset, ce.boundary_geojson, l.name AS location_name, COUNT(f.id) AS find_count FROM collection_events ce JOIN locations l ON l.id=ce.location_id LEFT JOIN finds f ON f.collection_event_id=ce.id GROUP BY ce.id, l.name ORDER BY LOWER(COALESCE(l.name,'')), LOWER(COALESCE(ce.collection_subset,'')), ce.id")
             else:
-                cur.execute("SELECT ce.id, ce.trip_id, ce.event_year, ce.collection_name, ce.collection_subset, l.name AS location_name, COUNT(f.id) AS find_count FROM collection_events ce JOIN locations l ON l.id=ce.location_id LEFT JOIN finds f ON f.collection_event_id=ce.id WHERE ce.trip_id = %s GROUP BY ce.id, l.name ORDER BY LOWER(COALESCE(l.name,'')), LOWER(COALESCE(ce.collection_subset,'')), ce.id", (trip_id,))
+                cur.execute("SELECT ce.id, ce.trip_id, ce.event_year, ce.collection_name, ce.collection_subset, ce.boundary_geojson, l.name AS location_name, COUNT(f.id) AS find_count FROM collection_events ce JOIN locations l ON l.id=ce.location_id LEFT JOIN finds f ON f.collection_event_id=ce.id WHERE ce.trip_id = %s GROUP BY ce.id, l.name ORDER BY LOWER(COALESCE(l.name,'')), LOWER(COALESCE(ce.collection_subset,'')), ce.id", (trip_id,))
             rows = cur.fetchall()
         return [cast(CollectionEventRecord, dict(r)) for r in rows]
+
+    def get_collection_event(self, collection_event_id: int) -> CollectionEventRecord | None:
+        with self._connect() as conn, conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT ce.id, ce.trip_id, ce.event_year, ce.collection_name, ce.collection_subset, ce.boundary_geojson, l.name AS location_name
+                FROM collection_events ce
+                JOIN locations l ON l.id = ce.location_id
+                WHERE ce.id = %s
+                """,
+                (collection_event_id,),
+            )
+            row = cur.fetchone()
+        return cast(CollectionEventRecord, dict(row)) if row else None
+
+    def update_collection_event_boundary(self, collection_event_id: int, boundary_geojson: str | None) -> None:
+        with self._connect() as conn, conn.cursor() as cur:
+            cur.execute(
+                "UPDATE collection_events SET boundary_geojson = %s WHERE id = %s",
+                (boundary_geojson, collection_event_id),
+            )
+            if int(cur.rowcount or 0) == 0:
+                raise ValueError("Collection Event does not exist.")
 
     def list_finds(self, trip_id: int | None = None) -> list[FindRecord]:
         with self._connect() as conn, conn.cursor() as cur:
@@ -598,6 +621,45 @@ class PostgresTripRepositoryDomainMixin:
             cur.execute("UPDATE collection_events SET collection_name = %s WHERE id = %s", (self._format_collection_event_name(cleaned, collection_event_id), collection_event_id))
             if int(cur.rowcount or 0) == 0:
                 raise ValueError("Collection Event does not exist.")
+
+    def duplicate_collection_event(self, source_collection_event_id: int, collection_name: str) -> int:
+        cleaned = self._normalize_collection_event_base_name(collection_name)
+        if not cleaned:
+            raise ValueError("collection_name is required.")
+        with self._connect() as conn, conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT trip_id, location_id, collection_subset, event_year
+                FROM collection_events
+                WHERE id = %s
+                """,
+                (source_collection_event_id,),
+            )
+            source_row = cur.fetchone()
+            if not source_row:
+                raise ValueError("Collection Event does not exist.")
+            cur.execute(
+                """
+                INSERT INTO collection_events (
+                    trip_id, location_id, collection_name, collection_subset, boundary_geojson, event_year
+                )
+                VALUES (%s, %s, %s, %s, NULL, %s)
+                RETURNING id
+                """,
+                (
+                    source_row["trip_id"],
+                    source_row["location_id"],
+                    cleaned,
+                    source_row["collection_subset"],
+                    source_row["event_year"],
+                ),
+            )
+            event_id = int(cur.fetchone()["id"])
+            cur.execute(
+                "UPDATE collection_events SET collection_name = %s WHERE id = %s",
+                (self._format_collection_event_name(cleaned, event_id), event_id),
+            )
+            return event_id
 
     @staticmethod
     def _normalize_collection_events(raw_events) -> list[dict[str, str | None]]:
