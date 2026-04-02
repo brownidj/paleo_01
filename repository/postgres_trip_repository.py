@@ -43,7 +43,7 @@ class PostgresTripRepository(PostgresTripRepositoryDomainMixin):
         from scripts.db.migrate_sqlite_to_postgres_schema_helpers import ensure_schema
 
         with connect(self.database_url, row_factory=dict_row) as conn:
-            ensure_schema(conn)
+            ensure_schema(conn, include_legacy_finds_columns=False)
             conn.commit()
 
     def _ensure_finds_schema(self) -> None:
@@ -52,6 +52,7 @@ class PostgresTripRepository(PostgresTripRepositoryDomainMixin):
             cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS find_time TEXT")
             cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS latitude TEXT")
             cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS longitude TEXT")
+            cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS team_member_id BIGINT REFERENCES team_members(id) ON DELETE SET NULL")
             cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS source_system TEXT")
             cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS source_occurrence_no TEXT")
             cur.execute(
@@ -103,6 +104,7 @@ class PostgresTripRepository(PostgresTripRepositoryDomainMixin):
             )
             cur.execute("CREATE INDEX IF NOT EXISTS idx_finds_collection_event_id ON finds(collection_event_id)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_finds_location_id ON finds(location_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_finds_team_member_id ON finds(team_member_id)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_trips_trip_name_lower ON trips((LOWER(COALESCE(trip_name, ''))))")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_locations_name_lower_trim ON locations((LOWER(TRIM(name))))")
             cur.execute(

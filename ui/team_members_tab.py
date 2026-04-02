@@ -11,8 +11,9 @@ class TeamMembersTab(ttk.Frame):
     def __init__(self, parent, repo: TripRepository):
         super().__init__(parent)
         self.repo = repo
-        self.trip_filter_var = tk.IntVar(value=0)
+        self.trip_filter_var = tk.IntVar(value=1)
         self._trip_filter_names: set[str] | None = None
+        self._current_trip_id_provider = None
         self._toast_shown_count = 0
         self._toast_hide_after_id: str | None = None
 
@@ -64,11 +65,12 @@ class TeamMembersTab(ttk.Frame):
         except sqlite3.Error as e:
             messagebox.showerror("Database Error", str(e))
             return
-        use_trip_filter = self.trip_filter_var.get() == 1 and self._trip_filter_names
+        active_filter_names = self._active_trip_filter_names()
+        use_trip_filter = self.trip_filter_var.get() == 1 and active_filter_names is not None
         for team_member in team_members:
             if use_trip_filter:
                 name = self._norm_name(str(team_member.get("name", "")))
-                if name not in self._trip_filter_names:
+                if name not in active_filter_names:
                     continue
             self.team_members_tree.insert(
                 "",
@@ -146,13 +148,44 @@ class TeamMembersTab(ttk.Frame):
 
     def _on_trip_filter_click(self, _event) -> str:
         currently_on = self.trip_filter_var.get() == 1
-        self.trip_filter_var.set(0 if currently_on else 1)
+        if currently_on:
+            self.trip_filter_var.set(0)
+        else:
+            self._refresh_trip_filter_names_from_provider()
+            self.trip_filter_var.set(1)
         self.load_team_members()
         return "break"
+
+    def set_current_trip_provider(self, provider) -> None:
+        self._current_trip_id_provider = provider
 
     @staticmethod
     def _norm_name(value: str) -> str:
         return " ".join(value.strip().lower().split())
+
+    def _get_provider_trip_id(self) -> int | None:
+        if not callable(self._current_trip_id_provider):
+            return None
+        trip_id = self._current_trip_id_provider()
+        if trip_id is None:
+            return None
+        try:
+            return int(trip_id)
+        except (TypeError, ValueError):
+            return None
+
+    def _refresh_trip_filter_names_from_provider(self) -> None:
+        trip_id = self._get_provider_trip_id()
+        if trip_id is None:
+            return
+        trip = self.repo.get_trip(trip_id) or {}
+        raw_team = str(trip.get("team") or "")
+        names = [line.strip() for line in raw_team.split(";") if line.strip()]
+        self._trip_filter_names = {self._norm_name(name) for name in names if self._norm_name(name)}
+
+    def _active_trip_filter_names(self) -> set[str] | None:
+        self._refresh_trip_filter_names_from_provider()
+        return self._trip_filter_names
 
     def maybe_show_edit_toast(self) -> None:
         if self.team_members_tree.selection():

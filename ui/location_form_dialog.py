@@ -19,6 +19,7 @@ except ModuleNotFoundError:
 class LocationFormDialog(tk.Toplevel):
     DEFAULT_MAP_TYPE = "OpenStreetMap"
     DEFAULT_MAP_ZOOM = 8
+    GOLD_LIGHT = "#FFD54F"
     MAP_PREF_PATH = Path(__file__).resolve().parents[1] / "data" / "ui_map_preferences.json"
     MAP_TILE_TYPES: dict[str, tuple[str, int, int]] = {
         "OpenStreetMap": ("https://a.tile.openstreetmap.org/{z}/{x}/{y}.png", 256, 19),
@@ -711,7 +712,7 @@ class LocationFormDialog(tk.Toplevel):
                 if dist2 <= outer_r * outer_r:
                     color = "#B8860B"
                     if dist2 <= inner_r * inner_r:
-                        color = "#FFD54F"
+                        color = cls.GOLD_LIGHT
                     img.put(color, (x, y))
         cls._boundary_vertex_icon = img
         return img

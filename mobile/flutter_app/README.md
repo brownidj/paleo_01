@@ -7,9 +7,33 @@ Flutter mobile client scaffold for Paleo.
 ```bash
 cd mobile/flutter_app
 flutter pub get
-flutter run \
-  --dart-define=PALEO_API_BASE_URL=https://localhost \
-  --dart-define=PALEO_API_VERIFY_TLS=false
+```
+
+Start backend first (from repo root):
+
+```bash
+scripts/backend/bootstrap_local_backend.sh
+curl -k https://localhost/v1/health
+```
+
+Run app:
+
+```bash
+cd mobile/flutter_app
+flutter run --dart-define=PALEO_API_VERIFY_TLS=false
+```
+
+Override API URL when needed:
+
+```bash
+# iOS simulator
+flutter run --dart-define=PALEO_API_BASE_URL=https://localhost --dart-define=PALEO_API_VERIFY_TLS=false
+
+# Android emulator
+flutter run --dart-define=PALEO_API_BASE_URL=https://10.0.2.2 --dart-define=PALEO_API_VERIFY_TLS=false
+
+# Physical device (replace with your backend host/IP)
+flutter run --dart-define=PALEO_API_BASE_URL=https://paleo-server.local --dart-define=PALEO_API_VERIFY_TLS=false
 ```
 
 ## Verify

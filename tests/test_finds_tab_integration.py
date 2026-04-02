@@ -72,7 +72,7 @@ class TestFindsTabIntegration(unittest.TestCase):
         captured_choices: list[tuple[int, str]] = []
 
         class _FakeDialog:
-            def __init__(self, _parent, choices, on_save, **_kwargs):
+            def __init__(self, _parent, choices, _collection_event_locations, on_save, **_kwargs):
                 captured_choices.extend(choices)
                 on_save(
                     {
@@ -99,7 +99,7 @@ class TestFindsTabIntegration(unittest.TestCase):
         captured_choices: list[tuple[int, str]] = []
 
         class _FakeDialog:
-            def __init__(self, _parent, choices, on_save, initial_data=None, **_kwargs):
+            def __init__(self, _parent, choices, _collection_event_locations, on_save, initial_data=None, **_kwargs):
                 captured_choices.extend(choices)
                 on_save(
                     {

@@ -293,6 +293,8 @@ class RepositoryFindsMixin:
                     """
                     SELECT
                         f.id,
+                        f.team_member_id,
+                        tm.name AS team_member_name,
                         f.source_occurrence_no,
                         ft.accepted_name AS accepted_name,
                         ft.identified_name AS identified_name,
@@ -310,6 +312,7 @@ class RepositoryFindsMixin:
                     LEFT JOIN "CollectionEvents" ce ON ce.id = f.collection_event_id
                     LEFT JOIN "Trips" t ON t.id = ce.trip_id
                     LEFT JOIN "Locations" l ON l.id = f.location_id
+                    LEFT JOIN "Team_members" tm ON tm.id = f.team_member_id
                     ORDER BY LOWER(COALESCE(l.name, '')), f.id
                     """
                 ).fetchall()
@@ -318,6 +321,8 @@ class RepositoryFindsMixin:
                     """
                     SELECT
                         f.id,
+                        f.team_member_id,
+                        tm.name AS team_member_name,
                         f.source_occurrence_no,
                         ft.accepted_name AS accepted_name,
                         ft.identified_name AS identified_name,
@@ -335,6 +340,7 @@ class RepositoryFindsMixin:
                     LEFT JOIN "CollectionEvents" ce ON ce.id = f.collection_event_id
                     LEFT JOIN "Trips" t ON t.id = ce.trip_id
                     LEFT JOIN "Locations" l ON l.id = f.location_id
+                    LEFT JOIN "Team_members" tm ON tm.id = f.team_member_id
                     WHERE ce.trip_id = ?
                     ORDER BY LOWER(COALESCE(l.name, '')), f.id
                     """,
@@ -426,15 +432,16 @@ class RepositoryFindsMixin:
 
     def create_find(self, data: dict[str, object]) -> int:
         self.ensure_locations_table()
-        collection_event_id, location_id, text_values, year_value = self._normalize_find_payload(data)
+        collection_event_id, location_id, team_member_id, text_values, year_value = self._normalize_find_payload(data)
 
         with self._connect() as conn:
             columns = (
                 "location_id",
                 "collection_event_id",
+                "team_member_id",
                 *self._FIND_CORE_TEXT_FIELDS,
             )
-            values: list[object] = [location_id, collection_event_id]
+            values: list[object] = [location_id, collection_event_id, team_member_id]
             values.extend(text_values[field] for field in self._FIND_CORE_TEXT_FIELDS)
             col_sql = ", ".join([f'"{c}"' for c in columns])
             placeholders = ", ".join(["?"] * len(columns))
@@ -456,6 +463,8 @@ class RepositoryFindsMixin:
                     f.location_id,
                     l.name AS location_name,
                     f.collection_event_id,
+                    f.team_member_id,
+                    tm.name AS team_member_name,
                     f.source_system,
                     f.source_occurrence_no,
                     ft.identified_name AS identified_name,
@@ -486,6 +495,7 @@ class RepositoryFindsMixin:
                     f.updated_at
                 FROM "Finds" f
                 LEFT JOIN "Locations" l ON l.id = f.location_id
+                LEFT JOIN "Team_members" tm ON tm.id = f.team_member_id
                 LEFT JOIN "FindFieldObservations" fo ON fo.find_id = f.id
                 LEFT JOIN "FindTaxonomy" ft ON ft.find_id = f.id
                 WHERE f.id = ?
@@ -496,16 +506,17 @@ class RepositoryFindsMixin:
 
     def update_find(self, find_id: int, data: dict[str, object]) -> None:
         self.ensure_locations_table()
-        collection_event_id, location_id, text_values, year_value = self._normalize_find_payload(data)
+        collection_event_id, location_id, team_member_id, text_values, year_value = self._normalize_find_payload(data)
 
         with self._connect() as conn:
             set_columns = (
                 "location_id",
                 "collection_event_id",
+                "team_member_id",
                 *self._FIND_CORE_TEXT_FIELDS,
             )
             set_sql = ", ".join([f'"{col}" = ?' for col in set_columns])
-            values: list[object] = [location_id, collection_event_id]
+            values: list[object] = [location_id, collection_event_id, team_member_id]
             values.extend(text_values[field] for field in self._FIND_CORE_TEXT_FIELDS)
             values.append(find_id)
             conn.execute(
@@ -706,7 +717,7 @@ class RepositoryFindsMixin:
     def _normalize_find_payload(
         self,
         data: dict[str, object],
-    ) -> tuple[int, int, dict[str, str | None], int | None]:
+    ) -> tuple[int, int, int | None, dict[str, str | None], int | None]:
         ce_raw = data.get("collection_event_id")
         if ce_raw in (None, ""):
             raise ValueError("collection_event_id is required.")
@@ -723,6 +734,21 @@ class RepositoryFindsMixin:
             if not ce_row:
                 raise ValueError("Selected collection event does not exist.")
             location_id = int(ce_row["location_id"])
+            team_member_raw = str(data.get("team_member_id") or "").strip()
+            team_member_id: int | None = None
+            if team_member_raw:
+                try:
+                    team_member_id = int(team_member_raw)
+                except (TypeError, ValueError) as exc:
+                    raise ValueError("team_member_id must be an integer.") from exc
+                if team_member_id <= 0:
+                    raise ValueError("team_member_id must be a positive integer.")
+                exists_row = conn.execute(
+                    'SELECT 1 FROM "Team_members" WHERE id = ? LIMIT 1',
+                    (team_member_id,),
+                ).fetchone()
+                if not exists_row:
+                    raise ValueError("Selected team member does not exist.")
 
         text_values: dict[str, str | None] = {}
         for field in self._FIND_MUTABLE_TEXT_FIELDS:
@@ -741,7 +767,7 @@ class RepositoryFindsMixin:
             except (TypeError, ValueError) as exc:
                 raise ValueError("collection_year_latest_estimate must be an integer.") from exc
 
-        return collection_event_id, location_id, text_values, year_value
+        return collection_event_id, location_id, team_member_id, text_values, year_value
 
     def _upsert_split_find_rows(
         self,

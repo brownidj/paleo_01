@@ -246,6 +246,7 @@ class PlanningTabsController:
             map_widget.set_tile_server(*LocationFormDialog.MAP_TILE_TYPES[selected_map_type])
             map_widget.set_position(lat, lon)
             map_widget.set_zoom(zoom)
+            map_widget.canvas.delete("button")
             LocationFormDialog._start_map_loading_indicator(dialog, map_widget, selected_map_type, lat, lon, zoom)
             boundary_points = self._parse_boundary_geojson(existing_boundary_geojson)
             vertex_markers: list[Any] = []
@@ -316,7 +317,7 @@ class PlanningTabsController:
                     try:
                         boundary_polygon = map_widget.set_polygon(
                             [(pt_lat, pt_lon) for pt_lat, pt_lon in boundary_points],
-                            outline_color="#E0A800",
+                            outline_color=LocationFormDialog.GOLD_LIGHT,
                             fill_color=None,
                             border_width=2,
                         )
@@ -567,6 +568,7 @@ class PlanningTabsController:
                 if selection == "OpenTopoMap" and current_zoom < 10:
                     current_zoom = 10
                 map_widget.set_tile_server(*tile_settings)
+                map_widget.canvas.delete("button")
                 zoom_max = tile_settings[2]
                 zoom_scale.configure(to=zoom_max)
                 map_widget.set_position(lat, lon)
@@ -611,7 +613,9 @@ class PlanningTabsController:
                     pass
 
         buttons = ttk.Frame(body)
-        buttons.grid(row=3, column=0, columnspan=4, sticky="e", pady=(10, 0))
+        buttons.grid(row=3, column=0, columnspan=4, sticky="ew", pady=(10, 0))
+        if edit_existing:
+            ttk.Button(buttons, text="Edit Team", command=lambda: None, state="disabled").pack(side="left")
         close_dialog = locals().get("_close_dialog_safe", dialog.destroy)
         dialog.protocol("WM_DELETE_WINDOW", close_dialog)
 

@@ -74,6 +74,7 @@ class RepositoryLocationMixin:
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     location_id INTEGER,
                     collection_event_id INTEGER,
+                    team_member_id INTEGER,
                     source_system TEXT,
                     source_occurrence_no TEXT,
                     identified_name TEXT,
@@ -151,8 +152,12 @@ class RepositoryLocationMixin:
             if "longitude" not in find_columns:
                 conn.execute('ALTER TABLE "Finds" ADD COLUMN longitude TEXT')
                 find_columns.add("longitude")
+            if "team_member_id" not in find_columns:
+                conn.execute('ALTER TABLE "Finds" ADD COLUMN team_member_id INTEGER')
+                find_columns.add("team_member_id")
             conn.execute('CREATE INDEX IF NOT EXISTS idx_finds_location ON "Finds"(location_id)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_finds_collection_event ON "Finds"(collection_event_id)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_finds_team_member ON "Finds"(team_member_id)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_finds_source_occurrence ON "Finds"(source_occurrence_no)')
             conn.execute(
                 """

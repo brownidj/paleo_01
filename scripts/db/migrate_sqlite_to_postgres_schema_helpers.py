@@ -5,7 +5,7 @@ from typing import Any
 from psycopg import Connection
 
 
-def ensure_schema(pg: Connection) -> None:
+def ensure_schema(pg: Connection, include_legacy_finds_columns: bool = True) -> None:
     with pg.cursor() as cur:
         cur.execute(
             """
@@ -150,6 +150,7 @@ def ensure_schema(pg: Connection) -> None:
                 id BIGSERIAL PRIMARY KEY,
                 location_id BIGINT REFERENCES locations(id) ON DELETE SET NULL,
                 collection_event_id BIGINT REFERENCES collection_events(id) ON DELETE SET NULL,
+                team_member_id BIGINT REFERENCES team_members(id) ON DELETE SET NULL,
                 source_system TEXT,
                 source_occurrence_no TEXT,
                 identified_name TEXT,
@@ -185,28 +186,33 @@ def ensure_schema(pg: Connection) -> None:
         cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS find_time TEXT")
         cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS latitude TEXT")
         cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS longitude TEXT")
-        # Compatibility bridge: migration upserts legacy detail fields into finds,
-        # then repository bootstrap can split/migrate them into child tables.
-        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS identified_name TEXT")
-        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS accepted_name TEXT")
-        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS identified_rank TEXT")
-        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS accepted_rank TEXT")
-        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS difference TEXT")
-        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS identified_no TEXT")
-        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS accepted_no TEXT")
-        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS phylum TEXT")
-        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS class_name TEXT")
-        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS taxon_order TEXT")
-        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS family TEXT")
-        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS genus TEXT")
-        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS abund_value TEXT")
-        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS abund_unit TEXT")
-        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS reference_no TEXT")
-        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS taxonomy_comments TEXT")
-        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS occurrence_comments TEXT")
-        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS research_group TEXT")
-        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS notes TEXT")
-        cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS collection_year_latest_estimate INTEGER")
+        cur.execute(
+            "ALTER TABLE finds ADD COLUMN IF NOT EXISTS team_member_id BIGINT REFERENCES team_members(id) ON DELETE SET NULL"
+        )
+        # Legacy compatibility columns are only needed for SQLite->Postgres import.
+        # App startup must not repeatedly add/drop these, because dropped columns
+        # still count toward PostgreSQL's 1600-column table limit.
+        if include_legacy_finds_columns:
+            cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS identified_name TEXT")
+            cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS accepted_name TEXT")
+            cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS identified_rank TEXT")
+            cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS accepted_rank TEXT")
+            cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS difference TEXT")
+            cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS identified_no TEXT")
+            cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS accepted_no TEXT")
+            cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS phylum TEXT")
+            cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS class_name TEXT")
+            cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS taxon_order TEXT")
+            cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS family TEXT")
+            cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS genus TEXT")
+            cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS abund_value TEXT")
+            cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS abund_unit TEXT")
+            cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS reference_no TEXT")
+            cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS taxonomy_comments TEXT")
+            cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS occurrence_comments TEXT")
+            cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS research_group TEXT")
+            cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS notes TEXT")
+            cur.execute("ALTER TABLE finds ADD COLUMN IF NOT EXISTS collection_year_latest_estimate INTEGER")
         cur.execute(
             """
             CREATE TABLE IF NOT EXISTS find_field_observations (

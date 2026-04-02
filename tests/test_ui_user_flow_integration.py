@@ -133,7 +133,7 @@ class TestUiUserFlowIntegration(unittest.TestCase):
         self.assertEqual(self.window.finds_tab.trip_filter_var.get(), 1)
 
         class _FakeFindDialog:
-            def __init__(self, _parent, choices, on_save, initial_data=None, **_kwargs):
+            def __init__(self, _parent, choices, _collection_event_locations, on_save, initial_data=None, **_kwargs):
                 if initial_data is None:
                     on_save(
                         {
