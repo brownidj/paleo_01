@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paleo_mobile/src/api/api_client.dart';
+import 'package:paleo_mobile/src/data/mobile_data_repository.dart';
 import 'package:paleo_mobile/src/data/offline_capable_mobile_data_repository.dart';
 import 'package:paleo_mobile/src/local_db/app_local_database.dart';
 import 'package:http/http.dart' as http;
@@ -38,6 +39,13 @@ void main() {
       teamMemberId: 7,
       findDate: '2026-04-03',
       findTime: '08:30',
+      photos: const <CreateFindPhotoInput>[
+        CreateFindPhotoInput(
+          filePath: '/tmp/p1.jpg',
+          source: 'gallery',
+          capturedAtIso: '2026-04-03T08:29:00Z',
+        ),
+      ],
       latitude: '-19.25',
       longitude: '146.82',
     );
@@ -105,6 +113,13 @@ void main() {
       teamMemberId: 8,
       findDate: '2026-04-03',
       findTime: '09:00',
+      photos: const <CreateFindPhotoInput>[
+        CreateFindPhotoInput(
+          filePath: '/tmp/p2.jpg',
+          source: 'camera',
+          capturedAtIso: '2026-04-03T08:59:00Z',
+        ),
+      ],
     );
     final dbBeforeSync = await localDb.database();
     final queuedBeforeSync = await dbBeforeSync.query('sync_queue');
@@ -146,6 +161,13 @@ void main() {
       teamMemberId: 9,
       findDate: '2026-04-03',
       findTime: '09:10',
+      photos: const <CreateFindPhotoInput>[
+        CreateFindPhotoInput(
+          filePath: '/tmp/p3.jpg',
+          source: 'gallery',
+          capturedAtIso: '2026-04-03T09:09:00Z',
+        ),
+      ],
     );
     await repository.syncPending();
 

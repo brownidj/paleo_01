@@ -17,6 +17,18 @@ class SyncSnapshot {
   final int failedCount;
 }
 
+class CreateFindPhotoInput {
+  const CreateFindPhotoInput({
+    required this.filePath,
+    required this.source,
+    required this.capturedAtIso,
+  });
+
+  final String filePath;
+  final String source;
+  final String capturedAtIso;
+}
+
 abstract class MobileDataRepository {
   void setTokens({required String accessToken, required String refreshToken});
 
@@ -38,6 +50,8 @@ abstract class MobileDataRepository {
     required int teamMemberId,
     required String findDate,
     required String findTime,
+    required List<CreateFindPhotoInput> photos,
+    String? provisionalIdentification,
     String? latitude,
     String? longitude,
   });

@@ -202,3 +202,13 @@ Week 6:
 - Documentation updated (`README` + sync plan/backlog docs).
 - Feature flag or rollout toggle in place for controlled release.
 
+## Run code to test offline - can't log in.
+```zsh
+flutter run -d 362D2CB4-795A-4291-8DDA-B611DC1CDFF2 --dart-define=PALEO_API_BASE_URL=https://127.0.0.2
+```
+
+## Run code to test not syncing.
+```zsh
+flutter run -d 362D2CB4-795A-4291-8DDA-B611DC1CDFF2 --dart-define=PALEO_DISABLE_AUTO_SYNC=true
+```
+

@@ -12,7 +12,7 @@ class AppLocalDatabase {
        _databasePathOverride = databasePathOverride;
 
   static const String defaultDatabaseName = 'paleo_mobile.db';
-  static const int schemaVersion = 3;
+  static const int schemaVersion = 5;
 
   final DatabaseFactory? _databaseFactoryOverride;
   final String? _databasePathOverride;
@@ -48,6 +48,11 @@ class AppLocalDatabase {
     }
     await db.close();
     _database = null;
+  }
+
+  Future<String> resolveDatabasePath() async {
+    final db = await database();
+    return db.path;
   }
 
   Future<void> deleteDatabaseFile() async {
@@ -136,6 +141,9 @@ class AppLocalDatabase {
     required String acceptedName,
     required String findDate,
     required String findTime,
+    String? provisionalIdentification,
+    String? abundValue,
+    String? notes,
     String? latitude,
     String? longitude,
     required String createdAtDevice,
@@ -154,6 +162,9 @@ class AppLocalDatabase {
       'accepted_name': acceptedName,
       'find_date': findDate,
       'find_time': findTime,
+      'provisional_identification': provisionalIdentification,
+      'abund_value': abundValue,
+      'notes': notes,
       'latitude': latitude,
       'longitude': longitude,
       'created_at_device': createdAtDevice,
@@ -202,6 +213,30 @@ class AppLocalDatabase {
       'SELECT COUNT(*) AS count FROM finds_local WHERE sync_status = ?',
       <Object?>[syncStatus],
     );
+    if (rows.isEmpty) {
+      return 0;
+    }
+    return (rows.first['count'] as int?) ?? 0;
+  }
+
+  Future<int> countUnsyncedFindsByCollectionEventIds(
+    List<int> collectionEventIds,
+  ) async {
+    if (collectionEventIds.isEmpty) {
+      return 0;
+    }
+    final db = await database();
+    final placeholders = List<String>.filled(
+      collectionEventIds.length,
+      '?',
+    ).join(',');
+    final rows = await db.rawQuery('''
+      SELECT COUNT(*) AS count
+      FROM finds_local
+      WHERE collection_event_id IN ($placeholders)
+        AND sync_status IN ('pending', 'syncing', 'failed', 'conflict')
+        AND (deleted_at_device IS NULL OR TRIM(deleted_at_device) = '')
+      ''', collectionEventIds.cast<Object?>());
     if (rows.isEmpty) {
       return 0;
     }
@@ -292,6 +327,138 @@ class AppLocalDatabase {
     return rows.first['value'] as String?;
   }
 
+  Future<List<Map<String, Object?>>> listFindsLocalByCollectionEventIds(
+    List<int> collectionEventIds, {
+    int limit = 200,
+  }) async {
+    if (collectionEventIds.isEmpty) {
+      return const <Map<String, Object?>>[];
+    }
+    final db = await database();
+    final placeholders = List<String>.filled(
+      collectionEventIds.length,
+      '?',
+    ).join(',');
+    return db.rawQuery(
+      '''
+      SELECT
+        local_id,
+        server_id,
+        collection_event_id,
+        team_member_id,
+        source,
+        accepted_name,
+        find_date,
+        find_time,
+        provisional_identification,
+        abund_value,
+        notes,
+        latitude,
+        longitude,
+        sync_status,
+        created_at_device
+      FROM finds_local
+      WHERE collection_event_id IN ($placeholders)
+        AND (deleted_at_device IS NULL OR TRIM(deleted_at_device) = '')
+      ORDER BY datetime(created_at_device) DESC, local_id DESC
+      LIMIT ?
+      ''',
+      <Object?>[...collectionEventIds, limit],
+    );
+  }
+
+  Future<void> updateFindLocalFields({
+    required String localId,
+    required int collectionEventId,
+    required int teamMemberId,
+    required String source,
+    required String acceptedName,
+    required String findDate,
+    required String findTime,
+    String? provisionalIdentification,
+    String? abundValue,
+    String? notes,
+    String? latitude,
+    String? longitude,
+    required String updatedAtDevice,
+  }) async {
+    final db = await database();
+    await db.update(
+      'finds_local',
+      <String, Object?>{
+        'collection_event_id': collectionEventId,
+        'team_member_id': teamMemberId,
+        'source': source,
+        'accepted_name': acceptedName,
+        'find_date': findDate,
+        'find_time': findTime,
+        'provisional_identification': provisionalIdentification,
+        'abund_value': abundValue,
+        'notes': notes,
+        'latitude': latitude,
+        'longitude': longitude,
+        'updated_at_device': updatedAtDevice,
+        'sync_status': 'pending',
+        'last_error': null,
+      },
+      where: 'local_id = ?',
+      whereArgs: <Object?>[localId],
+    );
+  }
+
+  Future<void> updatePendingCreateQueuePayloadForFind({
+    required String localId,
+    required String payloadJson,
+    required String updatedAt,
+  }) async {
+    final db = await database();
+    await db.update(
+      'sync_queue',
+      <String, Object?>{
+        'payload_json': payloadJson,
+        'updated_at': updatedAt,
+        'next_attempt_at': updatedAt,
+      },
+      where: 'entity_type = ? AND entity_local_id = ? AND operation = ?',
+      whereArgs: <Object?>['find', localId, 'create'],
+    );
+  }
+
+  Future<void> insertFindPhotoLocal({
+    required String localPhotoId,
+    required String findLocalId,
+    required String filePath,
+    required String source,
+    required String capturedAtDevice,
+    required String createdAtDevice,
+    required String updatedAtDevice,
+  }) async {
+    final db = await database();
+    await db.insert('find_photos_local', <String, Object?>{
+      'local_photo_id': localPhotoId,
+      'find_local_id': findLocalId,
+      'file_path': filePath,
+      'source': source,
+      'captured_at_device': capturedAtDevice,
+      'created_at_device': createdAtDevice,
+      'updated_at_device': updatedAtDevice,
+      'deleted_at_device': null,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<List<Map<String, Object?>>> listFindPhotosByFindLocalId(
+    String findLocalId,
+  ) async {
+    final db = await database();
+    return db.query(
+      'find_photos_local',
+      where:
+          'find_local_id = ? AND (deleted_at_device IS NULL OR TRIM(deleted_at_device) = \'\')',
+      whereArgs: <Object?>[findLocalId],
+      orderBy: 'datetime(captured_at_device) ASC, local_photo_id ASC',
+    );
+  }
+
   static Future<void> _onCreate(Database db, int version) async {
     await db.execute('''
       CREATE TABLE trips (
@@ -322,6 +489,9 @@ class AppLocalDatabase {
         accepted_name TEXT NOT NULL,
         find_date TEXT NOT NULL,
         find_time TEXT NOT NULL,
+        provisional_identification TEXT,
+        abund_value TEXT,
+        notes TEXT,
         latitude TEXT,
         longitude TEXT,
         created_at_device TEXT NOT NULL,
@@ -351,11 +521,27 @@ class AppLocalDatabase {
         value TEXT NOT NULL
       )
       ''');
+    await db.execute('''
+      CREATE TABLE find_photos_local (
+        local_photo_id TEXT PRIMARY KEY,
+        find_local_id TEXT NOT NULL,
+        file_path TEXT NOT NULL,
+        source TEXT NOT NULL,
+        captured_at_device TEXT NOT NULL,
+        created_at_device TEXT NOT NULL,
+        updated_at_device TEXT NOT NULL,
+        deleted_at_device TEXT,
+        FOREIGN KEY (find_local_id) REFERENCES finds_local(local_id) ON DELETE CASCADE
+      )
+      ''');
     await db.execute(
       'CREATE INDEX idx_sync_queue_next_attempt_at ON sync_queue(next_attempt_at)',
     );
     await db.execute(
       'CREATE INDEX idx_finds_local_sync_status ON finds_local(sync_status)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_find_photos_local_find_local_id ON find_photos_local(find_local_id)',
     );
   }
 
@@ -381,6 +567,31 @@ class AppLocalDatabase {
       await db.execute(
         "ALTER TABLE finds_local ADD COLUMN team_member_id INTEGER NOT NULL DEFAULT 0",
       );
+    }
+    if (oldVersion < 4) {
+      await db.execute('''
+      CREATE TABLE IF NOT EXISTS find_photos_local (
+        local_photo_id TEXT PRIMARY KEY,
+        find_local_id TEXT NOT NULL,
+        file_path TEXT NOT NULL,
+        source TEXT NOT NULL,
+        captured_at_device TEXT NOT NULL,
+        created_at_device TEXT NOT NULL,
+        updated_at_device TEXT NOT NULL,
+        deleted_at_device TEXT,
+        FOREIGN KEY (find_local_id) REFERENCES finds_local(local_id) ON DELETE CASCADE
+      )
+      ''');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_find_photos_local_find_local_id ON find_photos_local(find_local_id)',
+      );
+    }
+    if (oldVersion < 5) {
+      await db.execute(
+        "ALTER TABLE finds_local ADD COLUMN provisional_identification TEXT",
+      );
+      await db.execute("ALTER TABLE finds_local ADD COLUMN abund_value TEXT");
+      await db.execute("ALTER TABLE finds_local ADD COLUMN notes TEXT");
     }
   }
 }

@@ -1,7 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 
+import '../data/mobile_data_repository.dart';
+import '../local_db/app_local_database.dart';
 import '../models/trip_models.dart';
 
 typedef CreateFindFn =
@@ -10,6 +15,8 @@ typedef CreateFindFn =
       required int teamMemberId,
       required String findDate,
       required String findTime,
+      required List<CreateFindPhotoInput> photos,
+      String? provisionalIdentification,
       String? latitude,
       String? longitude,
     });
@@ -33,7 +40,11 @@ class TripDetailScreen extends StatefulWidget {
 class _TripDetailScreenState extends State<TripDetailScreen> {
   int? _activeCollectionEventId;
   bool _savingFind = false;
+  bool _findsExpanded = false;
+  bool _findsLoading = false;
   bool _teamExpanded = false;
+  final AppLocalDatabase _localDb = AppLocalDatabase();
+  List<_LocalFindRow> _localFindRows = const <_LocalFindRow>[];
 
   @override
   void initState() {
@@ -41,6 +52,13 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     _activeCollectionEventId = widget.trip.collectionEvents.isNotEmpty
         ? widget.trip.collectionEvents.first.id
         : null;
+    _reloadLocalFinds();
+  }
+
+  @override
+  void dispose() {
+    _localDb.close();
+    super.dispose();
   }
 
   @override
@@ -86,17 +104,34 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
             _section(
               context,
               title: 'Finds',
-              headerValue: '${trip.findCount ?? 0}',
-              headerAction: IconButton(
-                icon: const Icon(Icons.add),
-                tooltip: 'New Find',
-                onPressed: (_savingFind || _activeCollectionEventId == null)
-                    ? null
-                    : _openNewFindDialog,
+              headerValue: '${_localFindRows.length}',
+              headerAction: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      _findsExpanded ? Icons.expand_more : Icons.chevron_right,
+                    ),
+                    tooltip: _findsExpanded ? 'Hide finds' : 'Show finds',
+                    onPressed: () {
+                      setState(() {
+                        _findsExpanded = !_findsExpanded;
+                      });
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add),
+                    tooltip: 'New Find',
+                    onPressed: (_savingFind || _activeCollectionEventId == null)
+                        ? null
+                        : _openNewFindDialog,
+                  ),
+                ],
               ),
-              children: const [],
+              children: _buildFindRows(context),
+              collapsed: !_findsExpanded,
               titleBodySpacing: 0,
-              contentVerticalPadding: 0,
+              contentVerticalPadding: _findsExpanded ? 12 : 0,
             ),
             const SizedBox(height: 12),
             _section(
@@ -144,6 +179,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
           setState(() {
             _activeCollectionEventId = value;
           });
+          _reloadLocalFinds();
         },
         child: Column(
           children: rows
@@ -153,6 +189,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                     setState(() {
                       _activeCollectionEventId = row.id;
                     });
+                    _reloadLocalFinds();
                   },
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 1),
@@ -194,7 +231,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     final fallbackLatLon = _fallbackFakeDeviceLatLon();
     const photoRequiredTooltip =
         'At least 1 photo must be included before this Find can be saved';
-    const photoCount = 0;
+    var draftPhotos = <_DraftPhoto>[];
     Map<String, String?> observationsDraft = <String, String?>{
       'provisional_identification': 'Unknown',
       'abund_value': 'Single',
@@ -217,7 +254,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
           builder: (context, setDialogState) => AlertDialog(
             title: Row(
               children: [
-                const Expanded(child: Text('New Find')),
+                const Expanded(child: Text('Add Find')),
                 IconButton(
                   onPressed: () => Navigator.of(dialogContext).pop(false),
                   tooltip: 'Cancel',
@@ -329,7 +366,17 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                       spacing: 8,
                       children: [
                         ActionChip(
-                          onPressed: () {},
+                          onPressed: () async {
+                            final updated = await _openPhotosDialog(
+                              context,
+                              existing: draftPhotos,
+                            );
+                            if (updated != null) {
+                              setDialogState(() {
+                                draftPhotos = updated;
+                              });
+                            }
+                          },
                           tooltip: photoRequiredTooltip,
                           label: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -341,7 +388,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                '$photoCount',
+                                '${draftPhotos.length}',
                                 style: TextStyle(
                                   color: Theme.of(
                                     context,
@@ -362,14 +409,14 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                               MaterialTapTargetSize.shrinkWrap,
                         ),
                         ActionChip(
-                          onPressed: photoCount <= 0
+                          onPressed: draftPhotos.isEmpty
                               ? null
                               : () async {
                                   final updated =
                                       await _openFindFieldObservationsDialog(
                                         context,
                                         initialValues: observationsDraft,
-                                        photoCount: photoCount,
+                                        photoCount: draftPhotos.length,
                                       );
                                   if (updated != null) {
                                     observationsDraft = updated;
@@ -398,11 +445,52 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                     ),
                     const Spacer(),
                     Tooltip(
-                      message: photoCount == 0 ? photoRequiredTooltip : '',
+                      message: draftPhotos.isEmpty ? photoRequiredTooltip : '',
                       triggerMode: TooltipTriggerMode.longPress,
-                      child: const FilledButton(
-                        onPressed: null,
-                        child: Text('Save'),
+                      child: FilledButton(
+                        onPressed: draftPhotos.isEmpty
+                            ? null
+                            : () {
+                                final date = dateController.text.trim();
+                                final time = timeController.text.trim();
+                                final latitude = latitudeController.text.trim();
+                                final longitude = longitudeController.text
+                                    .trim();
+                                if (date.isEmpty || time.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Date and Time are required.',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                if (latitude.isNotEmpty &&
+                                    double.tryParse(latitude) == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Latitude must be a valid number.',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                if (longitude.isNotEmpty &&
+                                    double.tryParse(longitude) == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Longitude must be a valid number.',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                Navigator.of(dialogContext).pop(true);
+                              },
+                        child: const Text('Save'),
                       ),
                     ),
                   ],
@@ -415,10 +503,12 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     );
 
     if (result != true) {
-      dateController.dispose();
-      timeController.dispose();
-      latitudeController.dispose();
-      longitudeController.dispose();
+      _disposeControllersNextFrame([
+        dateController,
+        timeController,
+        latitudeController,
+        longitudeController,
+      ]);
       return;
     }
     if (widget.defaultTeamMemberId <= 0) {
@@ -431,10 +521,12 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
           ),
         );
       }
-      dateController.dispose();
-      timeController.dispose();
-      latitudeController.dispose();
-      longitudeController.dispose();
+      _disposeControllersNextFrame([
+        dateController,
+        timeController,
+        latitudeController,
+        longitudeController,
+      ]);
       return;
     }
 
@@ -447,6 +539,18 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
         teamMemberId: widget.defaultTeamMemberId,
         findDate: dateController.text.trim(),
         findTime: timeController.text.trim(),
+        photos: draftPhotos
+            .map(
+              (row) => CreateFindPhotoInput(
+                filePath: row.filePath,
+                source: row.source,
+                capturedAtIso: row.capturedAtIso,
+              ),
+            )
+            .toList(growable: false),
+        provisionalIdentification: _nullableText(
+          observationsDraft['provisional_identification'] ?? '',
+        ),
         latitude: _nullableText(latitudeController.text),
         longitude: _nullableText(longitudeController.text),
       );
@@ -464,16 +568,652 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text('Create find failed: $exc')));
     } finally {
-      dateController.dispose();
-      timeController.dispose();
-      latitudeController.dispose();
-      longitudeController.dispose();
+      _disposeControllersNextFrame([
+        dateController,
+        timeController,
+        latitudeController,
+        longitudeController,
+      ]);
       if (mounted) {
         setState(() {
           _savingFind = false;
         });
+        _reloadLocalFinds();
       }
     }
+  }
+
+  List<Widget> _buildFindRows(BuildContext context) {
+    if (_findsLoading) {
+      return const <Widget>[
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: 8),
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ];
+    }
+    if (_localFindRows.isEmpty) {
+      return const <Widget>[
+        Text('No local finds for this collection event yet.'),
+      ];
+    }
+    return <Widget>[
+      ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: 220),
+        child: Scrollbar(
+          thumbVisibility: false,
+          child: ListView.separated(
+            shrinkWrap: true,
+            itemCount: _localFindRows.length,
+            separatorBuilder: (context, index) => const Divider(height: 12),
+            itemBuilder: (context, index) {
+              final row = _localFindRows[index];
+              final whenLabel = _formatFindRowDateTime(
+                row.findDate,
+                row.findTime,
+              );
+              final provisional =
+                  (row.provisionalIdentification ?? '').trim().isEmpty
+                  ? 'Unknown'
+                  : row.provisionalIdentification!.trim();
+              final initials = _teamMemberInitials(row.teamMemberId);
+              return InkWell(
+                onTap: () => _openEditFindDialog(row),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '$whenLabel • $provisional • $initials',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        row.syncStatus,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    ];
+  }
+
+  Future<void> _openEditFindDialog(_LocalFindRow row) async {
+    final dateController = TextEditingController(text: row.findDate);
+    final timeController = TextEditingController(text: row.findTime);
+    final latitudeController = TextEditingController(text: row.latitude ?? '');
+    final longitudeController = TextEditingController(
+      text: row.longitude ?? '',
+    );
+    var observationsDraft = <String, String?>{
+      'provisional_identification': row.provisionalIdentification ?? 'Unknown',
+      'abund_value': row.abundValue ?? 'Single',
+      'notes': row.notes ?? '',
+    };
+    var photoCount = 0;
+    try {
+      photoCount = (await _localDb.listFindPhotosByFindLocalId(
+        row.localId,
+      )).length;
+    } catch (_) {
+      photoCount = 0;
+    }
+    if (!mounted) {
+      _disposeControllersNextFrame([
+        dateController,
+        timeController,
+        latitudeController,
+        longitudeController,
+      ]);
+      return;
+    }
+    final now = DateTime.now();
+    final edited = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Row(
+            children: [
+              const Expanded(child: Text('Edit Find')),
+              IconButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                tooltip: 'Cancel',
+                icon: const Icon(Icons.close),
+              ),
+            ],
+          ),
+          content: SizedBox(
+            width: 420,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('CE: ${row.collectionEventId}'),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: dateController,
+                  decoration: InputDecoration(
+                    labelText: 'Date',
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.calendar_today),
+                      onPressed: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: _parseDate(dateController.text) ?? now,
+                          firstDate: DateTime(1900),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked == null) {
+                          return;
+                        }
+                        setDialogState(() {
+                          dateController.text = _formatDate(picked);
+                        });
+                      },
+                    ),
+                  ),
+                ),
+                TextField(
+                  controller: timeController,
+                  decoration: InputDecoration(
+                    labelText: 'Time',
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.access_time),
+                      onPressed: () async {
+                        final parsed = _parseTime(timeController.text);
+                        final picked = await showTimePicker(
+                          context: context,
+                          initialTime: parsed ?? TimeOfDay.fromDateTime(now),
+                        );
+                        if (picked == null) {
+                          return;
+                        }
+                        setDialogState(() {
+                          timeController.text = _formatTimeOfDay(picked);
+                        });
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: const [
+                    Expanded(child: Text('Latitude')),
+                    SizedBox(width: 12),
+                    Expanded(child: Text('Longitude')),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: latitudeController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          signed: true,
+                          decimal: true,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: longitudeController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          signed: true,
+                          decimal: true,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            SizedBox(
+              width: double.infinity,
+              child: Row(
+                children: [
+                  ActionChip(
+                    onPressed: () => _openFindPhotosDialogForRow(row),
+                    tooltip: 'Photos',
+                    label: Icon(
+                      Icons.camera_alt_outlined,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    ),
+                    labelPadding: EdgeInsets.zero,
+                    padding: const EdgeInsets.symmetric(horizontal: 5),
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    side: BorderSide.none,
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  const SizedBox(width: 8),
+                  ActionChip(
+                    onPressed: () async {
+                      final updated = await _openFindFieldObservationsDialog(
+                        context,
+                        title: 'Edit Field Observations',
+                        initialValues: observationsDraft,
+                        photoCount: photoCount,
+                      );
+                      if (updated != null) {
+                        setDialogState(() {
+                          observationsDraft = updated;
+                        });
+                      }
+                    },
+                    tooltip: 'Observations',
+                    label: Icon(
+                      Icons.visibility_outlined,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    ),
+                    labelPadding: EdgeInsets.zero,
+                    padding: const EdgeInsets.symmetric(horizontal: 5),
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    side: BorderSide.none,
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  const Spacer(),
+                  FilledButton(
+                    onPressed: () {
+                      final date = dateController.text.trim();
+                      final time = timeController.text.trim();
+                      final latitude = latitudeController.text.trim();
+                      final longitude = longitudeController.text.trim();
+                      if (date.isEmpty || time.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Date and Time are required.'),
+                          ),
+                        );
+                        return;
+                      }
+                      if (latitude.isNotEmpty &&
+                          double.tryParse(latitude) == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Latitude must be a valid number.'),
+                          ),
+                        );
+                        return;
+                      }
+                      if (longitude.isNotEmpty &&
+                          double.tryParse(longitude) == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Longitude must be a valid number.'),
+                          ),
+                        );
+                        return;
+                      }
+                      Navigator.of(dialogContext).pop(true);
+                    },
+                    child: const Text('Save'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (edited != true) {
+      _disposeControllersNextFrame([
+        dateController,
+        timeController,
+        latitudeController,
+        longitudeController,
+      ]);
+      return;
+    }
+    final nowIso = DateTime.now().toUtc().toIso8601String();
+    final findDate = dateController.text.trim();
+    final findTime = timeController.text.trim();
+    final latitude = _nullableText(latitudeController.text);
+    final longitude = _nullableText(longitudeController.text);
+    try {
+      await _localDb.updateFindLocalFields(
+        localId: row.localId,
+        collectionEventId: row.collectionEventId,
+        teamMemberId: row.teamMemberId,
+        source: row.source,
+        acceptedName: row.acceptedName,
+        findDate: findDate,
+        findTime: findTime,
+        provisionalIdentification: _nullableText(
+          observationsDraft['provisional_identification'] ?? '',
+        ),
+        abundValue: _nullableText(observationsDraft['abund_value'] ?? ''),
+        notes: _nullableText(observationsDraft['notes'] ?? ''),
+        latitude: latitude,
+        longitude: longitude,
+        updatedAtDevice: nowIso,
+      );
+      await _localDb.updatePendingCreateQueuePayloadForFind(
+        localId: row.localId,
+        payloadJson: jsonEncode(<String, Object?>{
+          'collection_event_id': row.collectionEventId,
+          'team_member_id': row.teamMemberId,
+          'source': row.source,
+          'accepted_name': row.acceptedName,
+          'find_date': findDate,
+          'find_time': findTime,
+          'latitude': latitude,
+          'longitude': longitude,
+        }),
+        updatedAt: nowIso,
+      );
+      if (!mounted) {
+        return;
+      }
+      await _reloadLocalFinds();
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Find updated.')));
+    } catch (exc) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Update failed: $exc')));
+    } finally {
+      _disposeControllersNextFrame([
+        dateController,
+        timeController,
+        latitudeController,
+        longitudeController,
+      ]);
+    }
+  }
+
+  Future<List<_DraftPhoto>?> _openPhotosDialog(
+    BuildContext context, {
+    required List<_DraftPhoto> existing,
+  }) async {
+    var photos = List<_DraftPhoto>.from(existing);
+    return showDialog<List<_DraftPhoto>>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Row(
+            children: [
+              const Expanded(child: Text('Photos')),
+              IconButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                tooltip: 'Close',
+                icon: const Icon(Icons.close),
+              ),
+            ],
+          ),
+          content: SizedBox(
+            width: 420,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (photos.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text('No photos attached yet.'),
+                    ),
+                  ),
+                if (photos.isNotEmpty)
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 150),
+                    child: Scrollbar(
+                      thumbVisibility: false,
+                      child: ListView.separated(
+                        itemCount: photos.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
+                          final row = photos[index];
+                          return Row(
+                            children: [
+                              GestureDetector(
+                                onTap: () async {
+                                  await _openDraftPhotoViewer(context, row);
+                                },
+                                child: Stack(
+                                  children: [
+                                    Container(
+                                      width: 64,
+                                      height: 64,
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.surfaceContainerHighest,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: Theme.of(context).dividerColor,
+                                        ),
+                                      ),
+                                      child: File(row.filePath).existsSync()
+                                          ? ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              child: Image.file(
+                                                File(row.filePath),
+                                                fit: BoxFit.cover,
+                                              ),
+                                            )
+                                          : Icon(
+                                              Icons.image_outlined,
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.onSurfaceVariant,
+                                            ),
+                                    ),
+                                    Positioned(
+                                      right: 2,
+                                      top: 2,
+                                      child: InkWell(
+                                        onTap: () {
+                                          setState(() {
+                                            photos.removeAt(index);
+                                          });
+                                        },
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.surface,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          padding: const EdgeInsets.all(2),
+                                          child: const Icon(
+                                            Icons.close,
+                                            size: 14,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      row.label,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodyMedium,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${_formatPhotoSource(row.source)} • ${row.capturedAtIso}',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            SizedBox(
+              width: double.infinity,
+              child: Row(
+                children: [
+                  ActionChip(
+                    onPressed: () async {
+                      final source = await _choosePhotoSource(dialogContext);
+                      if (source == null) {
+                        return;
+                      }
+                      final sequence = photos.length + 1;
+                      if (source == ImageSource.camera) {
+                        setState(() {
+                          photos.add(_buildCameraPlaceholderPhoto(sequence));
+                        });
+                        return;
+                      }
+                      final picker = ImagePicker();
+                      try {
+                        final file = await picker.pickImage(
+                          source: source,
+                          imageQuality: 85,
+                          maxWidth: 2200,
+                          maxHeight: 2200,
+                        );
+                        if (file == null) {
+                          return;
+                        }
+                        final now = DateTime.now().toUtc();
+                        setState(() {
+                          photos.add(
+                            _DraftPhoto(
+                              id: 'draft-${now.microsecondsSinceEpoch}',
+                              label: 'Photo $sequence',
+                              capturedAtIso: now.toIso8601String(),
+                              filePath: file.path,
+                              source: source == ImageSource.camera
+                                  ? 'camera'
+                                  : 'gallery',
+                            ),
+                          );
+                        });
+                      } on PlatformException {
+                        if (source == ImageSource.camera) {
+                          setState(() {
+                            photos.add(_buildCameraPlaceholderPhoto(sequence));
+                          });
+                        }
+                      } on MissingPluginException {
+                        if (source == ImageSource.camera) {
+                          setState(() {
+                            photos.add(_buildCameraPlaceholderPhoto(sequence));
+                          });
+                        }
+                      } catch (_) {
+                        if (source == ImageSource.camera) {
+                          setState(() {
+                            photos.add(_buildCameraPlaceholderPhoto(sequence));
+                          });
+                        }
+                      }
+                    },
+                    label: const Text('+'),
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    labelStyle: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    side: BorderSide.none,
+                  ),
+                  const SizedBox(width: 8),
+                  ActionChip(
+                    onPressed: photos.isEmpty
+                        ? null
+                        : () {
+                            setState(() {
+                              photos = <_DraftPhoto>[];
+                            });
+                          },
+                    label: const Text('Clear all'),
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    disabledColor: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
+                    labelStyle: TextStyle(
+                      color: photos.isEmpty
+                          ? Theme.of(context).colorScheme.onSurfaceVariant
+                          : Theme.of(context).colorScheme.onPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    side: BorderSide.none,
+                  ),
+                  const Spacer(),
+                  ActionChip(
+                    onPressed: () => Navigator.of(dialogContext).pop(photos),
+                    label: const Text('Done'),
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    labelStyle: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    side: BorderSide.none,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<ImageSource?> _choosePhotoSource(BuildContext context) async {
+    return showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('Take photo'),
+              onTap: () => Navigator.of(sheetContext).pop(ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choose from gallery'),
+              onTap: () => Navigator.of(sheetContext).pop(ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _section(
@@ -528,6 +1268,217 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
 
   String _display(String? value) =>
       (value ?? '').trim().isEmpty ? '-' : value!.trim();
+
+  String _formatFindRowDateTime(String findDate, String findTime) {
+    final date = findDate.trim();
+    final time = findTime.trim();
+    var mmdd = date;
+    final dateParts = date.split('-');
+    if (dateParts.length == 3 &&
+        dateParts[1].length == 2 &&
+        dateParts[2].length == 2) {
+      mmdd = '${dateParts[1]}-${dateParts[2]}';
+    }
+    var hhmm = time;
+    final timeParts = time.split(':');
+    if (timeParts.length >= 2) {
+      final hh = timeParts[0].padLeft(2, '0');
+      final mm = timeParts[1].padLeft(2, '0');
+      hhmm = '$hh:$mm';
+    }
+    if (mmdd.isEmpty) {
+      return hhmm;
+    }
+    if (hhmm.isEmpty) {
+      return mmdd;
+    }
+    return '$mmdd $hhmm';
+  }
+
+  String _teamMemberInitials(int teamMemberId) {
+    for (final row in widget.trip.teamMembers) {
+      if (row.id != teamMemberId) {
+        continue;
+      }
+      final parts = row.name
+          .trim()
+          .split(RegExp(r'\s+'))
+          .where((part) => part.isNotEmpty)
+          .toList(growable: false);
+      if (parts.isEmpty) {
+        break;
+      }
+      if (parts.length == 1) {
+        return parts.first.substring(0, 1).toUpperCase();
+      }
+      final first = parts.first.substring(0, 1).toUpperCase();
+      final last = parts.last.substring(0, 1).toUpperCase();
+      return '$first$last';
+    }
+    return 'NA';
+  }
+
+  Future<void> _reloadLocalFinds() async {
+    final activeEventId = _activeCollectionEventId;
+    final eventIds = activeEventId != null
+        ? <int>[activeEventId]
+        : widget.trip.collectionEvents
+              .map((row) => row.id)
+              .where((id) => id > 0)
+              .toList(growable: false);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _findsLoading = true;
+    });
+    try {
+      final rows = await _localDb.listFindsLocalByCollectionEventIds(eventIds);
+      final parsed = rows.map(_LocalFindRow.fromDbRow).toList(growable: false);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _localFindRows = parsed;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _localFindRows = const <_LocalFindRow>[];
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _findsLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _openFindPhotosDialogForRow(_LocalFindRow row) async {
+    final photos = await _localDb.listFindPhotosByFindLocalId(row.localId);
+    if (!mounted) {
+      return;
+    }
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Row(
+          children: [
+            const Expanded(child: Text('Find Photos')),
+            IconButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              tooltip: 'Close',
+              icon: const Icon(Icons.close),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: 380,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Find: ${row.findDate} ${row.findTime}'),
+              const SizedBox(height: 10),
+              if (photos.isEmpty)
+                const Text('No photos associated with this find yet.'),
+              if (photos.isNotEmpty)
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 260),
+                  child: Scrollbar(
+                    thumbVisibility: false,
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: photos.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final item = photos[index];
+                        final filePath = (item['file_path'] ?? '')
+                            .toString()
+                            .trim();
+                        final source = (item['source'] ?? '').toString().trim();
+                        final capturedAt = (item['captured_at_device'] ?? '')
+                            .toString()
+                            .trim();
+                        final label = source.isEmpty ? 'Photo' : source;
+                        return Row(
+                          children: [
+                            GestureDetector(
+                              onTap: () async {
+                                await _openDraftPhotoViewer(
+                                  context,
+                                  _DraftPhoto(
+                                    id: (item['local_photo_id'] ?? '')
+                                        .toString()
+                                        .trim(),
+                                    label: label,
+                                    capturedAtIso: capturedAt,
+                                    filePath: filePath,
+                                    source: source,
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                width: 64,
+                                height: 64,
+                                decoration: BoxDecoration(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceContainerHighest,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: Theme.of(context).dividerColor,
+                                  ),
+                                ),
+                                child:
+                                    filePath.isNotEmpty &&
+                                        File(filePath).existsSync()
+                                    ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Image.file(
+                                          File(filePath),
+                                          fit: BoxFit.cover,
+                                        ),
+                                      )
+                                    : Icon(
+                                        Icons.image_outlined,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                '${_formatPhotoSource(source)} • $capturedAt',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _disposeControllersNextFrame(List<TextEditingController> controllers) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      for (final controller in controllers) {
+        controller.dispose();
+      }
+    });
+  }
 
   String? _nullableText(String value) {
     final normalized = value.trim();
@@ -658,6 +1609,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
 
   Future<Map<String, String?>?> _openFindFieldObservationsDialog(
     BuildContext context, {
+    String title = 'Add Observations',
     required Map<String, String?> initialValues,
     required int photoCount,
   }) async {
@@ -680,7 +1632,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
           builder: (context, setState) => AlertDialog(
             title: Row(
               children: [
-                const Expanded(child: Text('Field Observations')),
+                Expanded(child: Text(title)),
                 IconButton(
                   onPressed: () => Navigator.of(dialogContext).pop(),
                   tooltip: 'Close',
@@ -743,6 +1695,24 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                 width: double.infinity,
                 child: Row(
                   children: [
+                    Icon(
+                      Icons.terrain,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '/',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.layers,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                     const Spacer(),
                     ActionChip(
                       onPressed: photoCount <= 0
@@ -779,10 +1749,88 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
         ),
       );
     } finally {
-      provisionalController.dispose();
-      notesController.dispose();
+      _disposeControllersNextFrame([provisionalController, notesController]);
     }
     return output;
+  }
+
+  Future<void> _openDraftPhotoViewer(
+    BuildContext context,
+    _DraftPhoto photo,
+  ) async {
+    final file = File(photo.filePath);
+    final hasFile = file.existsSync();
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Row(
+          children: [
+            Expanded(child: Text(photo.label)),
+            IconButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              tooltip: 'Close',
+              icon: const Icon(Icons.close),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: 320,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 280,
+                height: 220,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Theme.of(context).dividerColor),
+                ),
+                child: hasFile
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.file(file, fit: BoxFit.cover),
+                      )
+                    : Icon(
+                        Icons.image_outlined,
+                        size: 72,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                '${_formatPhotoSource(photo.source)} • ${photo.capturedAtIso}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _formatPhotoSource(String source) {
+    switch (source.trim().toLowerCase()) {
+      case 'camera':
+        return 'Camera';
+      case 'gallery':
+        return 'Gallery';
+      case 'placeholder':
+        return 'Placeholder';
+      default:
+        return 'Unknown';
+    }
+  }
+
+  _DraftPhoto _buildCameraPlaceholderPhoto(int sequence) {
+    final now = DateTime.now().toUtc();
+    return _DraftPhoto(
+      id: 'placeholder-${now.microsecondsSinceEpoch}',
+      label: 'Photo $sequence (placeholder)',
+      capturedAtIso: now.toIso8601String(),
+      filePath: '',
+      source: 'placeholder',
+    );
   }
 
   List<(double, double)> _extractLonLatPoints(dynamic geojson) {
@@ -864,5 +1912,91 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
       return value.toDouble();
     }
     return double.tryParse(value.toString());
+  }
+}
+
+class _DraftPhoto {
+  const _DraftPhoto({
+    required this.id,
+    required this.label,
+    required this.capturedAtIso,
+    required this.filePath,
+    required this.source,
+  });
+
+  final String id;
+  final String label;
+  final String capturedAtIso;
+  final String filePath;
+  final String source;
+}
+
+class _LocalFindRow {
+  const _LocalFindRow({
+    required this.localId,
+    required this.collectionEventId,
+    required this.teamMemberId,
+    required this.source,
+    required this.acceptedName,
+    required this.findDate,
+    required this.findTime,
+    required this.provisionalIdentification,
+    required this.abundValue,
+    required this.notes,
+    required this.latitude,
+    required this.longitude,
+    required this.syncStatus,
+  });
+
+  final String localId;
+  final int collectionEventId;
+  final int teamMemberId;
+  final String source;
+  final String acceptedName;
+  final String findDate;
+  final String findTime;
+  final String? provisionalIdentification;
+  final String? abundValue;
+  final String? notes;
+  final String? latitude;
+  final String? longitude;
+  final String syncStatus;
+
+  factory _LocalFindRow.fromDbRow(Map<String, Object?> row) {
+    String readText(String key, {String fallback = ''}) {
+      final text = (row[key] ?? '').toString().trim();
+      if (text.isEmpty) {
+        return fallback;
+      }
+      return text;
+    }
+
+    int readInt(String key, {int fallback = 0}) {
+      return int.tryParse((row[key] ?? '').toString()) ?? fallback;
+    }
+
+    String? readNullable(String key) {
+      final text = (row[key] ?? '').toString().trim();
+      if (text.isEmpty) {
+        return null;
+      }
+      return text;
+    }
+
+    return _LocalFindRow(
+      localId: readText('local_id'),
+      collectionEventId: readInt('collection_event_id'),
+      teamMemberId: readInt('team_member_id'),
+      source: readText('source', fallback: 'Field'),
+      acceptedName: readText('accepted_name', fallback: 'Unknown'),
+      findDate: readText('find_date', fallback: '-'),
+      findTime: readText('find_time', fallback: '-'),
+      provisionalIdentification: readNullable('provisional_identification'),
+      abundValue: readNullable('abund_value'),
+      notes: readNullable('notes'),
+      latitude: readNullable('latitude'),
+      longitude: readNullable('longitude'),
+      syncStatus: readText('sync_status', fallback: 'pending'),
+    );
   }
 }

@@ -38,6 +38,10 @@ class _PaleoMobileAppState extends State<PaleoMobileApp> {
     'PALEO_API_VERIFY_TLS',
     defaultValue: false,
   );
+  static const bool _disableAutoSync = bool.fromEnvironment(
+    'PALEO_DISABLE_AUTO_SYNC',
+    defaultValue: false,
+  );
 
   late final MobileDataRepository _repository;
   late final String _apiBaseUrl;
@@ -69,7 +73,9 @@ class _PaleoMobileAppState extends State<PaleoMobileApp> {
     _tokenStore = TokenStore();
     _wireConnectivitySync();
     _refreshConnectivityState();
-    _triggerBackgroundSync();
+    if (!_disableAutoSync) {
+      _triggerBackgroundSync();
+    }
     if (widget.enableSessionRestore) {
       _restoreSession();
     } else {
@@ -109,7 +115,9 @@ class _PaleoMobileAppState extends State<PaleoMobileApp> {
         _trips = _sortTripsByStartAscending(trips);
         _busy = false;
       });
-      _triggerBackgroundSync();
+      if (!_disableAutoSync) {
+        _triggerBackgroundSync();
+      }
     } catch (_) {
       await _tokenStore.clear();
       _repository.clearTokens();
@@ -150,7 +158,9 @@ class _PaleoMobileAppState extends State<PaleoMobileApp> {
         _errorText = null;
       });
       await _refreshSyncStatus();
-      _triggerBackgroundSync();
+      if (!_disableAutoSync) {
+        _triggerBackgroundSync();
+      }
     } on MobileDataRepositoryError catch (exc) {
       if (mounted) {
         setState(() {
@@ -212,6 +222,8 @@ class _PaleoMobileAppState extends State<PaleoMobileApp> {
                   required int teamMemberId,
                   required String findDate,
                   required String findTime,
+                  required List<CreateFindPhotoInput> photos,
+                  String? provisionalIdentification,
                   String? latitude,
                   String? longitude,
                 }) async {
@@ -220,11 +232,15 @@ class _PaleoMobileAppState extends State<PaleoMobileApp> {
                     teamMemberId: teamMemberId,
                     findDate: findDate,
                     findTime: findTime,
+                    photos: photos,
+                    provisionalIdentification: provisionalIdentification,
                     latitude: latitude,
                     longitude: longitude,
                   );
                   await _refreshSyncStatus();
-                  _triggerBackgroundSync();
+                  if (!_disableAutoSync) {
+                    _triggerBackgroundSync();
+                  }
                 },
           ),
         ),
@@ -272,7 +288,7 @@ class _PaleoMobileAppState extends State<PaleoMobileApp> {
           _isOnline = online;
         }
         _refreshSyncStatus();
-        if (_hasOnlineConnectivity(results)) {
+        if (_hasOnlineConnectivity(results) && !_disableAutoSync) {
           _triggerBackgroundSync();
         }
       });

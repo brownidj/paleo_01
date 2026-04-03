@@ -66,5 +66,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Camera access is required to attach find photos in the field.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Photo library access is required to attach existing find photos.</string>
 </dict>
 </plist>

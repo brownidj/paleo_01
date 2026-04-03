@@ -64,6 +64,8 @@ class OnlineMobileDataRepository implements MobileDataRepository {
     required int teamMemberId,
     required String findDate,
     required String findTime,
+    required List<CreateFindPhotoInput> photos,
+    String? provisionalIdentification,
     String? latitude,
     String? longitude,
   }) async {
