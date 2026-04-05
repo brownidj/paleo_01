@@ -19,14 +19,19 @@ class ApiClientError implements Exception {
 class ApiClient {
   ApiClient({
     required String baseUrl,
+    String? fallbackBaseUrl,
     bool verifyTls = false,
     Duration requestTimeout = const Duration(seconds: 8),
     http.Client? client,
   }) : _baseUrl = baseUrl.replaceFirst(RegExp(r'/+$'), ''),
+       _fallbackBaseUrl = (fallbackBaseUrl ?? '')
+           .replaceFirst(RegExp(r'/+$'), '')
+           .trim(),
        _requestTimeout = requestTimeout,
        _client = client ?? _buildClient(verifyTls: verifyTls);
 
   final String _baseUrl;
+  final String _fallbackBaseUrl;
   final Duration _requestTimeout;
   final http.Client _client;
 
@@ -133,9 +138,13 @@ class ApiClient {
     Map<String, dynamic>? body,
     bool includeAuth = true,
     bool retried = false,
+    bool fallbackTried = false,
+    String? baseUrlOverride,
     Map<String, String>? additionalHeaders,
   }) async {
-    final uri = Uri.parse('$_baseUrl$path');
+    final effectiveBaseUrl = (baseUrlOverride ?? _baseUrl)
+        .replaceFirst(RegExp(r'/+$'), '');
+    final uri = Uri.parse('$effectiveBaseUrl$path');
     final headers = <String, String>{
       'Accept': 'application/json',
       'Content-Type': 'application/json',
@@ -171,10 +180,58 @@ class ApiClient {
           throw ApiClientError('Unsupported HTTP method: $method');
       }
     } on SocketException catch (exc) {
-      throw ApiClientError('Cannot reach API at $_baseUrl: ${exc.message}');
-    } on TimeoutException {
+      if (!fallbackTried &&
+          _fallbackBaseUrl.isNotEmpty &&
+          _fallbackBaseUrl != effectiveBaseUrl) {
+        return _request(
+          method: method,
+          path: path,
+          body: body,
+          includeAuth: includeAuth,
+          retried: retried,
+          fallbackTried: true,
+          baseUrlOverride: _fallbackBaseUrl,
+          additionalHeaders: additionalHeaders,
+        );
+      }
       throw ApiClientError(
-        'Cannot reach API at $_baseUrl: request timed out after ${_requestTimeout.inSeconds}s',
+        'Cannot reach API at $effectiveBaseUrl: ${exc.message}',
+      );
+    } on HandshakeException catch (exc) {
+      if (!fallbackTried &&
+          _fallbackBaseUrl.isNotEmpty &&
+          _fallbackBaseUrl != effectiveBaseUrl) {
+        return _request(
+          method: method,
+          path: path,
+          body: body,
+          includeAuth: includeAuth,
+          retried: retried,
+          fallbackTried: true,
+          baseUrlOverride: _fallbackBaseUrl,
+          additionalHeaders: additionalHeaders,
+        );
+      }
+      throw ApiClientError(
+        'Cannot reach API at $effectiveBaseUrl: ${exc.message}',
+      );
+    } on TimeoutException {
+      if (!fallbackTried &&
+          _fallbackBaseUrl.isNotEmpty &&
+          _fallbackBaseUrl != effectiveBaseUrl) {
+        return _request(
+          method: method,
+          path: path,
+          body: body,
+          includeAuth: includeAuth,
+          retried: retried,
+          fallbackTried: true,
+          baseUrlOverride: _fallbackBaseUrl,
+          additionalHeaders: additionalHeaders,
+        );
+      }
+      throw ApiClientError(
+        'Cannot reach API at $effectiveBaseUrl: request timed out after ${_requestTimeout.inSeconds}s',
       );
     }
 
@@ -189,6 +246,8 @@ class ApiClient {
         body: body,
         includeAuth: includeAuth,
         retried: true,
+        fallbackTried: fallbackTried,
+        baseUrlOverride: effectiveBaseUrl,
         additionalHeaders: additionalHeaders,
       );
     }

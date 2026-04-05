@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as p;
 
 import '../data/mobile_data_repository.dart';
 import '../local_db/app_local_database.dart';
@@ -105,28 +106,23 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
               context,
               title: 'Finds',
               headerValue: '${_localFindRows.length}',
-              headerAction: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: Icon(
-                      _findsExpanded ? Icons.expand_more : Icons.chevron_right,
-                    ),
-                    tooltip: _findsExpanded ? 'Hide finds' : 'Show finds',
-                    onPressed: () {
-                      setState(() {
-                        _findsExpanded = !_findsExpanded;
-                      });
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add),
-                    tooltip: 'New Find',
-                    onPressed: (_savingFind || _activeCollectionEventId == null)
-                        ? null
-                        : _openNewFindDialog,
-                  ),
-                ],
+              titleAction: IconButton(
+                icon: Icon(
+                  _findsExpanded ? Icons.expand_more : Icons.chevron_right,
+                ),
+                tooltip: _findsExpanded ? 'Hide finds' : 'Show finds',
+                onPressed: () {
+                  setState(() {
+                    _findsExpanded = !_findsExpanded;
+                  });
+                },
+              ),
+              headerAction: IconButton(
+                icon: const Icon(Icons.add),
+                tooltip: 'New Find',
+                onPressed: (_savingFind || _activeCollectionEventId == null)
+                    ? null
+                    : _openNewFindDialog,
               ),
               children: _buildFindRows(context),
               collapsed: !_findsExpanded,
@@ -137,7 +133,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
             _section(
               context,
               title: 'Team',
-              headerAction: IconButton(
+              titleAction: IconButton(
                 icon: Icon(
                   _teamExpanded ? Icons.expand_more : Icons.chevron_right,
                 ),
@@ -783,12 +779,36 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
               child: Row(
                 children: [
                   ActionChip(
-                    onPressed: () => _openFindPhotosDialogForRow(row),
+                    onPressed: () async {
+                      await _openFindPhotosDialogForRow(row);
+                      final refreshed = await _localDb.listFindPhotosByFindLocalId(
+                        row.localId,
+                      );
+                      if (!context.mounted) {
+                        return;
+                      }
+                      setDialogState(() {
+                        photoCount = refreshed.length;
+                      });
+                    },
                     tooltip: 'Photos',
-                    label: Icon(
-                      Icons.camera_alt_outlined,
-                      size: 18,
-                      color: Theme.of(context).colorScheme.onPrimary,
+                    label: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.camera_alt_outlined,
+                          size: 18,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$photoCount',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                     labelPadding: EdgeInsets.zero,
                     padding: const EdgeInsets.symmetric(horizontal: 5),
@@ -1093,12 +1113,6 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                         return;
                       }
                       final sequence = photos.length + 1;
-                      if (source == ImageSource.camera) {
-                        setState(() {
-                          photos.add(_buildCameraPlaceholderPhoto(sequence));
-                        });
-                        return;
-                      }
                       final picker = ImagePicker();
                       try {
                         final file = await picker.pickImage(
@@ -1111,37 +1125,62 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                           return;
                         }
                         final now = DateTime.now().toUtc();
+                        final persistedDraftPath =
+                            await _persistDraftPhotoToLocalStorage(file.path);
+                        if (persistedDraftPath.isEmpty) {
+                          if (!context.mounted) {
+                            return;
+                          }
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Unable to store selected photo.'),
+                            ),
+                          );
+                          return;
+                        }
                         setState(() {
                           photos.add(
                             _DraftPhoto(
                               id: 'draft-${now.microsecondsSinceEpoch}',
                               label: 'Photo $sequence',
                               capturedAtIso: now.toIso8601String(),
-                              filePath: file.path,
+                              filePath: persistedDraftPath,
                               source: source == ImageSource.camera
                                   ? 'camera'
                                   : 'gallery',
                             ),
                           );
                         });
-                      } on PlatformException {
-                        if (source == ImageSource.camera) {
-                          setState(() {
-                            photos.add(_buildCameraPlaceholderPhoto(sequence));
-                          });
+                      } on PlatformException catch (exc) {
+                        if (!context.mounted) {
+                          return;
                         }
+                        final message = source == ImageSource.camera
+                            ? 'Camera not available. Choose from gallery.'
+                            : 'Unable to load photo.';
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('$message (${exc.message ?? 'plugin error'})')),
+                        );
                       } on MissingPluginException {
-                        if (source == ImageSource.camera) {
-                          setState(() {
-                            photos.add(_buildCameraPlaceholderPhoto(sequence));
-                          });
+                        if (!context.mounted) {
+                          return;
                         }
+                        final message = source == ImageSource.camera
+                            ? 'Camera not available. Choose from gallery.'
+                            : 'Unable to load photo.';
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(SnackBar(content: Text(message)));
                       } catch (_) {
-                        if (source == ImageSource.camera) {
-                          setState(() {
-                            photos.add(_buildCameraPlaceholderPhoto(sequence));
-                          });
+                        if (!context.mounted) {
+                          return;
                         }
+                        final message = source == ImageSource.camera
+                            ? 'Camera not available. Choose from gallery.'
+                            : 'Unable to load photo.';
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(SnackBar(content: Text(message)));
                       }
                     },
                     label: const Text('+'),
@@ -1220,6 +1259,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     BuildContext context, {
     required String title,
     required List<Widget> children,
+    Widget? titleAction,
     Widget? headerAction,
     String? headerValue,
     bool collapsed = false,
@@ -1241,6 +1281,10 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                         title,
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
+                      if (titleAction != null) ...[
+                        const SizedBox(width: 4),
+                        titleAction,
+                      ],
                       if ((headerValue ?? '').trim().isNotEmpty) ...[
                         const SizedBox(width: 8),
                         Expanded(
@@ -1358,118 +1402,335 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
   }
 
   Future<void> _openFindPhotosDialogForRow(_LocalFindRow row) async {
-    final photos = await _localDb.listFindPhotosByFindLocalId(row.localId);
+    var photos = await _localDb.listFindPhotosByFindLocalId(row.localId);
     if (!mounted) {
       return;
     }
     await showDialog<void>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Row(
-          children: [
-            const Expanded(child: Text('Find Photos')),
-            IconButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              tooltip: 'Close',
-              icon: const Icon(Icons.close),
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Row(
+            children: [
+              const Expanded(child: Text('Find Photos')),
+              IconButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                tooltip: 'Close',
+                icon: const Icon(Icons.close),
+              ),
+            ],
+          ),
+          content: SizedBox(
+            width: 380,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Find: ${row.findDate} ${row.findTime}'),
+                const SizedBox(height: 10),
+                if (photos.isEmpty)
+                  const Text('No photos associated with this find yet.'),
+                if (photos.isNotEmpty)
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 260),
+                    child: Scrollbar(
+                      thumbVisibility: false,
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: photos.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
+                          final item = photos[index];
+                          final filePath = (item['file_path'] ?? '')
+                              .toString()
+                              .trim();
+                          final localPhotoId = (item['local_photo_id'] ?? '')
+                              .toString()
+                              .trim();
+                          final source = (item['source'] ?? '')
+                              .toString()
+                              .trim();
+                          final capturedAt = (item['captured_at_device'] ?? '')
+                              .toString()
+                              .trim();
+                          final label = source.isEmpty ? 'Photo' : source;
+                          return Dismissible(
+                            key: ValueKey<String>(localPhotoId),
+                            direction: DismissDirection.endToStart,
+                            background: Container(
+                              alignment: Alignment.centerRight,
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.errorContainer,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                Icons.delete_outline,
+                                color: Theme.of(context).colorScheme.onErrorContainer,
+                              ),
+                            ),
+                            confirmDismiss: (_) async {
+                              if (photos.length <= 1) {
+                                if (!context.mounted) {
+                                  return false;
+                                }
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'A find must contain at least 1 photo.',
+                                    ),
+                                  ),
+                                );
+                                return false;
+                              }
+                              await _deleteFindPhotoForRow(item);
+                              return true;
+                            },
+                            onDismissed: (_) {
+                              setDialogState(() {
+                                photos = photos
+                                    .where(
+                                      (photo) =>
+                                          (photo['local_photo_id'] ?? '')
+                                              .toString()
+                                              .trim() !=
+                                          localPhotoId,
+                                    )
+                                    .toList(growable: false);
+                              });
+                            },
+                            child: Row(
+                              children: [
+                                GestureDetector(
+                                  onTap: () async {
+                                    await _openDraftPhotoViewer(
+                                      context,
+                                      _DraftPhoto(
+                                        id: localPhotoId,
+                                        label: label,
+                                        capturedAtIso: capturedAt,
+                                        filePath: filePath,
+                                        source: source,
+                                      ),
+                                    );
+                                  },
+                                  child: Container(
+                                    width: 64,
+                                    height: 64,
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.surfaceContainerHighest,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: Theme.of(context).dividerColor,
+                                      ),
+                                    ),
+                                    child:
+                                        filePath.isNotEmpty &&
+                                            File(filePath).existsSync()
+                                        ? ClipRRect(
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            child: Image.file(
+                                              File(filePath),
+                                              fit: BoxFit.cover,
+                                            ),
+                                          )
+                                        : Icon(
+                                            Icons.image_outlined,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
+                                          ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    '${_formatPhotoSource(source)} • $capturedAt',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            SizedBox(
+              width: double.infinity,
+              child: Row(
+                children: [
+                  ActionChip(
+                    onPressed: () async {
+                      final inserted = await _addPhotoToExistingFind(
+                        row.localId,
+                      );
+                      if (inserted == false) {
+                        return;
+                      }
+                      final refreshed = await _localDb
+                          .listFindPhotosByFindLocalId(row.localId);
+                      setDialogState(() {
+                        photos = refreshed;
+                      });
+                    },
+                    label: const Text('+'),
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    labelStyle: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    side: BorderSide.none,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
-        content: SizedBox(
-          width: 380,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Find: ${row.findDate} ${row.findTime}'),
-              const SizedBox(height: 10),
-              if (photos.isEmpty)
-                const Text('No photos associated with this find yet.'),
-              if (photos.isNotEmpty)
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 260),
-                  child: Scrollbar(
-                    thumbVisibility: false,
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      itemCount: photos.length,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        final item = photos[index];
-                        final filePath = (item['file_path'] ?? '')
-                            .toString()
-                            .trim();
-                        final source = (item['source'] ?? '').toString().trim();
-                        final capturedAt = (item['captured_at_device'] ?? '')
-                            .toString()
-                            .trim();
-                        final label = source.isEmpty ? 'Photo' : source;
-                        return Row(
-                          children: [
-                            GestureDetector(
-                              onTap: () async {
-                                await _openDraftPhotoViewer(
-                                  context,
-                                  _DraftPhoto(
-                                    id: (item['local_photo_id'] ?? '')
-                                        .toString()
-                                        .trim(),
-                                    label: label,
-                                    capturedAtIso: capturedAt,
-                                    filePath: filePath,
-                                    source: source,
-                                  ),
-                                );
-                              },
-                              child: Container(
-                                width: 64,
-                                height: 64,
-                                decoration: BoxDecoration(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.surfaceContainerHighest,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: Theme.of(context).dividerColor,
-                                  ),
-                                ),
-                                child:
-                                    filePath.isNotEmpty &&
-                                        File(filePath).existsSync()
-                                    ? ClipRRect(
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: Image.file(
-                                          File(filePath),
-                                          fit: BoxFit.cover,
-                                        ),
-                                      )
-                                    : Icon(
-                                        Icons.image_outlined,
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurfaceVariant,
-                                      ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                '${_formatPhotoSource(source)} • $capturedAt',
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
       ),
     );
+  }
+
+  Future<bool> _addPhotoToExistingFind(String findLocalId) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final source = await _choosePhotoSource(context);
+    if (source == null) {
+      return false;
+    }
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: source,
+        imageQuality: 85,
+        maxWidth: 2200,
+        maxHeight: 2200,
+      );
+      if (picked == null) {
+        return false;
+      }
+      final now = DateTime.now().toUtc();
+      final persistedPath = await _persistFindPhotoToLocalStorage(
+        findLocalId: findLocalId,
+        sourcePath: picked.path,
+      );
+      await _localDb.insertFindPhotoLocal(
+        localPhotoId: 'findphoto-${now.microsecondsSinceEpoch}',
+        findLocalId: findLocalId,
+        filePath: persistedPath,
+        source: source == ImageSource.camera ? 'camera' : 'gallery',
+        capturedAtDevice: now.toIso8601String(),
+        createdAtDevice: now.toIso8601String(),
+        updatedAtDevice: now.toIso8601String(),
+      );
+      return true;
+    } on PlatformException catch (exc) {
+      final message = source == ImageSource.camera
+          ? 'Camera not available. Choose from gallery.'
+          : 'Unable to load photo.';
+      messenger?.showSnackBar(
+        SnackBar(content: Text('$message (${exc.message ?? 'plugin error'})')),
+      );
+      return false;
+    } on MissingPluginException {
+      final message = source == ImageSource.camera
+          ? 'Camera not available. Choose from gallery.'
+          : 'Unable to load photo.';
+      messenger?.showSnackBar(SnackBar(content: Text(message)));
+      return false;
+    } catch (_) {
+      final message = source == ImageSource.camera
+          ? 'Camera not available. Choose from gallery.'
+          : 'Unable to load photo.';
+      messenger?.showSnackBar(SnackBar(content: Text(message)));
+      return false;
+    }
+  }
+
+  Future<void> _deleteFindPhotoForRow(Map<String, Object?> item) async {
+    final localPhotoId = (item['local_photo_id'] ?? '').toString().trim();
+    final filePath = (item['file_path'] ?? '').toString().trim();
+    if (localPhotoId.isEmpty) {
+      return;
+    }
+    try {
+      await _localDb.deleteFindPhotoLocal(localPhotoId);
+    } catch (_) {}
+    if (filePath.isEmpty) {
+      return;
+    }
+    try {
+      final file = File(filePath);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    } catch (_) {}
+  }
+
+  Future<String> _persistFindPhotoToLocalStorage({
+    required String findLocalId,
+    required String sourcePath,
+  }) async {
+    final raw = sourcePath.trim();
+    if (raw.isEmpty) {
+      return '';
+    }
+    final sourceFile = File(raw);
+    if (!await sourceFile.exists()) {
+      return raw;
+    }
+    try {
+      final dbPath = await _localDb.resolveDatabasePath();
+      final baseDir = p.dirname(dbPath);
+      final outDir = Directory(p.join(baseDir, 'find_photos', findLocalId));
+      if (!await outDir.exists()) {
+        await outDir.create(recursive: true);
+      }
+      final ext = p.extension(raw);
+      final outPath = p.join(
+        outDir.path,
+        '${DateTime.now().toUtc().microsecondsSinceEpoch}$ext',
+      );
+      await sourceFile.copy(outPath);
+      return outPath;
+    } catch (_) {
+      return raw;
+    }
+  }
+
+  Future<String> _persistDraftPhotoToLocalStorage(String sourcePath) async {
+    final raw = sourcePath.trim();
+    if (raw.isEmpty) {
+      return '';
+    }
+    final sourceFile = File(raw);
+    if (!await sourceFile.exists()) {
+      return '';
+    }
+    try {
+      final dbPath = await _localDb.resolveDatabasePath();
+      final baseDir = p.dirname(dbPath);
+      final outDir = Directory(p.join(baseDir, 'draft_photos'));
+      if (!await outDir.exists()) {
+        await outDir.create(recursive: true);
+      }
+      final ext = p.extension(raw);
+      final outPath = p.join(
+        outDir.path,
+        '${DateTime.now().toUtc().microsecondsSinceEpoch}$ext',
+      );
+      await sourceFile.copy(outPath);
+      return outPath;
+    } catch (_) {
+      return '';
+    }
   }
 
   void _disposeControllersNextFrame(List<TextEditingController> controllers) {
@@ -1765,7 +2026,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
       builder: (dialogContext) => AlertDialog(
         title: Row(
           children: [
-            Expanded(child: Text(photo.label)),
+            const Expanded(child: Text('Photo')),
             IconButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
               tooltip: 'Close',
@@ -1815,22 +2076,9 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
         return 'Camera';
       case 'gallery':
         return 'Gallery';
-      case 'placeholder':
-        return 'Placeholder';
       default:
         return 'Unknown';
     }
-  }
-
-  _DraftPhoto _buildCameraPlaceholderPhoto(int sequence) {
-    final now = DateTime.now().toUtc();
-    return _DraftPhoto(
-      id: 'placeholder-${now.microsecondsSinceEpoch}',
-      label: 'Photo $sequence (placeholder)',
-      capturedAtIso: now.toIso8601String(),
-      filePath: '',
-      source: 'placeholder',
-    );
   }
 
   List<(double, double)> _extractLonLatPoints(dynamic geojson) {

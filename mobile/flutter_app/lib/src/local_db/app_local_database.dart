@@ -453,9 +453,18 @@ class AppLocalDatabase {
     return db.query(
       'find_photos_local',
       where:
-          'find_local_id = ? AND (deleted_at_device IS NULL OR TRIM(deleted_at_device) = \'\')',
+          "find_local_id = ? AND (deleted_at_device IS NULL OR TRIM(deleted_at_device) = '') AND LOWER(TRIM(source)) != 'placeholder'",
       whereArgs: <Object?>[findLocalId],
       orderBy: 'datetime(captured_at_device) ASC, local_photo_id ASC',
+    );
+  }
+
+  Future<void> deleteFindPhotoLocal(String localPhotoId) async {
+    final db = await database();
+    await db.delete(
+      'find_photos_local',
+      where: 'local_photo_id = ?',
+      whereArgs: <Object?>[localPhotoId],
     );
   }
 

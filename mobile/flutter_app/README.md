@@ -13,7 +13,7 @@ Start backend first (from repo root):
 
 ```bash
 scripts/backend/bootstrap_local_backend.sh
-curl -k https://localhost/v1/health
+curl -v http://davids-mac-mini.tail850882.ts.net/v1/health
 ```
 
 Run app:
@@ -23,17 +23,21 @@ cd mobile/flutter_app
 flutter run --dart-define=PALEO_API_VERIFY_TLS=false
 ```
 
+Default API resolution:
+- iOS/macOS: primary `http://davids-mac-mini.tail850882.ts.net`, fallback `https://localhost`
+- Android emulator: primary `https://10.0.2.2`, fallback `http://davids-mac-mini.tail850882.ts.net`
+
 Override API URL when needed:
 
 ```bash
-# iOS simulator
+# iOS simulator (force localhost)
 flutter run --dart-define=PALEO_API_BASE_URL=https://localhost --dart-define=PALEO_API_VERIFY_TLS=false
 
 # Android emulator
 flutter run --dart-define=PALEO_API_BASE_URL=https://10.0.2.2 --dart-define=PALEO_API_VERIFY_TLS=false
 
-# Physical device (replace with your backend host/IP)
-flutter run --dart-define=PALEO_API_BASE_URL=https://paleo-server.local --dart-define=PALEO_API_VERIFY_TLS=false
+# Physical device (Tailscale host with explicit localhost fallback)
+flutter run --dart-define=PALEO_API_BASE_URL=http://davids-mac-mini.tail850882.ts.net --dart-define=PALEO_API_FALLBACK_BASE_URL=https://localhost --dart-define=PALEO_API_VERIFY_TLS=false
 ```
 
 ## Verify

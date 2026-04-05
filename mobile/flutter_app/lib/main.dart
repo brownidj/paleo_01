@@ -30,8 +30,15 @@ class PaleoMobileApp extends StatefulWidget {
 }
 
 class _PaleoMobileAppState extends State<PaleoMobileApp> {
+  static const String _defaultTailscaleApiBaseUrl =
+      'http://davids-mac-mini.tail850882.ts.net';
+  static const String _defaultLocalhostApiBaseUrl = 'https://localhost';
   static const String _configuredApiBaseUrl = String.fromEnvironment(
     'PALEO_API_BASE_URL',
+    defaultValue: '',
+  );
+  static const String _configuredFallbackApiBaseUrl = String.fromEnvironment(
+    'PALEO_API_FALLBACK_BASE_URL',
     defaultValue: '',
   );
   static const bool _verifyTls = bool.fromEnvironment(
@@ -45,6 +52,7 @@ class _PaleoMobileAppState extends State<PaleoMobileApp> {
 
   late final MobileDataRepository _repository;
   late final String _apiBaseUrl;
+  late final String _fallbackApiBaseUrl;
   late final TokenStore _tokenStore;
   final Connectivity _connectivity = Connectivity();
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
@@ -66,8 +74,15 @@ class _PaleoMobileAppState extends State<PaleoMobileApp> {
     _apiBaseUrl = _configuredApiBaseUrl.isNotEmpty
         ? _configuredApiBaseUrl
         : _defaultApiBaseUrl();
+    _fallbackApiBaseUrl = _configuredFallbackApiBaseUrl.isNotEmpty
+        ? _configuredFallbackApiBaseUrl
+        : _defaultFallbackApiBaseUrl();
     _repository = OfflineCapableMobileDataRepository(
-      apiClient: ApiClient(baseUrl: _apiBaseUrl, verifyTls: _verifyTls),
+      apiClient: ApiClient(
+        baseUrl: _apiBaseUrl,
+        fallbackBaseUrl: _fallbackApiBaseUrl,
+        verifyTls: _verifyTls,
+      ),
       localDatabase: AppLocalDatabase(),
     );
     _tokenStore = TokenStore();
@@ -88,7 +103,14 @@ class _PaleoMobileAppState extends State<PaleoMobileApp> {
       // Android emulator loopback points to the emulator, not the host machine.
       return 'https://10.0.2.2';
     }
-    return 'https://localhost';
+    return _defaultTailscaleApiBaseUrl;
+  }
+
+  String _defaultFallbackApiBaseUrl() {
+    if (Platform.isAndroid) {
+      return _defaultTailscaleApiBaseUrl;
+    }
+    return _defaultLocalhostApiBaseUrl;
   }
 
   Future<void> _restoreSession() async {
@@ -398,10 +420,13 @@ class _PaleoMobileAppState extends State<PaleoMobileApp> {
         child,
         SafeArea(
           child: Align(
-            alignment: Alignment.topRight,
+            alignment: Alignment.topLeft,
             child: Padding(
-              padding: const EdgeInsets.only(top: 8, right: 10),
-              child: IgnorePointer(
+              padding: const EdgeInsets.only(top: 8, left: 10),
+              child: Tooltip(
+                message:
+                    'Sync status for local changes.\nSynced: all local changes uploaded.\nSyncing: pending uploads in progress.\nOffline: no connection.\nNeeds attention: retries are failing.',
+                triggerMode: TooltipTriggerMode.longPress,
                 child: _SyncStatusChip(label: _syncStatusLabel),
               ),
             ),
