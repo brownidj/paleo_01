@@ -254,16 +254,17 @@ rg --files "$ROOT_DIR" \
   - Type-gate widening and tightening pass (2026-03-30):
     - `scripts/checks/check_types.sh` scope increased from 51 to 61 files to include additional split UI modules (`planning_phase_window_selection`, `planning_phase_window_palette`, `trip_filter_tree_tab`, `trip_form_dialog`, `trip_form_dialog_pickers`, `collection_events_tab`, `finds_tab`, `location_tab`, `geology_tab`, `team_members_tab`).
     - targeted mypy overrides were reduced by removing per-module suppressions for `ui.collection_events_tab` and `ui.finds_tab` after code-level typing fixes.
-  - **Prompt Compliance Snapshot (2026-03-30, updated)**:
+  - **Prompt Compliance Snapshot (2026-04-05, updated)**:
   - Architecture boundaries (UI/domain/infra separation): **mostly compliant**.
   - Root clutter minimization (`main.py` only at root): **partially compliant** (major infra/env files moved; IDE artifacts still present).
   - `main.py` thin/no wiring rule: **compliant** (`main.py` now delegates to `app/bootstrap_runtime.py`).
   - DB safety (parameterized SQL + safe connection handling): **compliant**.
-  - File size <= 300 lines: **not compliant** (current notable oversize files include `ui/planning_tabs_controller.py` (865), `repository/repository_finds.py` (839), `ui/location_form_dialog.py` (831), `repository/postgres_trip_repository_domain.py` (713), `ui/collection_events_tab.py` (381), plus several others).
+  - Type gate (`bash scripts/checks/check_types.sh`): **compliant** as of 2026-04-05 after remediation (`Success: no issues found in 61 source files`).
+  - File size <= 300 lines: **not compliant** (current notable oversize files include `ui/planning_tabs_controller.py` (881), `repository/repository_finds.py` (865), `ui/location_form_dialog.py` (832), `repository/postgres_trip_repository_domain.py` (750), `ui/find_form_dialog.py` (687), plus several others).
 
 ## Codebase Goodness Assessment (vs prompt)
 
-- **Overall rating**: **Strong (about 9.2/10)** for runtime behavior, DB safety, and refactor progress.
+- **Overall rating**: **Strong (about 9.1/10)** for runtime behavior, DB safety, and refactor progress.
   - Non-target legacy modules/tests over 300 lines are explicitly excluded from this score.
   - **Strong areas**:
   - Postgres-first runtime with SQLite compatibility/mirroring is in place and operational.
@@ -272,10 +273,10 @@ rg --files "$ROOT_DIR" \
   - Recent targeted test runs are stable and now include a broader New/Edit Find full-window journey.
   - Internal repository/controller interfaces now use typed payload structures, reducing `dict[str, Any]` usage.
   - Deployment/env layout is cleaner (`deploy/` + `config/env/`) and bootstrap scripts were updated accordingly.
-  - Mypy coverage has been widened and is green for 61 enforced files via `scripts/checks/check_types.sh`.
+  - Mypy coverage remains broad and useful; enforced gate is currently green for 61 files.
 - **Weak areas / debt**:
-  - Full-repo mypy run remains intentionally broader than enforced gate and still reports issues in non-gated UI modules.
-  - Mypy remains policy-scoped by command selection (tests are still out of scope), though current runtime/script module coverage is broad and green.
+  - Full-repo mypy run remains intentionally broader than enforced gate and still reports issues outside strict enforcement scope.
+  - Mypy remains policy-scoped by command selection (tests are still out of scope).
   - Team-member publication-name matching is currently heuristic/string-based; further meaningful identity-quality improvement is unlikely without additional publicly available source data.
 
 ## Recommendations
@@ -290,6 +291,25 @@ rg --files "$ROOT_DIR" \
 2. Add an explicit team-assignment rebuild script (`--dry-run/--apply`) that can regenerate `Trips.team` deterministically from publication + date-window rules.
 3. Implement Search + partial/fuzzy matching for location resolution (for example when trip location text and `Locations.name` are close but not exact).
 4. Type-coverage next slice: consider bringing selected test modules into a separate `mypy` target once cost/benefit is clear.
+
+## ToDo: Immediate Type-Gate Remediation (2026-04-05)
+
+Status: **completed** on 2026-04-05.
+
+1. `ui/find_taxonomy_dialog.py`
+   - Resolve mixed `Text`/`Entry` assignment typing.
+   - Tighten widget type for `transient(parent)` argument.
+   - Ensure `.get()` calls are only on correctly typed widgets.
+2. `ui/find_field_observations_dialog.py`
+   - Resolve mixed `Text`/`Entry` assignment typing.
+   - Tighten widget type for `transient(parent)` argument.
+   - Ensure `.get()` calls are only on correctly typed widgets.
+3. `ui/maintenance_dialog.py`
+   - Correct `subprocess.run()` typing consistency (`bytes` vs `str` mode).
+   - Remove invalid `.decode()` calls when `text=True` result is used.
+4. `ui/finds_tab.py`
+  - Fix `FindFormDialog` call signatures (duplicate keyword and missing/shifted args).
+  - Reconcile `team_member_choices_by_event` and `on_save` argument ordering/types.
 
 ## ToDo: Team Institution Backfill
 
@@ -322,6 +342,21 @@ rg --files "$ROOT_DIR" \
    - Record provenance URL/text in `institution_source` and audit notes in `notes`.
 
 ## Test run report
+
+- **2026-04-05 (current audit run)**:
+  - `python3 scripts/checks/check_import_boundaries.py`: **PASSED**.
+  - `python3 scripts/checks/check_trip_event_integrity.py`: **PASSED**.
+  - `pytest -q tests/test_collection_plan_tab_behavior.py tests/test_tab_filter_regression.py`: **PASSED** (`13 passed`).
+  - `bash scripts/checks/check_types.sh`: **FAILED** (`17` mypy errors in 4 files).
+  - `bash scripts/checks/check_file_sizes.sh .`: **FAILED** (multiple files >300 lines; includes `ui/planning_tabs_controller.py` (881), `repository/repository_finds.py` (865), `ui/location_form_dialog.py` (832), `repository/postgres_trip_repository_domain.py` (750), `ui/find_form_dialog.py` (687), `ui/maintenance_dialog.py` (518), `ui/finds_tab.py` (469), and others).
+
+- **2026-04-05 (type remediation run)**:
+  - `bash scripts/checks/check_types.sh`: **PASSED** (`Success: no issues found in 61 source files`).
+  - Remediated files:
+    - `ui/find_taxonomy_dialog.py`
+    - `ui/find_field_observations_dialog.py`
+    - `ui/maintenance_dialog.py`
+    - `ui/finds_tab.py`
 
 - **2026-03-26 (latest full local gate run)**:
   - `bash scripts/checks/ci_checks.sh`: **FAILED at file-size gate**.

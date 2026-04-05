@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+from typing import Callable, cast
 
 
 class FindFieldObservationsDialog(tk.Toplevel):
@@ -18,14 +19,14 @@ class FindFieldObservationsDialog(tk.Toplevel):
         parent: tk.Widget,
         find_id: int,
         initial_data: dict[str, object] | None,
-        on_save,
+        on_save: Callable[[dict[str, object]], bool | None],
     ):
         super().__init__(parent)
         self.title(f"Find Field Observations #{find_id}")
         self.resizable(True, True)
         self.minsize(620, 420)
         self._on_save = on_save
-        self._inputs: dict[str, tk.Widget] = {}
+        self._inputs: dict[str, tk.Text | ttk.Entry] = {}
 
         frame = ttk.Frame(self, padding=10)
         frame.pack(fill="both", expand=True)
@@ -44,7 +45,15 @@ class FindFieldObservationsDialog(tk.Toplevel):
             if initial_data and initial_data.get(field) is not None:
                 value = str(initial_data.get(field))
             if field in self.TEXT_FIELDS:
-                widget = tk.Text(frame, width=56, height=4, wrap="word", bd=1, relief="solid", highlightthickness=0)
+                widget: tk.Text | ttk.Entry = tk.Text(
+                    frame,
+                    width=56,
+                    height=4,
+                    wrap="word",
+                    bd=1,
+                    relief="solid",
+                    highlightthickness=0,
+                )
                 if value:
                     widget.insert("1.0", value)
             else:
@@ -60,7 +69,7 @@ class FindFieldObservationsDialog(tk.Toplevel):
         ttk.Button(buttons, text="Save", command=self._save).pack(side="left", padx=4)
         ttk.Button(buttons, text="Close", command=self.destroy).pack(side="left", padx=4)
 
-        self.transient(parent)
+        self.transient(cast(tk.Wm, parent))
         self.grab_set()
         self.protocol("WM_DELETE_WINDOW", self.destroy)
 

@@ -8,6 +8,7 @@ import tkinter as tk
 from datetime import datetime
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
+from typing import cast
 from urllib.parse import urlsplit
 
 
@@ -15,7 +16,7 @@ class MaintenanceDialog(tk.Toplevel):
     def __init__(self, parent: tk.Widget, sqlite_db_path: Path, postgres_url: str):
         super().__init__(parent)
         self.title("Maintenance")
-        self.transient(parent)
+        self.transient(cast(tk.Wm, parent))
         self.grab_set()
         self.geometry("760x460")
         self.minsize(700, 420)
@@ -402,13 +403,18 @@ def _backup_postgres(database_url: str, destination: Path, timestamp: str) -> Pa
             "--encoding=UTF8",
         ]
         with target.open("wb") as out_fp:
-            completed = subprocess.run(cmd, stdout=out_fp, stderr=subprocess.PIPE, check=False)
-        if completed.returncode != 0:
+            docker_completed = subprocess.run(
+                cmd,
+                stdout=out_fp,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+        if docker_completed.returncode != 0:
             try:
                 target.unlink(missing_ok=True)
             except OSError:
                 pass
-            error_text = completed.stderr.decode("utf-8", errors="replace").strip() or "docker pg_dump failed."
+            error_text = docker_completed.stderr.decode("utf-8", errors="replace").strip() or "docker pg_dump failed."
             raise RuntimeError(error_text)
         return target
 
@@ -498,9 +504,15 @@ def _restore_postgres(source_path: Path, database_url: str) -> None:
             "ON_ERROR_STOP=1",
         ]
         with source.open("rb") as source_fp:
-            restore_run = subprocess.run(restore_cmd, stdin=source_fp, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
-        if restore_run.returncode != 0:
-            details = restore_run.stderr.decode("utf-8", errors="replace").strip() or "Postgres restore failed."
+            restore_run_bytes = subprocess.run(
+                restore_cmd,
+                stdin=source_fp,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+        if restore_run_bytes.returncode != 0:
+            details = restore_run_bytes.stderr.decode("utf-8", errors="replace").strip() or "Postgres restore failed."
             raise RuntimeError(details)
         return
 
