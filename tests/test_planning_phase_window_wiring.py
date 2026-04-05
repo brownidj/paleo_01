@@ -15,6 +15,14 @@ class _FakeRepo:
         return []
 
 
+class _ProviderAwareTab:
+    def __init__(self):
+        self.provider = None
+
+    def set_current_trip_provider(self, provider):
+        self.provider = provider
+
+
 class _FakeTabsController:
     def __init__(self, parent, repo, on_tab_changed):
         self.parent = parent
@@ -22,14 +30,18 @@ class _FakeTabsController:
         self.on_tab_changed = on_tab_changed
         self.tabs = object()
         self.trips_tab = object()
-        self.location_tab = object()
+        self.location_tab = _ProviderAwareTab()
         self.geology_tab = object()
-        self.collection_events_tab = object()
-        self.finds_tab = object()
+        self.collection_events_tab = _ProviderAwareTab()
+        self.finds_tab = _ProviderAwareTab()
         self.collection_plan_tab = object()
-        self.team_members_tab = object()
+        self.team_members_tab = _ProviderAwareTab()
         self.placeholder_built = False
         self.initial_loaded = False
+        self.provider = None
+
+    def set_current_trip_provider(self, provider):
+        self.provider = provider
 
     def build_collection_plan_placeholder(self):
         self.placeholder_built = True
@@ -85,6 +97,7 @@ class TestPlanningPhaseWindowWiring(unittest.TestCase):
             mock.patch.object(ppw.tk.Tk, "after_idle", lambda self, _cb: None), \
             mock.patch.object(ppw.PlanningPhaseWindow, "_apply_palette", lambda self: None), \
             mock.patch.object(ppw.PlanningPhaseWindow, "_build_trips_tab", _fake_build_trips_tab), \
+            mock.patch.object(ppw.PlanningPhaseWindow, "_build_main_menu", lambda self: None), \
             mock.patch("ui.planning_phase_window.TripRepository", return_value=fake_repo), \
             mock.patch("ui.planning_phase_window.PlanningTabsController", side_effect=lambda *a, **k: _FakeTabsController(*a, **k)) as tabs_cls, \
             mock.patch("ui.planning_phase_window.TripNavigationCoordinator", side_effect=lambda **k: _FakeNavigationCoordinator(**k)) as nav_cls, \
@@ -108,6 +121,16 @@ class TestPlanningPhaseWindowWiring(unittest.TestCase):
         self.assertEqual(dialog_kwargs["on_open_collection_events"], window.navigation.open_collection_events_for_trip)
         self.assertEqual(dialog_kwargs["on_open_finds"], window.navigation.open_finds_for_trip)
         self.assertEqual(dialog_kwargs["on_open_team"], window.navigation.open_team_members_for_trip)
+        for provider in (
+            window.tabs_controller.location_tab.provider,
+            window.tabs_controller.collection_events_tab.provider,
+            window.tabs_controller.finds_tab.provider,
+            window.tabs_controller.team_members_tab.provider,
+            window.tabs_controller.provider,
+        ):
+            self.assertIsNotNone(provider)
+            self.assertIs(provider.__self__, window)
+            self.assertEqual(provider.__name__, "_get_selected_trip_id")
 
         window.new_trip()
         window.edit_selected()

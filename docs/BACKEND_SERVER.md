@@ -94,7 +94,7 @@ Set it up as a small, stable Linux-style service host on macOS with Docker, reve
   - `scripts/backend/bootstrap_local_backend.sh`
 - Verify:
   - `docker compose --env-file config/env/local.env -f deploy/docker/docker-compose.yml ps`
-  - `curl -k https://localhost/v1/health`
+  - `curl -v http://davids-mac-mini.tail850882.ts.net/v1/health`
 
 ## 3. Network and security
 - Expose only `443` (and optionally `80` for redirect) on LAN.
@@ -179,8 +179,11 @@ Set it up as a small, stable Linux-style service host on macOS with Docker, reve
 - Add a one-command deploy (`git pull && docker compose up -d --build`).
 
 ## 7. Desktop/mobile client config
-- Desktop app points to API base URL in config (`https://paleo-server.local/v1`).
-- Flutter app uses same API URL, with environment switch for dev/staging/prod.
+- Desktop API URL resolution:
+  - `PALEO_API_BASE_URL` (if set)
+  - otherwise `PALEO_API_PRIMARY_BASE_URL` if reachable (default `http://davids-mac-mini.tail850882.ts.net`)
+  - otherwise `PALEO_API_FALLBACK_BASE_URL` (default `https://localhost`)
+- Flutter app uses the Tailscale host as default on iOS/macOS with localhost fallback. Use `PALEO_API_BASE_URL` and optional `PALEO_API_FALLBACK_BASE_URL` to override.
 - Never allow clients to connect directly to DB.
 
 ## 8. First deployment checklist

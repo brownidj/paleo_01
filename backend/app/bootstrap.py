@@ -68,6 +68,25 @@ def bootstrap_postgres_auth() -> None:
                     settings.bootstrap_admin_display_name,
                 ),
             )
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS api_idempotency_keys (
+                    id BIGSERIAL PRIMARY KEY,
+                    username TEXT NOT NULL,
+                    idempotency_key TEXT NOT NULL,
+                    response_status TEXT NOT NULL,
+                    response_message TEXT NOT NULL,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE (username, idempotency_key)
+                )
+                """
+            )
+            cur.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_api_idempotency_keys_created_at
+                ON api_idempotency_keys(created_at)
+                """
+            )
             cur.execute("SELECT to_regclass('public.trips') IS NOT NULL AS trips_present")
             trips_present = bool(cur.fetchone()[0])
             if trips_present:
@@ -99,3 +118,12 @@ def bootstrap_postgres_auth() -> None:
                     ON CONFLICT (trip_id, team_member_id) DO NOTHING
                     """
                 )
+                cur.execute("SELECT to_regclass('public.finds') IS NOT NULL AS finds_present")
+                finds_present = bool(cur.fetchone()[0])
+                if finds_present:
+                    cur.execute(
+                        """
+                        ALTER TABLE finds
+                        ADD COLUMN IF NOT EXISTS team_member_id BIGINT REFERENCES team_members(id) ON DELETE SET NULL
+                        """
+                    )

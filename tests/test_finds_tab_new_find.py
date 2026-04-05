@@ -41,9 +41,20 @@ class _FakeRepo:
         return [
             {
                 "id": 101,
+                "trip_id": 42,
                 "collection_name": "Site A",
                 "location_name": "Loc A",
             }
+        ]
+
+    def get_trip(self, _trip_id: int):
+        return {"id": 42, "team": "Alice; Bob"}
+
+    def list_team_members(self):
+        return [
+            {"id": 7, "name": "Alice"},
+            {"id": 8, "name": "Bob"},
+            {"id": 9, "name": "Charlie"},
         ]
 
     def create_find(self, _payload):
@@ -136,6 +147,8 @@ class TestFindsTabNewFind(unittest.TestCase):
         dialog = FindFormDialog(
             self.root,
             [(101, "#101 | Site A | Loc A")],
+            {101: "Loc A"},
+            {101: [(7, "Alice")]},
             on_save=lambda _payload: True,
             initial_data={"id": 1, "collection_event_id": 101},
             title="Edit Find",

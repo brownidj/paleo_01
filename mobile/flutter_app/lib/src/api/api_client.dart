@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
@@ -18,12 +19,20 @@ class ApiClientError implements Exception {
 class ApiClient {
   ApiClient({
     required String baseUrl,
+    String? fallbackBaseUrl,
     bool verifyTls = false,
+    Duration requestTimeout = const Duration(seconds: 8),
     http.Client? client,
   }) : _baseUrl = baseUrl.replaceFirst(RegExp(r'/+$'), ''),
+       _fallbackBaseUrl = (fallbackBaseUrl ?? '')
+           .replaceFirst(RegExp(r'/+$'), '')
+           .trim(),
+       _requestTimeout = requestTimeout,
        _client = client ?? _buildClient(verifyTls: verifyTls);
 
   final String _baseUrl;
+  final String _fallbackBaseUrl;
+  final Duration _requestTimeout;
   final http.Client _client;
 
   String? _accessToken;
@@ -92,17 +101,34 @@ class ApiClient {
 
   Future<void> createFind({
     required int collectionEventId,
-    required String source,
-    required String acceptedName,
+    int? teamMemberId,
+    required String findDate,
+    required String findTime,
+    String? latitude,
+    String? longitude,
+    String? idempotencyKey,
   }) async {
+    final headers = <String, String>{};
+    if ((idempotencyKey ?? '').isNotEmpty) {
+      headers['Idempotency-Key'] = idempotencyKey!;
+    }
+    final body = <String, dynamic>{
+      'collection_event_id': collectionEventId,
+      'source': 'Field',
+      'accepted_name': 'Unknown',
+      'find_date': findDate,
+      'find_time': findTime,
+      'latitude': latitude,
+      'longitude': longitude,
+    };
+    if ((teamMemberId ?? 0) > 0) {
+      body['team_member_id'] = teamMemberId;
+    }
     await _request(
       method: 'POST',
       path: '/v1/finds',
-      body: <String, dynamic>{
-        'collection_event_id': collectionEventId,
-        'source': source,
-        'accepted_name': acceptedName,
-      },
+      body: body,
+      additionalHeaders: headers,
     );
   }
 
@@ -112,8 +138,13 @@ class ApiClient {
     Map<String, dynamic>? body,
     bool includeAuth = true,
     bool retried = false,
+    bool fallbackTried = false,
+    String? baseUrlOverride,
+    Map<String, String>? additionalHeaders,
   }) async {
-    final uri = Uri.parse('$_baseUrl$path');
+    final effectiveBaseUrl = (baseUrlOverride ?? _baseUrl)
+        .replaceFirst(RegExp(r'/+$'), '');
+    final uri = Uri.parse('$effectiveBaseUrl$path');
     final headers = <String, String>{
       'Accept': 'application/json',
       'Content-Type': 'application/json',
@@ -124,25 +155,84 @@ class ApiClient {
       }
       headers['Authorization'] = 'Bearer $_accessToken';
     }
+    if (additionalHeaders != null && additionalHeaders.isNotEmpty) {
+      headers.addAll(additionalHeaders);
+    }
 
     http.Response response;
     try {
       switch (method.toUpperCase()) {
         case 'POST':
-          response = await _client.post(
-            uri,
-            headers: headers,
-            body: jsonEncode(body ?? const <String, dynamic>{}),
-          );
+          response = await _client
+              .post(
+                uri,
+                headers: headers,
+                body: jsonEncode(body ?? const <String, dynamic>{}),
+              )
+              .timeout(_requestTimeout);
           break;
         case 'GET':
-          response = await _client.get(uri, headers: headers);
+          response = await _client
+              .get(uri, headers: headers)
+              .timeout(_requestTimeout);
           break;
         default:
           throw ApiClientError('Unsupported HTTP method: $method');
       }
     } on SocketException catch (exc) {
-      throw ApiClientError('Cannot reach API at $_baseUrl: ${exc.message}');
+      if (!fallbackTried &&
+          _fallbackBaseUrl.isNotEmpty &&
+          _fallbackBaseUrl != effectiveBaseUrl) {
+        return _request(
+          method: method,
+          path: path,
+          body: body,
+          includeAuth: includeAuth,
+          retried: retried,
+          fallbackTried: true,
+          baseUrlOverride: _fallbackBaseUrl,
+          additionalHeaders: additionalHeaders,
+        );
+      }
+      throw ApiClientError(
+        'Cannot reach API at $effectiveBaseUrl: ${exc.message}',
+      );
+    } on HandshakeException catch (exc) {
+      if (!fallbackTried &&
+          _fallbackBaseUrl.isNotEmpty &&
+          _fallbackBaseUrl != effectiveBaseUrl) {
+        return _request(
+          method: method,
+          path: path,
+          body: body,
+          includeAuth: includeAuth,
+          retried: retried,
+          fallbackTried: true,
+          baseUrlOverride: _fallbackBaseUrl,
+          additionalHeaders: additionalHeaders,
+        );
+      }
+      throw ApiClientError(
+        'Cannot reach API at $effectiveBaseUrl: ${exc.message}',
+      );
+    } on TimeoutException {
+      if (!fallbackTried &&
+          _fallbackBaseUrl.isNotEmpty &&
+          _fallbackBaseUrl != effectiveBaseUrl) {
+        return _request(
+          method: method,
+          path: path,
+          body: body,
+          includeAuth: includeAuth,
+          retried: retried,
+          fallbackTried: true,
+          baseUrlOverride: _fallbackBaseUrl,
+          additionalHeaders: additionalHeaders,
+        );
+      }
+      throw ApiClientError(
+        'Cannot reach API at $effectiveBaseUrl: request timed out after ${_requestTimeout.inSeconds}s',
+      );
     }
 
     final text = response.body.trim();
@@ -156,6 +246,9 @@ class ApiClient {
         body: body,
         includeAuth: includeAuth,
         retried: true,
+        fallbackTried: fallbackTried,
+        baseUrlOverride: effectiveBaseUrl,
+        additionalHeaders: additionalHeaders,
       );
     }
     if (response.statusCode >= 400) {

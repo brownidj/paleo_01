@@ -31,10 +31,7 @@ class TripSummary {
 }
 
 class TeamMemberSummary {
-  const TeamMemberSummary({
-    required this.id,
-    required this.name,
-  });
+  const TeamMemberSummary({required this.id, required this.name});
 
   final int id;
   final String name;
@@ -48,10 +45,7 @@ class TeamMemberSummary {
 }
 
 class TripLocationSummary {
-  const TripLocationSummary({
-    required this.id,
-    required this.name,
-  });
+  const TripLocationSummary({required this.id, required this.name});
 
   final int id;
   final String name;
@@ -69,17 +63,20 @@ class TripCollectionEventSummary {
     required this.id,
     required this.collectionName,
     this.eventYear,
+    this.boundaryGeojson,
   });
 
   final int id;
   final String collectionName;
   final int? eventYear;
+  final String? boundaryGeojson;
 
   factory TripCollectionEventSummary.fromJson(Map<String, dynamic> json) {
     return TripCollectionEventSummary(
       id: int.tryParse((json['id'] ?? '').toString()) ?? 0,
       collectionName: (json['collection_name'] ?? '').toString(),
       eventYear: int.tryParse((json['event_year'] ?? '').toString()),
+      boundaryGeojson: _asNullable(json['boundary_geojson']),
     );
   }
 }
@@ -124,18 +121,20 @@ class TripDetail {
       notes: _asNullable(json['notes']),
       team: _asNullable(json['team']),
       findCount: int.tryParse((json['find_count'] ?? '').toString()),
-      teamMembers: ((json['team_members'] as List<dynamic>? ?? const <dynamic>[])
-          .whereType<Map<String, dynamic>>()
-          .map(TeamMemberSummary.fromJson)
-          .toList()),
+      teamMembers:
+          ((json['team_members'] as List<dynamic>? ?? const <dynamic>[])
+              .whereType<Map<String, dynamic>>()
+              .map(TeamMemberSummary.fromJson)
+              .toList()),
       locations: ((json['locations'] as List<dynamic>? ?? const <dynamic>[])
           .whereType<Map<String, dynamic>>()
           .map(TripLocationSummary.fromJson)
           .toList()),
-      collectionEvents: ((json['collection_events'] as List<dynamic>? ?? const <dynamic>[])
-          .whereType<Map<String, dynamic>>()
-          .map(TripCollectionEventSummary.fromJson)
-          .toList()),
+      collectionEvents:
+          ((json['collection_events'] as List<dynamic>? ?? const <dynamic>[])
+              .whereType<Map<String, dynamic>>()
+              .map(TripCollectionEventSummary.fromJson)
+              .toList()),
     );
   }
 }

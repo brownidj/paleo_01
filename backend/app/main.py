@@ -1,11 +1,11 @@
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 from psycopg import connect
 from psycopg.rows import dict_row
 
 from app.auth import Principal, get_current_principal, require_roles, router as auth_router
 from app.bootstrap import bootstrap_postgres_auth
-from app.config import get_settings
+from app.config import Settings, get_settings
 from app.db import check_database
 
 app = FastAPI(title="Paleo API", version="0.1.0")
@@ -41,6 +41,7 @@ class TripCollectionEventSummary(BaseModel):
     id: int
     collection_name: str
     event_year: int | None = None
+    boundary_geojson: str | None = None
 
 
 class TripDetailResponse(BaseModel):
@@ -67,11 +68,19 @@ class FindCreateRequest(BaseModel):
     collection_event_id: int = Field(gt=0)
     source: str = Field(min_length=1, max_length=200)
     accepted_name: str = Field(min_length=1, max_length=200)
+    team_member_id: int | None = Field(default=None, gt=0)
 
 
 class FindCreateResponse(BaseModel):
     status: str
     message: str
+
+
+def _build_find_create_response(principal: Principal) -> FindCreateResponse:
+    return FindCreateResponse(
+        status="accepted",
+        message=f"Find create scaffold accepted for user '{principal.username}'.",
+    )
 
 
 @app.get("/v1/health")
@@ -112,7 +121,7 @@ def list_trips(
                 FROM trips
                 WHERE COALESCE(NULLIF(split_part(CAST(end_date AS text), 'T', 1), ''), '9999-12-31')
                       > to_char(CURRENT_DATE, 'YYYY-MM-DD')
-                ORDER BY start_date DESC NULLS LAST, trip_name ASC, id ASC
+                ORDER BY start_date ASC NULLS LAST, trip_name ASC, id ASC
                 """
             )
             rows = cur.fetchall()
@@ -206,7 +215,7 @@ def get_trip_detail(
 
             cur.execute(
                 """
-                SELECT id, collection_name, event_year
+                SELECT id, collection_name, event_year, boundary_geojson
                 FROM collection_events
                 WHERE trip_id = %s
                 ORDER BY event_year DESC NULLS LAST, id ASC
@@ -248,6 +257,7 @@ def get_trip_detail(
                 id=int(row.get("id") or 0),
                 collection_name=str(row.get("collection_name") or ""),
                 event_year=int(row.get("event_year")) if row.get("event_year") is not None else None,
+                boundary_geojson=str(row.get("boundary_geojson") or "") or None,
             )
             for row in event_rows
         ],
@@ -272,12 +282,90 @@ def list_collection_events(
 def create_find(
     payload: FindCreateRequest,
     principal: Principal = Depends(require_roles("admin", "team", "planner", "field_member")),
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+    settings: Settings = Depends(get_settings),
 ) -> FindCreateResponse:
-    _ = payload
-    return FindCreateResponse(
-        status="accepted",
-        message=f"Find create scaffold accepted for user '{principal.username}'.",
-    )
+    requested_team_member_id = int(payload.team_member_id or 0)
+    effective_team_member_id = requested_team_member_id or principal.team_member_id
+    if effective_team_member_id <= 0:
+        raise HTTPException(status_code=403, detail="Team membership is required.")
+    normalized_key = (idempotency_key or "").strip()
+
+    with connect(settings.database_url, row_factory=dict_row) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT trip_id
+                FROM collection_events
+                WHERE id = %s
+                LIMIT 1
+                """,
+                (payload.collection_event_id,),
+            )
+            event_row = cur.fetchone()
+            if not event_row:
+                raise HTTPException(status_code=404, detail="Collection event not found.")
+            trip_id = int(event_row.get("trip_id") or 0)
+            if trip_id <= 0:
+                raise HTTPException(status_code=422, detail="Collection event is not assigned to a trip.")
+
+            cur.execute(
+                """
+                SELECT 1
+                FROM trip_team_members
+                WHERE trip_id = %s AND team_member_id = %s
+                LIMIT 1
+                """,
+                (trip_id, effective_team_member_id),
+            )
+            if cur.fetchone() is None:
+                raise HTTPException(status_code=403, detail="Team member is not assigned to this trip.")
+
+            if not normalized_key:
+                return _build_find_create_response(principal)
+
+            cur.execute(
+                """
+                SELECT response_status, response_message
+                FROM api_idempotency_keys
+                WHERE username = %s AND idempotency_key = %s
+                LIMIT 1
+                """,
+                (principal.username, normalized_key),
+            )
+            existing = cur.fetchone()
+            if existing:
+                return FindCreateResponse(
+                    status=str(existing.get("response_status") or "accepted"),
+                    message=str(existing.get("response_message") or ""),
+                )
+
+            created = _build_find_create_response(principal)
+            cur.execute(
+                """
+                INSERT INTO api_idempotency_keys (username, idempotency_key, response_status, response_message)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (username, idempotency_key) DO NOTHING
+                """,
+                (principal.username, normalized_key, created.status, created.message),
+            )
+            if cur.rowcount == 0:
+                cur.execute(
+                    """
+                    SELECT response_status, response_message
+                    FROM api_idempotency_keys
+                    WHERE username = %s AND idempotency_key = %s
+                    LIMIT 1
+                    """,
+                    (principal.username, normalized_key),
+                )
+                existing_after_conflict = cur.fetchone()
+                if existing_after_conflict:
+                    return FindCreateResponse(
+                        status=str(existing_after_conflict.get("response_status") or "accepted"),
+                        message=str(existing_after_conflict.get("response_message") or ""),
+                    )
+            return created
 
 
 @app.get("/v1/whoami")

@@ -30,6 +30,7 @@ class RepositoryLocationMixin:
                     location_id INTEGER NOT NULL,
                     collection_name TEXT NOT NULL,
                     collection_subset TEXT,
+                    boundary_geojson TEXT,
                     event_year INTEGER,
                     FOREIGN KEY (trip_id) REFERENCES Trips(id) ON DELETE SET NULL,
                     FOREIGN KEY (location_id) REFERENCES Locations(id)
@@ -44,6 +45,8 @@ class RepositoryLocationMixin:
                 }
             if "event_year" not in collection_event_columns:
                 conn.execute('ALTER TABLE "CollectionEvents" ADD COLUMN event_year INTEGER')
+            if "boundary_geojson" not in collection_event_columns:
+                conn.execute('ALTER TABLE "CollectionEvents" ADD COLUMN boundary_geojson TEXT')
             self._migrate_legacy_collection_fields(conn)
             self._rebuild_locations_table_without_legacy_columns(conn)
             conn.execute(
@@ -71,6 +74,7 @@ class RepositoryLocationMixin:
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     location_id INTEGER,
                     collection_event_id INTEGER,
+                    team_member_id INTEGER,
                     source_system TEXT,
                     source_occurrence_no TEXT,
                     identified_name TEXT,
@@ -148,8 +152,12 @@ class RepositoryLocationMixin:
             if "longitude" not in find_columns:
                 conn.execute('ALTER TABLE "Finds" ADD COLUMN longitude TEXT')
                 find_columns.add("longitude")
+            if "team_member_id" not in find_columns:
+                conn.execute('ALTER TABLE "Finds" ADD COLUMN team_member_id INTEGER')
+                find_columns.add("team_member_id")
             conn.execute('CREATE INDEX IF NOT EXISTS idx_finds_location ON "Finds"(location_id)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_finds_collection_event ON "Finds"(collection_event_id)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_finds_team_member ON "Finds"(team_member_id)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_finds_source_occurrence ON "Finds"(source_occurrence_no)')
             conn.execute(
                 """

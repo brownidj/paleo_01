@@ -3,7 +3,7 @@ import sqlite3
 import tkinter as tk
 from collections.abc import Mapping
 from tkinter import messagebox, ttk
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from app.api_auth import ApiAuthClient
 from repository import DEFAULT_DB_PATH
@@ -26,7 +26,7 @@ class PlanningPhaseWindow(PlanningPhaseWindowSelectionMixin, PlanningPhaseWindow
         db_backend: str = "sqlite",
     ):
         super().__init__()
-        self.title("Paleo Trips - Planning and viewing past Finds")
+        self.title("Paleo Trips - Planning and Viewing past Finds")
         self.geometry("980x560")
         self._apply_palette()
         self.protocol("WM_DELETE_WINDOW", self._on_close)
@@ -75,7 +75,7 @@ class PlanningPhaseWindow(PlanningPhaseWindowSelectionMixin, PlanningPhaseWindow
         self.finds_tab = self.tabs_controller.finds_tab
         self.collection_plan_tab = self.tabs_controller.collection_plan_tab
         self.team_members_tab = self.tabs_controller.team_members_tab
-        for tab in (self.location_tab, self.collection_events_tab, self.finds_tab):
+        for tab in (self.location_tab, self.collection_events_tab, self.finds_tab, self.team_members_tab, self.tabs_controller):
             set_provider = getattr(tab, "set_current_trip_provider", None)
             if callable(set_provider):
                 set_provider(self._get_selected_trip_id)
@@ -266,7 +266,7 @@ class PlanningPhaseWindow(PlanningPhaseWindowSelectionMixin, PlanningPhaseWindow
             self._maintenance_dialog.focus_force()
             return
         self._maintenance_dialog = MaintenanceDialog(
-            self,
+            cast(tk.Widget, self),
             sqlite_db_path=self._db_path,
             postgres_url=self._postgres_url,
         )

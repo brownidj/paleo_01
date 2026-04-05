@@ -9,9 +9,9 @@ from ui.planning_tabs_controller import PlanningTabsController
 class _FakeRepo:
     def __init__(self):
         self.events_by_trip: dict[int, list[dict[str, object]]] = {
-            1: [{"id": 101, "collection_name": "CE Zulu"}],
+            1: [{"id": 101, "trip_id": 1, "collection_name": "CE Zulu", "boundary_geojson": None}],
             2: [],
-            3: [{"id": 301, "collection_name": "CE Beta"}],
+            3: [{"id": 301, "trip_id": 3, "collection_name": "CE Beta", "boundary_geojson": None}],
             4: [],
             5: [],
         }
@@ -21,10 +21,10 @@ class _FakeRepo:
         tomorrow = (today + timedelta(days=1)).isoformat()
         yesterday = (today - timedelta(days=1)).isoformat()
         return [
-            {"id": 1, "trip_name": "Zulu", "start_date": "2024-01-01", "end_date": tomorrow},
-            {"id": 2, "trip_name": "Alpha", "start_date": "2025-04-10", "end_date": ""},
-            {"id": 3, "trip_name": "Beta", "start_date": "2025-04-10", "end_date": None},
-            {"id": 4, "trip_name": "No Date", "start_date": None, "end_date": tomorrow},
+            {"id": 1, "trip_name": "Zulu", "start_date": "2024-01-01", "end_date": tomorrow, "team": "Z Team"},
+            {"id": 2, "trip_name": "Alpha", "start_date": "2025-04-10", "end_date": "", "team": "A Team"},
+            {"id": 3, "trip_name": "Beta", "start_date": "2025-04-10", "end_date": None, "team": "B Team"},
+            {"id": 4, "trip_name": "No Date", "start_date": None, "end_date": tomorrow, "team": "N Team"},
             {"id": 5, "trip_name": "Finished", "start_date": "2026-01-01", "end_date": yesterday},
         ]
 
@@ -47,6 +47,7 @@ class _FakeRepo:
                     "trip_name": row["trip_name"],
                     "start_date": row["start_date"],
                     "location": f"Location for {row['trip_name']}",
+                    "team": row.get("team", ""),
                 }
         return None
 
@@ -54,7 +55,7 @@ class _FakeRepo:
         trip_key = int(trip_id)
         events = self.events_by_trip.setdefault(trip_key, [])
         new_id = len(events) + 1000 + trip_key
-        events.insert(0, {"id": new_id, "collection_name": collection_name})
+        events.append({"id": new_id, "trip_id": trip_key, "collection_name": collection_name, "boundary_geojson": None})
         return new_id
 
     def update_collection_event_name(self, collection_event_id: int, collection_name: str):
@@ -106,10 +107,10 @@ class TestCollectionPlanTabBehavior(unittest.TestCase):
         self.assertEqual(
             rows,
             [
-                ("Alpha", "2025-04-10", ""),
-                ("Beta", "2025-04-10", "CE Beta"),
-                ("No Date", "", ""),
-                ("Zulu", "2024-01-01", "CE Zulu"),
+                ("Alpha", "2025-04-10", "", "A Team"),
+                ("Beta", "2025-04-10", "CE Beta", "B Team"),
+                ("No Date", "", "", "N Team"),
+                ("Zulu", "2024-01-01", "CE Zulu", "Z Team"),
             ],
         )
 
@@ -147,7 +148,6 @@ class TestCollectionPlanTabBehavior(unittest.TestCase):
         self.assertIn("Start", label_texts)
         self.assertIn("Location", label_texts)
         self.assertIn("Collection Event", label_texts)
-        self.assertIn("New name", label_texts)
         self.assertIn("Alpha", label_texts)
         self.assertIn("2025-04-10", label_texts)
         self.assertIn("Location for Alpha", label_texts)
@@ -163,7 +163,8 @@ class TestCollectionPlanTabBehavior(unittest.TestCase):
         _collect_comboboxes(dialog)
         self.assertEqual(len(combo_widgets), 1)
         combo_values = tuple(str(v) for v in combo_widgets[0].cget("values"))
-        self.assertEqual(combo_values[0], "[+]")
+        self.assertIn("CE Beta", combo_values)
+        self.assertIn("CE Zulu", combo_values)
         dialog.destroy()
 
     def test_create_collection_event_from_modal_updates_collection_plan_row(self):
@@ -179,18 +180,17 @@ class TestCollectionPlanTabBehavior(unittest.TestCase):
         self.assertIsNotNone(dialog)
         assert dialog is not None
 
-        entry_widgets: list[ttk.Entry] = []
+        combo_widgets: list[ttk.Combobox] = []
 
-        def _collect_entries(widget):
+        def _collect_comboboxes(widget):
             for child in widget.winfo_children():
-                if isinstance(child, ttk.Entry) and not isinstance(child, ttk.Combobox):
-                    entry_widgets.append(child)
-                _collect_entries(child)
+                if isinstance(child, ttk.Combobox):
+                    combo_widgets.append(child)
+                _collect_comboboxes(child)
 
-        _collect_entries(dialog)
-        self.assertEqual(len(entry_widgets), 1)
-        entry = entry_widgets[0]
-        entry.insert(0, "CE Alpha New")
+        _collect_comboboxes(dialog)
+        self.assertEqual(len(combo_widgets), 1)
+        combo_widgets[0].set("CE Alpha New")
 
         create_buttons: list[ttk.Button] = []
 
@@ -205,7 +205,7 @@ class TestCollectionPlanTabBehavior(unittest.TestCase):
         create_buttons[0].invoke()
 
         rows = [controller.collection_plan_tree.item(iid, "values") for iid in controller.collection_plan_tree.get_children()]
-        self.assertEqual(rows[0], ("Alpha", "2025-04-10", "CE Alpha New"))
+        self.assertEqual(rows[0], ("Alpha", "2025-04-10", "CE Alpha New", "A Team"))
 
     def test_create_collection_event_from_existing_dropdown_value(self):
         controller = PlanningTabsController(self.root, _FakeRepo(), lambda _event: None)
@@ -247,7 +247,7 @@ class TestCollectionPlanTabBehavior(unittest.TestCase):
         create_buttons[0].invoke()
 
         rows = [controller.collection_plan_tree.item(iid, "values") for iid in controller.collection_plan_tree.get_children()]
-        self.assertEqual(rows[0], ("Alpha", "2025-04-10", "CE Beta"))
+        self.assertEqual(rows[0], ("Alpha", "2025-04-10", "CE Beta", "A Team"))
 
     def test_double_click_collection_plan_item_allows_edit(self):
         controller = PlanningTabsController(self.root, _FakeRepo(), lambda _event: None)
@@ -277,21 +277,7 @@ class TestCollectionPlanTabBehavior(unittest.TestCase):
         _collect_comboboxes(dialog)
         self.assertEqual(len(combo_widgets), 1)
         combo = combo_widgets[0]
-        combo.set("[+]")
-        combo.event_generate("<<ComboboxSelected>>")
-
-        entry_widgets: list[ttk.Entry] = []
-
-        def _collect_entries(widget):
-            for child in widget.winfo_children():
-                if isinstance(child, ttk.Entry) and not isinstance(child, ttk.Combobox):
-                    entry_widgets.append(child)
-                _collect_entries(child)
-
-        _collect_entries(dialog)
-        self.assertEqual(len(entry_widgets), 1)
-        entry = entry_widgets[0]
-        entry.insert(0, "CE Beta Edited")
+        combo.set("CE Beta Edited")
 
         save_buttons: list[ttk.Button] = []
 
@@ -307,7 +293,7 @@ class TestCollectionPlanTabBehavior(unittest.TestCase):
 
         rows = [controller.collection_plan_tree.item(iid, "values") for iid in controller.collection_plan_tree.get_children()]
         beta_row = next(row for row in rows if row[0] == "Beta")
-        self.assertEqual(beta_row, ("Beta", "2025-04-10", "CE Beta Edited"))
+        self.assertEqual(beta_row, ("Beta", "2025-04-10", "CE Beta Edited", "B Team"))
 
     def test_duplicate_trip_names_order_by_start_date_as_tiebreaker(self):
         controller = PlanningTabsController(self.root, _FakeRepoDuplicateTripNames(), lambda _event: None)
@@ -318,10 +304,10 @@ class TestCollectionPlanTabBehavior(unittest.TestCase):
         self.assertEqual(
             rows,
             [
-                ("Alpha", "2024-01-01", ""),
-                ("Alpha", "2025-05-01", ""),
-                ("Alpha", "2026-02-20", ""),
-                ("Beta", "2025-07-07", ""),
+                ("Alpha", "2024-01-01", "", ""),
+                ("Alpha", "2025-05-01", "", ""),
+                ("Alpha", "2026-02-20", "", ""),
+                ("Beta", "2025-07-07", "", ""),
             ],
         )
 

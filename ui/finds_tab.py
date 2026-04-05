@@ -1,7 +1,9 @@
 import sqlite3
 import tkinter as tk
 from tkinter import messagebox, ttk
+from typing import Callable, Mapping, cast
 
+from repository.domain_types import CollectionEventRecord
 from repository.trip_repository import TripRepository
 from ui.find_field_observations_dialog import FindFieldObservationsDialog
 from ui.find_form_dialog import FindFormDialog
@@ -34,7 +36,13 @@ class FindsTab(TripFilterTreeTab):
             "source_occurrence_no": 96,
             "accepted_name": 180,
         }
-        super().__init__(parent, repo, self.LIST_COLUMNS, widths, repo.list_finds)
+        super().__init__(
+            parent,
+            repo,
+            self.LIST_COLUMNS,
+            widths,
+            cast(Callable[[int | None], list[Mapping[str, object]]], repo.list_finds),
+        )
         style = ttk.Style(self)
         style.configure("Finds.Treeview.Heading", font=("Helvetica", 10, "bold"))
         self.tree.configure(style="Finds.Treeview")
@@ -100,9 +108,13 @@ class FindsTab(TripFilterTreeTab):
             return
 
         choices = self._collection_event_choices(events)
+        locations_by_event = self._collection_event_locations(events)
+        map_data_by_event = self._collection_event_map_data(events)
 
         def save_find(payload: dict[str, object]) -> bool:
             try:
+                if payload.get("team_member_id") in (None, ""):
+                    raise ValueError("Select a team member assigned to the trip.")
                 new_find_id = int(self.repo.create_find(payload))
             except (sqlite3.Error, ValueError) as e:
                 messagebox.showerror("Save Error", str(e))
@@ -111,7 +123,17 @@ class FindsTab(TripFilterTreeTab):
             self._focus_find(new_find_id)
             return True
 
-        FindFormDialog(self, choices, save_find, initial_data=None, title="New Find", is_new=True)
+        FindFormDialog(
+            self,
+            choices,
+            locations_by_event,
+            self._team_member_choices_by_event(events),
+            save_find,
+            collection_event_map_data=map_data_by_event,
+            initial_data=None,
+            title="New Find",
+            is_new=True,
+        )
 
     def edit_find(self) -> None:
         selected = self.tree.selection()
@@ -143,7 +165,8 @@ class FindsTab(TripFilterTreeTab):
         except sqlite3.Error as e:
             messagebox.showerror("Database Error", str(e))
             return
-        choices = self._collection_event_choices(events)
+        events_for_choices = list(events)
+        choices = self._collection_event_choices(events_for_choices)
         current_ce_id_raw = record.get("collection_event_id")
         current_ce_id = int(current_ce_id_raw) if current_ce_id_raw is not None else None
         if current_ce_id is not None and current_ce_id not in {c[0] for c in choices}:
@@ -152,16 +175,21 @@ class FindsTab(TripFilterTreeTab):
                 event_id = int(event["id"])
                 if event_id != current_ce_id:
                     continue
-                choices.extend(self._collection_event_choices([event]))
+                events_for_choices.append(event)
+                choices = self._collection_event_choices(events_for_choices)
                 break
         if not choices:
             messagebox.showinfo("Edit Find", "No Collection Events are available for this Find.")
             return
+        locations_by_event = self._collection_event_locations(events_for_choices)
+        map_data_by_event = self._collection_event_map_data(events_for_choices)
 
         initial = dict(record)
 
         def save_find(payload: dict[str, object]) -> bool:
             try:
+                if payload.get("team_member_id") in (None, ""):
+                    raise ValueError("Select a team member assigned to the trip.")
                 merged_payload = dict(initial)
                 merged_payload.update(payload)
                 self.repo.update_find(find_id, merged_payload)
@@ -175,10 +203,13 @@ class FindsTab(TripFilterTreeTab):
         FindFormDialog(
             self,
             choices,
+            locations_by_event,
+            self._team_member_choices_by_event(events_for_choices),
             save_find,
             on_saved=self._show_record_saved_toast,
             on_open_field_observations=self._open_field_observations_form,
             on_open_taxonomy=self._open_taxonomy_form,
+            collection_event_map_data=map_data_by_event,
             initial_data=initial,
             title="Edit Find",
             is_new=False,
@@ -307,18 +338,32 @@ class FindsTab(TripFilterTreeTab):
         self._save_toast_hide_after_id = None
 
     @staticmethod
-    def _collection_event_choices(events: list[dict[str, object]]) -> list[tuple[int, str]]:
+    def _event_id(event: CollectionEventRecord) -> int | None:
+        raw = event.get("id")
+        try:
+            if raw is None:
+                return None
+            return int(raw)
+        except (TypeError, ValueError):
+            return None
+
+    @classmethod
+    def _collection_event_choices(cls, events: list[CollectionEventRecord]) -> list[tuple[int, str]]:
         base_labels: dict[int, tuple[str, str]] = {}
         counts: dict[str, int] = {}
         for event in events:
-            event_id = int(event["id"])
+            event_id = cls._event_id(event)
+            if event_id is None:
+                continue
             collection_name = str(event.get("collection_name") or "").strip() or "n/a"
             location_name = str(event.get("location_name") or "").strip() or "n/a"
             base_labels[event_id] = (collection_name, location_name)
             counts[collection_name] = counts.get(collection_name, 0) + 1
         choices: list[tuple[int, str]] = []
         for event in events:
-            event_id = int(event["id"])
+            event_id = cls._event_id(event)
+            if event_id is None or event_id not in base_labels:
+                continue
             collection_name, location_name = base_labels[event_id]
             if counts.get(collection_name, 0) == 1:
                 label = collection_name
@@ -326,3 +371,99 @@ class FindsTab(TripFilterTreeTab):
                 label = f"{collection_name} | {location_name} (CE #{event_id})"
             choices.append((event_id, label))
         return choices
+
+    @classmethod
+    def _collection_event_locations(cls, events: list[CollectionEventRecord]) -> dict[int, str]:
+        locations: dict[int, str] = {}
+        for event in events:
+            event_id = cls._event_id(event)
+            if event_id is None:
+                continue
+            locations[event_id] = str(event.get("location_name") or "").strip()
+        return locations
+
+    def _collection_event_map_data(self, events: list[CollectionEventRecord]) -> dict[int, dict[str, object]]:
+        locations_by_name: dict[str, tuple[object, object]] = {}
+        list_locations = getattr(self.repo, "list_locations", None)
+        if callable(list_locations):
+            try:
+                locations = list_locations()
+            except sqlite3.Error:
+                locations = []
+        else:
+            locations = []
+        for location in locations:
+            location_name = str(location.get("name") or "").strip()
+            if not location_name or location_name in locations_by_name:
+                continue
+            locations_by_name[location_name] = (location.get("latitude"), location.get("longitude"))
+        map_data: dict[int, dict[str, object]] = {}
+        for event in events:
+            event_id = self._event_id(event)
+            if event_id is None:
+                continue
+            location_name = str(event.get("location_name") or "").strip()
+            lat_lon = locations_by_name.get(location_name, (None, None))
+            map_data[event_id] = {
+                "boundary_geojson": event.get("boundary_geojson"),
+                "latitude": lat_lon[0],
+                "longitude": lat_lon[1],
+                "location_name": location_name,
+            }
+        return map_data
+
+    def _team_member_choices_by_event(
+        self,
+        events: list[CollectionEventRecord],
+    ) -> dict[int, list[tuple[int, str]]]:
+        by_event: dict[int, list[tuple[int, str]]] = {}
+        cache: dict[int, list[tuple[int, str]]] = {}
+        for event in events:
+            event_id = self._event_id(event)
+            if event_id is None:
+                continue
+            trip_id_raw = event.get("trip_id")
+            try:
+                trip_id = int(trip_id_raw) if trip_id_raw is not None else 0
+            except (TypeError, ValueError):
+                trip_id = 0
+            if trip_id <= 0:
+                by_event[event_id] = []
+                continue
+            if trip_id not in cache:
+                cache[trip_id] = self._assigned_team_members_for_trip(trip_id)
+            by_event[event_id] = list(cache.get(trip_id, []))
+        return by_event
+
+    def _assigned_team_members_for_trip(self, trip_id: int) -> list[tuple[int, str]]:
+        get_trip = getattr(self.repo, "get_trip", None)
+        list_team_members = getattr(self.repo, "list_team_members", None)
+        if not callable(get_trip) or not callable(list_team_members):
+            return []
+        try:
+            trip = get_trip(int(trip_id))
+            members = list_team_members()
+        except sqlite3.Error:
+            return []
+        if not isinstance(trip, dict):
+            return []
+        assigned_names = {
+            name.strip().lower()
+            for name in str(trip.get("team") or "").split(";")
+            if name.strip()
+        }
+        if not assigned_names:
+            return []
+        selected: list[tuple[int, str]] = []
+        for row in members:
+            if not isinstance(row, dict):
+                continue
+            member_name = str(row.get("name") or "").strip()
+            member_id = int(row.get("id") or 0)
+            if member_id <= 0 or not member_name:
+                continue
+            if member_name.lower() not in assigned_names:
+                continue
+            selected.append((member_id, member_name))
+        selected.sort(key=lambda item: item[1].lower())
+        return selected

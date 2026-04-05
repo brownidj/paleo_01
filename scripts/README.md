@@ -18,4 +18,5 @@ Run scripts from the repository root so relative paths resolve consistently.
 ```zsh
 open -a Docker
 scripts/backend/bootstrap_local_backend.sh
-curl -k https://localhost/v1/health
+curl -v http://davids-mac-mini.tail850882.ts.net/v1/health
+```

@@ -224,6 +224,7 @@ def _rebuild_finds_table_without_trip_id(conn: sqlite3.Connection) -> None:
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             location_id INTEGER,
             collection_event_id INTEGER,
+            team_member_id INTEGER,
             source_system TEXT,
             source_occurrence_no TEXT,
             identified_name TEXT,
@@ -261,6 +262,7 @@ def _rebuild_finds_table_without_trip_id(conn: sqlite3.Connection) -> None:
         "id",
         "location_id",
         "collection_event_id",
+        "team_member_id",
         "source_system",
         "source_occurrence_no",
         "identified_name",
@@ -296,4 +298,5 @@ def _rebuild_finds_table_without_trip_id(conn: sqlite3.Connection) -> None:
     conn.execute("ALTER TABLE Finds_new RENAME TO Finds")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_finds_location ON Finds(location_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_finds_collection_event ON Finds(collection_event_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_finds_team_member ON Finds(team_member_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_finds_source_occurrence ON Finds(source_occurrence_no)")

@@ -69,6 +69,8 @@ class FindRecord(TypedDict, total=False):
     id: int
     location_id: int | None
     collection_event_id: int | None
+    team_member_id: int | None
+    team_member_name: str | None
     source_system: str | None
     source_occurrence_no: str | None
     accepted_name: str | None
@@ -109,6 +111,7 @@ class CollectionEventRecord(TypedDict, total=False):
     event_year: int | None
     collection_name: str | None
     collection_subset: str | None
+    boundary_geojson: str | None
     location_name: str | None
     find_count: int
 

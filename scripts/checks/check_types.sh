@@ -50,6 +50,16 @@ python3 -m mypy --config-file config/mypy.ini --explicit-package-bases \
   scripts/dev_seed/seed_trips.py \
   scripts/dev_seed/seed_users.py \
   ui/planning_phase_window.py \
+  ui/planning_phase_window_selection.py \
+  ui/planning_phase_window_palette.py \
   ui/planning_tabs_controller.py \
   ui/trip_navigation_coordinator.py \
-  ui/trip_dialog_controller.py
+  ui/trip_filter_tree_tab.py \
+  ui/trip_dialog_controller.py \
+  ui/trip_form_dialog.py \
+  ui/trip_form_dialog_pickers.py \
+  ui/collection_events_tab.py \
+  ui/finds_tab.py \
+  ui/location_tab.py \
+  ui/geology_tab.py \
+  ui/team_members_tab.py

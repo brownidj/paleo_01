@@ -9,6 +9,7 @@ import tkinter as tk
 from repository.trip_repository import TripRepository
 from ui.collection_events_tab import CollectionEventsTab
 from ui.finds_tab import FindsTab
+from ui.team_members_tab import TeamMembersTab
 
 
 class TestTabFilterRegression(unittest.TestCase):
@@ -179,6 +180,43 @@ class TestTabFilterRegression(unittest.TestCase):
         self.assertIsNotNone(row)
         assert row is not None
         self.assertEqual(row[0], f"Edited CE [#{event_id}]")
+
+    def test_team_members_trip_filter_uses_selected_trip_provider(self):
+        self.repo.create_team_member("Alice", "", True)
+        self.repo.create_team_member("Bob", "", True)
+        self.repo.create_team_member("Zoe", "", True)
+        self.repo.update_trip(self.trip_a, {"team": "Alice; Bob"})
+        self.repo.update_trip(self.trip_b, {"team": "Zoe"})
+
+        selected_trip_id = self.trip_a
+
+        def _selected_trip_provider():
+            return selected_trip_id
+
+        tab = TeamMembersTab(self.root, self.repo)
+        tab.set_current_trip_provider(_selected_trip_provider)
+        tab.load_team_members()
+        self.assertEqual(tab.trip_filter_var.get(), 1)
+
+        rows_a = [tab.team_members_tree.item(iid, "values")[0] for iid in tab.team_members_tree.get_children()]
+        self.assertEqual(rows_a, ["Alice", "Bob"])
+
+        selected_trip_id = self.trip_b
+        tab.load_team_members()
+        rows_b = [tab.team_members_tree.item(iid, "values")[0] for iid in tab.team_members_tree.get_children()]
+        self.assertEqual(rows_b, ["Zoe"])
+
+    def test_team_members_trip_filter_for_empty_trip_team_shows_no_rows(self):
+        self.repo.create_team_member("Alice", "", True)
+        self.repo.create_team_member("Bob", "", True)
+        self.repo.update_trip(self.trip_a, {"team": ""})
+
+        tab = TeamMembersTab(self.root, self.repo)
+        tab.set_current_trip_provider(lambda: self.trip_a)
+        tab.load_team_members()
+
+        self.assertEqual(tab.trip_filter_var.get(), 1)
+        self.assertEqual(len(tab.team_members_tree.get_children()), 0)
 
 
 if __name__ == "__main__":

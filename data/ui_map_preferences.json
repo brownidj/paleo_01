@@ -1,0 +1,9 @@
+{
+  "selected_map_type": "Google Hybrid",
+  "zoom_level": 18,
+  "zoom_levels": {
+    "Google Hybrid": 18,
+    "OpenStreetMap": 16,
+    "OpenTopoMap": 14
+  }
+}

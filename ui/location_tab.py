@@ -14,8 +14,15 @@ class LocationTab(ttk.Frame):
     def __init__(self, parent, repo: TripRepository):
         super().__init__(parent)
         self.repo = repo
+        self.trip_filter_var = tk.IntVar(value=1)
+        self._trip_filter_trip_id: int | None = None
+        self._current_trip_id_provider = None
         self._toast_shown_count = 0
         self._toast_hide_after_id: str | None = None
+
+        trip_filter_radio = ttk.Radiobutton(self, text="Trip filter", variable=self.trip_filter_var, value=1)
+        trip_filter_radio.pack(anchor="w", padx=10, pady=(10, 4))
+        trip_filter_radio.bind("<Button-1>", self._on_trip_filter_click, add="+")
 
         self.tree = ttk.Treeview(
             self,
@@ -78,13 +85,28 @@ class LocationTab(ttk.Frame):
         except sqlite3.Error as e:
             messagebox.showerror("Database Error", str(e))
             return
+        allowed_location_names = self._active_trip_location_names()
         for loc in locations:
+            if (
+                self.trip_filter_var.get() == 1
+                and allowed_location_names is not None
+                and str(loc.get("name") or "").strip().lower() not in allowed_location_names
+            ):
+                continue
             self.tree.insert(
                 "",
                 "end",
                 iid=str(loc["id"]),
                 values=tuple((loc.get(col, "") or "") for col in self.LIST_COLUMNS),
             )
+
+    def set_current_trip_provider(self, provider) -> None:
+        self._current_trip_id_provider = provider
+
+    def activate_trip_filter(self, trip_id: int) -> None:
+        self._trip_filter_trip_id = trip_id
+        self.trip_filter_var.set(1)
+        self.load_locations()
 
     def new_location(self) -> None:
         geology_choices = self._list_geology_choices()
@@ -201,6 +223,46 @@ class LocationTab(ttk.Frame):
                 continue
             normalized[key] = value if value else None
         return normalized
+
+    def _on_trip_filter_click(self, _event) -> str:
+        currently_on = self.trip_filter_var.get() == 1
+        if currently_on:
+            self.trip_filter_var.set(0)
+        else:
+            provider_trip_id = self._get_provider_trip_id()
+            if provider_trip_id is not None:
+                self._trip_filter_trip_id = provider_trip_id
+            self.trip_filter_var.set(1)
+        self.load_locations()
+        return "break"
+
+    def _get_provider_trip_id(self) -> int | None:
+        if not callable(self._current_trip_id_provider):
+            return None
+        trip_id = self._current_trip_id_provider()
+        if trip_id is None:
+            return None
+        try:
+            return int(trip_id)
+        except (TypeError, ValueError):
+            return None
+
+    def _active_trip_filter_trip_id(self) -> int | None:
+        provider_trip_id = self._get_provider_trip_id()
+        if provider_trip_id is not None:
+            self._trip_filter_trip_id = provider_trip_id
+        return self._trip_filter_trip_id
+
+    def _active_trip_location_names(self) -> set[str] | None:
+        trip_id = self._active_trip_filter_trip_id()
+        if trip_id is None:
+            return None
+        trip = self.repo.get_trip(trip_id)
+        if not trip:
+            return None
+        raw_location = str(trip.get("location") or "")
+        names = {part.strip().lower() for part in raw_location.split(";") if part.strip()}
+        return names or None
 
     def maybe_show_edit_toast(self) -> None:
         if self.tree.selection():

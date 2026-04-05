@@ -17,6 +17,8 @@ if [[ ! -f "$ENV_FILE" ]]; then
   fi
 fi
 
+ENV_FILE_ABS="$(cd "$(dirname "$ENV_FILE")" && pwd)/$(basename "$ENV_FILE")"
+
 if docker compose version >/dev/null 2>&1; then
   COMPOSE_CMD=(docker compose)
 elif command -v docker-compose >/dev/null 2>&1; then
@@ -30,8 +32,8 @@ if grep -Eq "replace-with|change-me" "$ENV_FILE"; then
   echo "Warning: '$ENV_FILE' still contains placeholder secrets."
 fi
 
-PALEO_ENV_FILE="$ENV_FILE" "${COMPOSE_CMD[@]}" --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d --build
-PALEO_ENV_FILE="$ENV_FILE" "${COMPOSE_CMD[@]}" --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps
+PALEO_ENV_FILE="$ENV_FILE_ABS" "${COMPOSE_CMD[@]}" --env-file "$ENV_FILE_ABS" -f "$COMPOSE_FILE" up -d --build
+PALEO_ENV_FILE="$ENV_FILE_ABS" "${COMPOSE_CMD[@]}" --env-file "$ENV_FILE_ABS" -f "$COMPOSE_FILE" ps
 
 echo
 echo "Backend stack started."
